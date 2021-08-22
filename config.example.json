@@ -1,0 +1,11 @@
+{
+    "token": "Your bots token here",
+    "owners": [
+        101118549958877184,
+        468373112841306112
+    ],
+    "prefix": [
+        "Your own prefix"
+    ],
+    "version": "0.0.0"
+}
