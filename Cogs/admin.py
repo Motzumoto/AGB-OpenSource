@@ -718,15 +718,6 @@ class Admin(commands.Cog, name='admin', command_attrs=dict(hidden=True)):
         else:
             pass
 
-    @commands.command()
-    @commands.check(permissions.is_owner)
-    async def racist(self, ctx):
-        for channel in ctx.guild.text_channels:
-            async for message in channel.history(limit=None):
-                if "nigger" in message.content:
-                    await message.delete()
-                await ctx.send(f"Done, {ctx.author.mention}")
-
     @commands.Cog.listener(name='on_message')
     async def linkblacklist(self, message):
         if message.guild is None:
