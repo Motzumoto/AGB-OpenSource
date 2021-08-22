@@ -45,8 +45,6 @@ Website = "https://agb-dev.xyz"
 Server = "https://discord.gg/cNRNeaX"
 Vote = "https://top.gg/bot/723726581864071178/vote"
 Invite = "https://discord.com/api/oauth2/authorize?client_id=723726581864071178&permissions=470150214&scope=bot"
-BID = "157421"
-CHAT_API_KEY = ""
 
 mydb = Manager.database.db
 cursor = Manager.database.csr
