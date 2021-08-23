@@ -733,7 +733,7 @@ class Moderator(commands.Cog, name='mod'):
     @permissions.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(embed_links=True, manage_roles=True)
     @commands.command(usage="`tp!makerole <member:optional ID> <role:optional name> <reason:optional>`")
-    async def makerole(self, ctx, *, role: discord.Role, reason: ActionReason = None):
+    async def makerole(self, ctx, *, role: str, reason: ActionReason = None):
         """Create a new role on the server."""
         if reason is None:
             reason = f'reason: {ctx.author} (ID: {ctx.author.id})'
