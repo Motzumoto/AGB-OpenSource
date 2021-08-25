@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from io import BytesIO
 from typing import Union
+import os
 
 import aiohttp
 import discord
@@ -56,7 +57,7 @@ class DiscordCmds(commands.Cog, name='discord'):
 
     @commands.command(aliases=['s'], usage="`tp!s`")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.channel)
     async def snipe(self, ctx):
         """Snipe recently deleted messages to see what someone said."""
         try:
@@ -96,7 +97,7 @@ class DiscordCmds(commands.Cog, name='discord'):
                 name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url)
             embed.set_footer(text=f"Edited in #{channel_name}")
             embed.add_field(
-                name="‎‎‎‎‎‎", value=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote})", inline=False)
+                name="‎‎‎‎‎‎", value=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.advert})", inline=False)
 
             await ctx.send(embed=embed)
         except:
@@ -137,12 +138,10 @@ class DiscordCmds(commands.Cog, name='discord'):
     async def avatar(self, ctx, *,  user: Union[discord.User, discord.Member] = None):
         """Get someones avatar"""
         user = user or ctx.author
-        embed = discord.Embed(title=f"Avatar of {user.name}",
-                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote})",
-                              color=ctx.author.color)
-        embed.set_image(url='{}'.format(user.avatar_url))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-        await ctx.reply(embed=embed)
+        au = "av" + (".gif" if str(user.avatar_url).split("?")[0].endswith(".gif") else ".png")
+        await user.avatar_url.save(au)
+        await ctx.reply(file=discord.File(open(au, "rb"), au))
+        os.remove(au)
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @permissions.has_permissions(manage_roles=True)
@@ -168,7 +167,7 @@ class DiscordCmds(commands.Cog, name='discord'):
         """Check when a user joined the current server."""
         user = user or ctx.author
         embed = discord.Embed(
-            title=f"{self.bot.user.name}", description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote})",
+            title=f"{self.bot.user.name}", description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.advert})",
             url=f"{Website}", colour=user.top_role.colour.value)
         embed.set_thumbnail(url=user.avatar_url)
         embed.description = f"**{user}** joined **{ctx.guild.name}**\n{default.date(user.joined_at)}"
@@ -230,7 +229,7 @@ class DiscordCmds(commands.Cog, name='discord'):
         """Check info about current server"""
 
         embed = discord.Embed(title=f"{self.bot.user.name}", url=f"{Website}",
-                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote})",
+                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.advert})",
                               color=ctx.author.color, timestamp=ctx.message.created_at)
 
         if ctx.guild.icon:
@@ -359,7 +358,7 @@ class DiscordCmds(commands.Cog, name='discord'):
           data = json.load(f)
         colors = '\n'.join(data.keys())
         embed = discord.Embed(title="I can give / make the following colours...",
-                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote})")
+                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.advert})")
         embed.add_field(name="\u200b", value=f"""**{colors}**\nIf you feel there should be more, DM me, our devs will see what you say.
 You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!colorme red` \nIf you want to remove a color from yourself, do `tp!colorme` with no arguments.
 
@@ -435,6 +434,31 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                     embed = error_embed(title, description)
                 return await ctx.reply(embed=embed)
 
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.command(usage="`tp!roleinfo <role>`")
+    @commands.bot_has_permissions(embed_links=True)
+    @commands.guild_only()
+    async def roleinfo(self, ctx, *, role: discord.Role):
+        """Get information about a role"""
+        perms = "\n".join([f"- {p}".replace("_", " ")
+                          for p, value in role.permissions if value is True])
+        if "administrator" in perms:
+            perms = "All of them lol"
+        embed = discord.Embed(title=f"**{role.name}**", color=role.colour)
+        embed.add_field(name="ID", value=role.id)
+        embed.add_field(name="Created", value=role.created_at.strftime(
+            "%d %b %Y %H:%M"))
+        embed.add_field(name="Color", value=str(role.colour))
+        embed.add_field(name="Members", value=f"{len(role.members)}")
+        embed.add_field(name="Mentionable", value=role.mentionable)
+        embed.add_field(name="Hoist", value=role.hoist)
+        embed.add_field(name="Position", value=role.position)
+        embed.add_field(name="Managed", value=role.managed)
+        embed.add_field(name="Permissions", value=perms, inline=True)
+        embed.add_field(name="Mention", value=f"{role.mention}")
+        embed.add_field(name="Created", value=role.created_at.strftime(
+            "%d %b %Y %H:%M"))
+        await ctx.send(embed=embed)
 
 
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -480,7 +504,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
         embed = discord.Embed()
         embed.title = f"{self.bot.user.name}"
-        embed.description = f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote})"
+        embed.description = f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.advert})"
         embed.url = f"{Website}"
         user = user or ctx.author
         embed.add_field(name="User", value=f"`{user}`", inline=True)
@@ -492,12 +516,12 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         embed.add_field(name="Nickname", value=user.nick if hasattr(
             user, "nick") else "None", inline=True)
         embed.add_field(name="Account created",
-                        value=f"{user.created_at:%x\n%b %d (%a), %Y - %H:%M:%S}\nThat was {(datetime.utcnow() - user.created_at).days} days ago!", inline=False)
+                        value=f"`{user.created_at:%x\n%b %d (%a), %Y - %H:%M:%S}`\nThat was `{(datetime.utcnow() - user.created_at).days}` days ago!", inline=False)
         embed.set_thumbnail(url=user.avatar_url)
         if isinstance(user, discord.Member):
             embed.colour = user.color
             embed.add_field(
-                name="Joined Server", value=f"{user.joined_at:%b %d, %Y - %H:%M:%S}\nThat was {(datetime.utcnow() - user.joined_at).days} days ago!", inline=False)
+                name="Joined Server", value=f"`{user.joined_at:%b %d, %Y - %H:%M:%S}`\nThat was `{(datetime.utcnow() - user.joined_at).days}` days ago!", inline=False)
             # .join(
             #x.mention for x in user.roles[1:][::-1]) if user.roles else "None",
             role_list = [r.mention for r in usr.roles if r !=
@@ -507,7 +531,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                     role_list), inline=False)
             else:
                 embed.add_field(name="Roles", value=f"None", inline=False)
-        await ctx.reply(content=f"Basic info about **{user.id} / {user.name}**", embed=embed)
+        await ctx.reply(content=f"Basic info about **`{user.id} / {user.name}`**", embed=embed)
 
 #        embed.add_field(name="Status", value=user.status, inline=True)
 #        embed.add_field(name="Activity", value=user.activity)
