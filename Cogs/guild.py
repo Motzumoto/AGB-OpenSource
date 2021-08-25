@@ -515,28 +515,5 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 #            embed.add_field(name="Listening To", value=user.activity.title)
 
 
-#######Baby Shaking Zone Media Only Channel#########
-
-
-    @commands.Cog.listener(name='on_message')
-    async def onlymedia(self, message):
-        if message.channel.id in [755722577279713281, 780157565010313258]:
-            if not message.attachments:
-                await message.delete()
-####################################################
-
-####anxiety zone prevent other people from talking in announcements####
-    @commands.Cog.listener(name='on_message')
-    async def OwnerOwnly(self, message):
-        whitelist = [101118549958877184, 417052810161684511,
-                     393996898945728523, 454421372911878145,
-                     542572136112324629, 468373112841306112,
-                     146151306216734720, 343048549744902144,
-                     683530527239962627, 828858385113939969]
-        if message.channel.id == 755722577049026562:
-            if message.author.id not in whitelist:
-                await message.delete()
-########################################################################
-
 def setup(bot):
     bot.add_cog(DiscordCmds(bot))
