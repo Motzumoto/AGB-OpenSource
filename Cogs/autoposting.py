@@ -8,15 +8,14 @@ from discord.ext import commands, tasks
 from index import EMBED_COLOUR, config, cursor, mydb
 from utils import default
 
-
 class autoposting(commands.Cog, name='ap'):
     def __init__(self, bot):
         self.bot = bot
         self.autoh.start()
         self.config = default.get("config.json")
         self.modules = ['nsfw_neko_gif', 'anal', 'les', 'hentai',
-                         'bj', 'cum_jpg', 'tits', 'pussy_jpg', 'pwankg',
-                         'classic', 'spank', 'boobs', 'random_hentai_gif']
+                        'bj', 'cum_jpg', 'tits', 'pussy_jpg', 'pwankg',
+                        'classic', 'spank', 'boobs', 'random_hentai_gif']
 
     async def get_hentai_img(self):
         if random.randint(1, 2) == 1:
@@ -38,20 +37,22 @@ class autoposting(commands.Cog, name='ap'):
     @tasks.loop(count=None, minutes=2.5)
     async def autoh(self):
         await self.bot.wait_until_ready()
-        print(f"{default.date()} | Started auto hentai loop")
+        print(f"{default.date()} | Autoposting - Posted Batch")
         embed = discord.Embed(title="Enjoy your poggers porn lmao",
-                                    description=f"Posting can be slow, please take into consideration how many servers this bot is in and how many are using auto posting. Please be patient. If I completely stop posting, please rerun the command or join the support server.\n[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote})", colour=EMBED_COLOUR)
+                                    description=f"Posting can be slow, please take into consideration how many servers this bot is in and how many are using auto posting. Please be patient. If I completely stop posting, please rerun the command or join the support server.\n[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})", colour=EMBED_COLOUR)
 
         cursor.execute(
             f"SELECT DISTINCT hentai_channel FROM guilds WHERE hentai_channel IS NOT NULL")
         try:
             embed.set_image(url=(await self.get_hentai_img()))
         except nekos.errors.NothingFound:
-            print(f"{default.date()} | [ERR] AutoPosting - No image found.\nTrying again...")
+            print(
+                f"{default.date()} | [ERR] AutoPosting - No image found.\nTrying again...")
             try:
                 embed.set_image(url=(await self.get_hentai_img()))
             except:
-                print(f"{default.date()} |[ERR] I still could not get an image to post with... so we're just not gonna do anything lmao")
+                print(
+                    f"{default.date()} |[ERR] I still could not get an image to post with... so we're just not gonna do anything lmao")
                 return
         except Exception as e:
             print(f"{default.date()} | Error:", e)
@@ -64,45 +65,47 @@ class autoposting(commands.Cog, name='ap'):
                     channel = self.bot.get_channel(int(row[0]))
                     # guild = await self.bot.fetch_guild(int(row[0]))
                     if channel is None:
-                        #remove the channel from the database
-                        print(f"{default.date()} | [ERR] AutoPosting - Channel not found. Removing from database.")
-                        cursor.execute(f"UPDATE guilds SET hentai_channel = NULL WHERE hentai_channel = {row[0]}") # NEW
-                        #cursor.execute(f"UPDATE guilds SET hentai_channel = NULL WHERE hentai_channel = {row[0]}") # OLD
+                        # remove the channel from the database
+                        print(
+                            f"{default.date()} | [ERR] AutoPosting - Channel not found. Removing from database.")
+                        cursor.execute(
+                            f"UPDATE guilds SET hentai_channel = NULL WHERE hentai_channel = {row[0]}")  # NEW
+                        # cursor.execute(f"UPDATE guilds SET hentai_channel = NULL WHERE hentai_channel = {row[0]}") # OLD
                     if channel != None:
                         if not channel.is_nsfw():
                             try:
                                 # Remove hentai channel from db
-                                try:
-                                    await channel.send(f"This channel seems to not be NSFW anymore.\nThis channel will be removed from the database.")
-                                except:
-                                    pass
                                 cursor.execute(
                                     f"UPDATE guilds SET hentai_channel = NULL WHERE guildId = {channel.guild.id}")
                                 mydb.commit()
-                                print(f"{default.date()} | {channel.guild.id} has removed the NSFW tag | Deleting from database...")
+                                print(
+                                    f"{default.date()} | {channel.guild.id} has removed the NSFW tag | Deleting from database...")
                             except:
                                 pass
                         else:
                             try:
                                 webhooks = await channel.webhooks()
-                                webhook = discord.utils.get(webhooks, name="AGB Autoposting", user=self.bot.user)
+                                webhook = discord.utils.get(
+                                    webhooks, name="AGB Autoposting", user=self.bot.user)
                                 if webhook is None:
                                     webhook = await channel.create_webhook(name="AGB Autoposting")
                             except discord.Forbidden:
                                 webhook = None
                             except Exception as e:
-                                print(f"{default.date()} | Wasn't able to get webhook because of error: {e}")
+                                print(
+                                    f"{default.date()} | Wasn't able to get webhook because of error: {e}")
                                 webhook = None
-                            final_messagable: Union[discord.Webhook, discord.TextChannel] = channel if webhook is None else webhook
+                            final_messagable: Union[discord.Webhook,
+                                                    discord.TextChannel] = channel if webhook is None else webhook
                             try:
                                 if isinstance(final_messagable, discord.TextChannel):
                                     await final_messagable.send(embed=embed)
                                 else:
                                     await self.send_from_webhook(final_messagable, embed)
                             except Exception as e:
-                                await channel.guild.owner.send(f"Hey make sure I have permission to see / send messages in {channel.id} | {channel.name} in {channel.guild.name}.\nAlso make sure I can make a webhook for you so I can post images for you.\nPlease enable the webhook, and then try again. Your channel will be removed from the database to prevent further errors.\nIf you have any questions please join the support server: {config.Server}")
                                 cursor.execute(
                                     f"UPDATE guilds SET hentai_channel = NULL WHERE guildId = {channel.guild.id}")
+
     def cog_unload(self):
         self.autoh.close()
 
