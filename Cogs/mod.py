@@ -24,7 +24,7 @@ def can_execute_action(ctx, user, target):
 class MemberNotFound(Exception):
     pass
 
-#edited from RoboDanny (i had a plan to use this but i just dont remember for what)
+# edited from RoboDanny (i had a plan to use this but i just dont remember for what)
 
 
 class Arguments(argparse.ArgumentParser):
@@ -43,7 +43,7 @@ async def resolve_member(guild, member_id):
             raise MemberNotFound() from None
     return member
 
-#Edited from robo danny
+# Edited from robo danny
 
 
 class MemberID(commands.Converter):
@@ -66,7 +66,7 @@ class MemberID(commands.Converter):
                 'You cannot do this action on this user due to role hierarchy.')
         return m
 
-#class taken from robo danny. Hackbanning is really nice
+# class taken from robo danny. Hackbanning is really nice
 
 
 class BannedMember(commands.Converter):
@@ -88,7 +88,7 @@ class BannedMember(commands.Converter):
                 'This member has not been banned before.')
         return entity
 
-#edited from robo danny
+# edited from robo danny
 
 
 class ActionReason(commands.Converter):
@@ -108,12 +108,13 @@ def safe_reason_append(base, to_append):
         return base
     return appended
 
-#i also had a plan to use this but i dont remember for what
+# i also had a plan to use this but i dont remember for what
 
 
 class CooldownByContent(commands.CooldownMapping):
     def _bucket_key(self, message):
         return (message.channel.id, message.content)
+
 
 class NoMuteRole(commands.CommandError):
     def __init__(self):
@@ -239,7 +240,7 @@ class Moderator(commands.Cog, name='mod'):
                 count += 1
         return {'Bot': count}
 
-    #async def _complex_cleanup_strategy(self, ctx, search):
+    # async def _complex_cleanup_strategy(self, ctx, search):
     #    prefixes = self.config.prefix # thanks startswith
 
         def check(m):
@@ -267,7 +268,7 @@ class Moderator(commands.Cog, name='mod'):
             pass
 
         strategy = self._basic_cleanup_strategy
-        #if ctx.me.permissions_in(ctx.channel).manage_messages:
+        # if ctx.me.permissions_in(ctx.channel).manage_messages:
         #    strategy = self._complex_cleanup_strategy
 
         spammers = await strategy(ctx, search)
@@ -349,7 +350,7 @@ class Moderator(commands.Cog, name='mod'):
             # prefixes[str(ctx.guild.id)]
             embed = discord.Embed(
                 title=f"AGB", url=f"{Website}", colour=EMBED_COLOUR,
-                description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote})",
+                description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                 timestamp=ctx.message.created_at)
             embed.add_field(name="Prefix for this server:", value=f"{row[2]}")
             embed.set_footer(text=f"{ctx.author}",
@@ -385,7 +386,7 @@ class Moderator(commands.Cog, name='mod'):
     async def perms(self, ctx):
         """ Tells you what permissions the bot has."""
         embed = discord.Embed(title=f"{self.bot.user.name}",
-                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote})",
+                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                               url=f"{Website}", color=ctx.author.color, timestamp=ctx.message.created_at)
         perms = "\n".join([f"- {p}".replace("_", " ")
                           for p, value in ctx.guild.me.guild_permissions if value is True])
@@ -426,7 +427,7 @@ class Moderator(commands.Cog, name='mod'):
                 await ctx.guild.create_role(name=color, colour=discord.Colour(int(hexcode, 0)))
                 await message.edit(content=f"Created {color}.")
                 await asyncio.sleep(0.5)
-            await message.edit(content=f"Alright, I've made all the colors, have fun.")
+            await message.edit(content=f"Alright, I've made all the colors, have fun.\nTo give yourself a color role, run `{ctx.prefix}help colorme` and follow its instructions.")
 
     @commands.cooldown(1, 500, commands.BucketType.guild)
     @permissions.has_permissions(manage_roles=True)
@@ -670,7 +671,7 @@ class Moderator(commands.Cog, name='mod'):
         for member in members:
             await ctx.guild.unban(member.user, reason=reason)
         await ctx.send(f'Unbanned everyone in {ctx.guild.name}.')
-    
+
     @commands.command(usage="`tp!kick <member:optional ID> <optional:reason>`")
     @commands.guild_only()
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
@@ -809,6 +810,7 @@ class Moderator(commands.Cog, name='mod'):
 #            await user.remove_roles(muted_role)
 #            await user.send(f"You have been unmuted in {ctx.guild}")
 
+
     @commands.command(usage="`tp!permamute <member> <optional:reason>`", aliases=["pm"])
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     @commands.guild_only()
@@ -854,7 +856,8 @@ class Moderator(commands.Cog, name='mod'):
         await ctx.send(default.actionmessage("unmuted"))
 
 
-#Forked from and edited https://github.com/Rapptz/RoboDanny/blob/715a5cf8545b94d61823f62db484be4fac1c95b1/cogs/mod.py#L1163
+# Forked from and edited https://github.com/Rapptz/RoboDanny/blob/715a5cf8545b94d61823f62db484be4fac1c95b1/cogs/mod.py#L1163
+
 
     @commands.group(invoke_without_command=True, usage="`tp!help purge`")
     @commands.guild_only()
@@ -978,9 +981,9 @@ class Moderator(commands.Cog, name='mod'):
             await ctx.message.delete()
         except discord.NotFound:
             pass
-        
+
         await self.do_removal(ctx, 100, lambda e: e.content.startswith(substr))
-        
+
     @purge.command(usage="`tp!purge contains <optional:search>`")
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def contains(self, ctx, *, substr: str):
@@ -991,10 +994,7 @@ class Moderator(commands.Cog, name='mod'):
             await ctx.message.delete()
         except discord.NotFound:
             pass
-        if len(substr) < 2:
-            await ctx.send('The search must be over 2 characters.')
-        else:
-            await self.do_removal(ctx, 100, lambda e: substr in e.content)
+        await self.do_removal(ctx, 100, lambda e: substr in e.content)
 
     @purge.command(name='bot', aliases=['bots'], usage="`tp!purge bots <optional:search>`")
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
