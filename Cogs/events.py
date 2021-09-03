@@ -15,11 +15,10 @@ class events(commands.Cog):
 
     def cog_unload(self):
         self.presence_loop.close()
-        
 
     @commands.Cog.listener()
     async def on_message(self, ctx):
-        
+
         # Add server to database
         try:
             cursor.execute(
@@ -41,18 +40,16 @@ class events(commands.Cog):
         print(f"{default.date()} | Logged in as: {self.bot.user}")
         print(f"{default.date()} | Client: {self.bot.user}")
         print(f"{default.date()} | Client ID: {self.bot.user.id}")
-        print(f"{default.date()} | Client Tag: {self.bot.user.mention}")
-        print(f"{default.date()} | Client Name: {self.bot.user.name}")
-        print(f"{default.date()} | Client Icon: {self.bot.user.avatar_url}")
-        print(f"{default.date()} | Client Discriminator: {self.bot.user.discriminator}")
-        print(f"{default.date()} | Client Bot: {self.bot.user.bot}")
         print(f"{default.date()} | Client Server Count: {len(self.bot.guilds)}")
         print(f"{default.date()} | Client User Count: {len(self.bot.users)}")
         if len(self.bot.shards) > 1:
-            print(f"{default.date()} | {self.bot.user} is using {len(self.bot.shards)} shards.")
+            print(
+                f"{default.date()} | {self.bot.user} is using {len(self.bot.shards)} shards.")
         else:
-            print(f"{default.date()} | {self.bot.user} is using {len(self.bot.shards)} shard.")
-        print(f"{default.date()} | Discord Python Version:", (discord.__version__))
+            print(
+                f"{default.date()} | {self.bot.user} is using {len(self.bot.shards)} shard.")
+        print(f"{default.date()} | Discord Python Version:",
+              (discord.__version__))
         try:
             self.bot.load_extension("Cogs.music")
         except:
@@ -62,14 +59,22 @@ class events(commands.Cog):
             print(f"{default.date()} | Loaded JSK.")
         except:
             pass
-            
+        print(f"{default.date()} | Chunking Guilds.")
+        for guild in self.bot.guilds:
+            if not guild.chunked:
+                await guild.chunk()
+                print(f"{default.date()} | Chunked {guild.name}")
+            #this is mainly for me (motz) to watch what the bot is doing, the print serves really no other purpose other than entertainment 
+
     @commands.Cog.listener()
     async def on_command(self, ctx):
-        
+
         if ctx.author.id in self.config.owners:
-            print(f"{default.date()} | {ctx.author.name} used command {ctx.message.clean_content}")
+            print(
+                f"{default.date()} | {ctx.author.name} used command {ctx.message.clean_content}")
         else:
-            print(f"{default.date()} | {ctx.author.id} used command {ctx.message.clean_content}")
+            print(
+                f"{default.date()} | {ctx.author.id} used command {ctx.message.clean_content}")
         try:
             embed = discord.Embed(
                 title=f"Basic Info On Latest Used Command.",
@@ -81,8 +86,12 @@ class events(commands.Cog):
                             value=f"{ctx.guild.name} {ctx.guild.id}.")
             embed.add_field(
                 name=f"Who?:", value=f"{ctx.author}, {ctx.author.id}")
-            embed.add_field(name="Command?:",
-                            value=f"{ctx.message.clean_content}")
+            try:
+                embed.add_field(name="Command?:",
+                                value=f"{ctx.message.clean_content}")
+            except discord.errors.HTTPException:
+                embed.add_field(name="Command?:",
+                                value="Command that was ran was too big.")
             channel = self.bot.get_channel(842099510360408104)
             message_cooldown = commands.CooldownMapping.from_cooldown(
                 1.0, 60.0, commands.BucketType.user)
@@ -114,10 +123,10 @@ class events(commands.Cog):
                 return
             else:
                 await channel.send(embed=embed)
-                
+
     @commands.Cog.listener(name="on_message")
     async def econmy_yuh(self, ctx):
-        
+
         if ctx.author.bot:
             return
         else:
@@ -235,7 +244,7 @@ class events(commands.Cog):
         funny_statuses = [f"tp!help {len(self.bot.guilds)} Servers",
                           f"tp!help {len(self.bot.commands)} commands!",
                           "tp!support", f"{delta_uptime} since last restart"]
-#Goodbye Cookie 2012 - 06/24/2021
+# Goodbye Cookie 2012 - 06/24/2021
         if omegalul == "watching":
             await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=random.choice(funny_statuses)))
         if omegalul == "playing":
@@ -247,13 +256,18 @@ class events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        
+
         embed = discord.Embed(
             title="Removed from a server.",
             colour=discord.Colour.red()
         )
-        embed.add_field(name=f":( forced to leave a server, heres their info:",
-                        value=f"Server name: `{guild.name}`\n ID `{guild.id}`\n Member Count: `{guild.member_count}`.")
+        try:
+            embed.add_field(name=f":( forced to leave a server, heres their info:",
+                            value=f"Server name: `{guild.name}`\n ID `{guild.id}`\n Member Count: `{guild.member_count}`.")
+        except:
+            embed.add_field(name=f":( forced to leave a server, heres their info:",
+                            value="Guild was not chunked. Data could not be loaded.")
+            pass
         embed.set_thumbnail(
             url=self.bot.user.avatar_url_as(static_format="png"))
         channel = self.bot.get_channel(769080397669072939)
@@ -267,11 +281,12 @@ class events(commands.Cog):
         else:
             cursor.execute(f"DELETE FROM guilds WHERE guildId = {guild.id}")
             mydb.commit()
-            print(f"{default.date()} | removed from: {guild.id} | Deleting database entry!")
+            print(
+                f"{default.date()} | removed from: {guild.id} | Deleting database entry!")
 
     @commands.Cog.listener(name='on_guild_join')
     async def MessageSentOnGuildJoin(self, guild):
-        
+
         nick = f"[tp!] {self.bot.user.name}"
         try:
             await guild.me.edit(nick=nick)
@@ -296,16 +311,11 @@ class events(commands.Cog):
         if row_count == 0:
             cursor.execute(f"INSERT INTO guilds (guildId) VALUES ({guild.id})")
             mydb.commit()
-            print(f"{default.date()} | New guild joined: {guild.id} | Added to database!")
+            print(
+                f"{default.date()} | New guild joined: {guild.id} | Added to database!")
         else:
             print(
                 f"{default.date()} | New guild joined: {guild.id} | But it was already in the DB")
-
-    # @commands.command(hidden=True)
-    # @commands.check(permissions.is_owner)
-    # async def postcount(self, ctx):
-    #     await self.blist_api.post_bot_stats()
-    #     await ctx.send("Done!")
 
 
 def setup(bot):
