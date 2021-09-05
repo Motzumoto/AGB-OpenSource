@@ -26,7 +26,7 @@ class DiscordCmds(commands.Cog, name='discord'):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        if "nigger" in message.content.lower():
+        if "N Word" in message.content.lower():
             return
         if message.author.bot:
             return
@@ -39,7 +39,7 @@ class DiscordCmds(commands.Cog, name='discord'):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        bad_words = ["nigger"]
+        bad_words = ["N Word"]
         for word in bad_words:
             if word in before.content.lower() or word in after.content.lower():
                 return
