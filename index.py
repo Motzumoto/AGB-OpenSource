@@ -104,12 +104,12 @@ async def on_message_edit(before, after):
 
 @bot.check
 def no_badwords(ctx):
-    return 'nigger' not in ctx.message.content.lower()
+    return 'N word' not in ctx.message.content.lower()
 
 
 @bot.check
 def no_nwords(ctx):
-    return 'reggin' not in ctx.message.content.lower()
+    return 'Reversed N Word' not in ctx.message.content.lower()
 
 
 bot.run(config.token)
