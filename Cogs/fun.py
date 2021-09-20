@@ -1,10 +1,10 @@
 import asyncio
 import datetime
 import functools
-import secrets
 import heapq
 import io
 import random
+import secrets
 import unicodedata
 import urllib
 from io import BytesIO
@@ -17,14 +17,13 @@ import discord
 import matplotlib
 import matplotlib.pyplot as plt
 import nekos
-from utils import lists
 from Cogs import DL, DisplayName, Utils
 from discord.ext import commands
 from index import BID, CHAT_API_KEY, EMBED_COLOUR, Website, config
 from utils import default, http, lists, permissions
 from utils.checks import voter_only
-from utils.default import type_message
 from utils.common_filters import filter_mass_mentions
+from utils.default import type_message
 
 from .Utils import *
 
@@ -47,9 +46,6 @@ plt.switch_backend("agg")
 
 class Fun(commands.Cog, name='fun'):
     """Fun / Game commands"""
-    __author__ = ["Motzumoto"]
-    __version__ = "1.0.0"
-
     def __init__(self, bot):
         self.bot = bot
         self.channels = {}
@@ -823,16 +819,6 @@ class Fun(commands.Cog, name='fun'):
             await ctx.reply(embed=embedd)
             return
 
-        if user.id == 842501104860397569:
-            embedd = discord.Embed(
-                colour=EMBED_COLOUR
-            )
-            hoodie = "=" * 100
-            embedd.add_field(
-                name=f"{user.name}'s pp size", value=f"8{hoodie}D")
-            await ctx.reply(embed=embedd)
-            return
-
         if user.id == 468373112841306112:
             embedd = discord.Embed(
                 colour=EMBED_COLOUR
@@ -1401,7 +1387,7 @@ class Fun(commands.Cog, name='fun'):
         https://countrycode.org/"""
 
         embed = discord.Embed(title="Covid statistics",
-                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                              description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                               colour=EMBED_COLOUR, url=f"{Website}")
 
         async with aiohttp.ClientSession() as session:
@@ -1561,7 +1547,7 @@ class Fun(commands.Cog, name='fun'):
         user = user or ctx.author
         if user == ctx.author:
             embed = discord.Embed(title=f"{ctx.author.name} hits themselves lol...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("slap"))
@@ -1570,7 +1556,7 @@ class Fun(commands.Cog, name='fun'):
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(title=f"{ctx.author.name} hits {user.name}...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("slap"))
@@ -1587,7 +1573,7 @@ class Fun(commands.Cog, name='fun'):
         user = user or ctx.author
         if user == ctx.author:
             embed = discord.Embed(title=f"{ctx.author.name} pokes themselves, why...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("poke"))
@@ -1596,7 +1582,7 @@ class Fun(commands.Cog, name='fun'):
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(title=f"{ctx.author.name} pokes {user.name}...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("poke"))
@@ -1622,7 +1608,7 @@ class Fun(commands.Cog, name='fun'):
         user = user or ctx.author
         if user == ctx.author:
             embed = discord.Embed(title=f"{ctx.author.name} hugs themselves, how sad...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("hug"))
@@ -1631,7 +1617,7 @@ class Fun(commands.Cog, name='fun'):
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(title=f"{ctx.author.name} hugs {user.name}...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("hug"))
@@ -1650,7 +1636,7 @@ class Fun(commands.Cog, name='fun'):
             weird = ["how lonely they must be",
                      "weirdo...", "god thats sad", "get a gf"]
             embed = discord.Embed(title=f"{ctx.author.name} kisses themselves, {random.choice(weird)}",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("kiss"))
@@ -1660,7 +1646,7 @@ class Fun(commands.Cog, name='fun'):
         else:
             cute = ["awww", "adorable", "cute"]
             embed = discord.Embed(title=f"{ctx.author.name} kisses {user.name}... {random.choice(cute)}",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("kiss"))
@@ -1676,7 +1662,7 @@ class Fun(commands.Cog, name='fun'):
         """ Look smug"""
         user = user or ctx.author
         embed = discord.Embed(title=f"{ctx.author} is smug...",
-                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                              description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                               url=f"{Website}",
                               colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
 
@@ -1693,7 +1679,7 @@ class Fun(commands.Cog, name='fun'):
         user = user or ctx.author
         if user == ctx.author:
             embed = discord.Embed(title=f"{ctx.author.name} pats themselves, kinda sad tbh...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("pat"))
@@ -1702,7 +1688,7 @@ class Fun(commands.Cog, name='fun'):
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(title=f"{ctx.author.name} patted {user.name}...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("pat"))
@@ -1719,7 +1705,7 @@ class Fun(commands.Cog, name='fun'):
         user = user or ctx.author
         if user == ctx.author:
             embed = discord.Embed(title=f"{ctx.author.name} tickles themselves, gross...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("tickle"))
@@ -1728,7 +1714,7 @@ class Fun(commands.Cog, name='fun'):
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(title=f"{ctx.author.name} tickled {user.name}...",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             embed.set_image(url=nekos.img("tickle"))
@@ -1764,13 +1750,13 @@ class Fun(commands.Cog, name='fun'):
         ]
         if user == ctx.author:
             embed = discord.Embed(title=f"Okay you've killed yourself {ctx.author.name}, I hope this was worth it! Now tag someone else to kill them!",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(title=f"{random.choice(kill_msg)}",
-                                  description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                                  description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                                   url=f"{Website}",
                                   colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
             await ctx.reply(embed=embed)
@@ -1808,7 +1794,7 @@ class Fun(commands.Cog, name='fun'):
                 return await ctx.reply(url)
             embed = discord.Embed(
                 title=name, url=url, colour=EMBED_COLOUR, timestamp=ctx.message.created_at,
-                description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})")
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})")
             embed.set_image(url=url)
             embed.set_footer(
                 text=f"{ctx.author}", icon_url=ctx.author.avatar_url)
@@ -1844,7 +1830,7 @@ class Fun(commands.Cog, name='fun'):
                 return await ctx.reply(url)
             embed = discord.Embed(
                 title=name, url=url, colour=EMBED_COLOUR, timestamp=ctx.message.created_at,
-                description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})")
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})")
             embed.set_image(url=url)
             embed.set_footer(
                 text=f"{ctx.author}", icon_url=ctx.author.avatar_url)
@@ -1978,7 +1964,7 @@ class Fun(commands.Cog, name='fun'):
             title="Aw, doggo",
             url=f"{Website}",
             colour=EMBED_COLOUR,
-            description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
             timestamp=ctx.message.created_at)
 
         embed.set_image(url=nekos.img("woof"))
@@ -1992,7 +1978,7 @@ class Fun(commands.Cog, name='fun'):
         """ Its really just geese """
         embed = discord.Embed(
             title="H o n k", colour=EMBED_COLOUR,
-            description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
             timestamp=ctx.message.created_at, url=f"{Website}")
 
         embed.set_image(url=nekos.img("goose"))
@@ -2094,6 +2080,27 @@ class Fun(commands.Cog, name='fun'):
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def coom(self, ctx):
         await ctx.reply("https://www.youtube.com/watch?v=yvWUDNsZXwA")
+
+    @commands.command(usage="`tp!sussy`", hidden=True)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    async def sussy(self, ctx):
+        await ctx.send("""
+⠀       ⠀⠀⠀⣠⠤⠖⠚⠛⠉⠛⠒⠒⠦⢤
+⠀⠀⠀⠀⣠⠞⠁⠀⠀⠠⠒⠂⠀⠀⠀⠀⠀⠉⠳⡄
+⠀⠀⠀⢸⠇⠀⠀⠀⢀⡄⠤⢤⣤⣤⡀⢀⣀⣀⣀⣹⡄
+⠀⠀⠀⠘⢧⠀⠀⠀⠀⣙⣒⠚⠛⠋⠁⡈⠓⠴⢿⡿⠁
+⠀⠀⠀⠀⠀⠙⠒⠤⢀⠛⠻⠿⠿⣖⣒⣁⠤⠒⠋
+⠀⠀⠀⠀⠀⢀⣀⣀⠼⠀⠈⣻⠋⠉⠁ A M O G U S
+⠀⠀⠀⡴⠚⠉⠀⠀⠀⠀⠀⠈⠀⠐⢦
+⠀⠀⣸⠃⠀⡴⠋⠉⠀⢄⣀⠤⢴⠄⠀⡇
+⠀⢀⡏⠀⠀⠹⠶⢀⡔⠉⠀⠀⣼⠀⠀⡇
+⠀⣼⠁⠀⠙⠦⣄⡀⣀⡤⠶⣉⣁⣀⠘
+⢀⡟⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⣽
+⢸⠇⠀⠀⠀⢀⡤⠦⢤⡄⠀⠀⡟
+⢸⠀⠀⠀⠀⡾⠀⠀⠀⡿⠀⠀⣇⣀⣀
+⢸⠀⠀⠈⠉⠓⢦⡀⢰⣇⡀⠀⠉⠀⠀⣉⠇
+⠈⠓⠒⠒⠀⠐⠚⠃⠀⠈⠉⠉⠉⠉⠉⠁
+""")
 
     @commands.command(usage="`tp!reverse <text>`")
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
