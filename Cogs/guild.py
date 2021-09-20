@@ -1,9 +1,9 @@
 import asyncio
 import json
+import re
 from datetime import datetime
 from io import BytesIO
 from typing import Union
-import os
 
 import aiohttp
 import discord
@@ -23,6 +23,17 @@ class DiscordCmds(commands.Cog, name='discord'):
         self.config = default.get("config.json")
         self.bot.sniped_messages = {}
         self.bot.edit_sniped_messages = {}
+        self.halloween_re = re.compile(r"h(a|4)(l|1)(l|1)(o|0)w(e|3)(e|3)n", re.I)
+
+
+    @commands.Cog.listener(name='on_message')
+    async def halloween(self, message):
+        if datetime.today().month == 10: #and datetime.today().day == 31:
+            if self.halloween_re.search(message.content.lower()):
+                try:
+                    await  message.add_reaction("🎃")
+                except discord.Forbidden as e:
+                    return
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -39,7 +50,7 @@ class DiscordCmds(commands.Cog, name='discord'):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        bad_words = ["N Word"]
+        bad_words = ["nigger"]
         for word in bad_words:
             if word in before.content.lower() or word in after.content.lower():
                 return
@@ -97,7 +108,7 @@ class DiscordCmds(commands.Cog, name='discord'):
                 name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url)
             embed.set_footer(text=f"Edited in #{channel_name}")
             embed.add_field(
-                name="‎‎‎‎‎‎", value=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})", inline=False)
+                name="‎‎‎‎‎‎", value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})", inline=False)
 
             await ctx.send(embed=embed)
         except:
@@ -175,7 +186,7 @@ class DiscordCmds(commands.Cog, name='discord'):
         """Check when a user joined the current server."""
         user = user or ctx.author
         embed = discord.Embed(
-            title=f"{self.bot.user.name}", description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+            title=f"{self.bot.user.name}", description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
             url=f"{Website}", colour=user.top_role.colour.value)
         embed.set_thumbnail(url=user.avatar_url)
         embed.description = f"**{user}** joined **`{user.joined_at:%b %d, %Y - %H:%M:%S}`**\nThat was **`{(datetime.utcnow() - user.joined_at).days}`** days ago!"
@@ -229,7 +240,7 @@ class DiscordCmds(commands.Cog, name='discord'):
                       icon_url=message.author.avatar_url)
 
         await ctx.reply(embed=em)
-
+ 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(aliases=['serverinfo'], usage="`tp!serverinfo`")
     @commands.bot_has_permissions(embed_links=True)
@@ -238,7 +249,7 @@ class DiscordCmds(commands.Cog, name='discord'):
         """Check info about current server"""
 
         embed = discord.Embed(title=f"{self.bot.user.name}", url=f"{Website}",
-                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                              description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                               color=ctx.author.color, timestamp=ctx.message.created_at)
 
         if ctx.guild.icon:
@@ -369,7 +380,7 @@ class DiscordCmds(commands.Cog, name='discord'):
             data = json.load(f)
         colors = '\n'.join(data.keys())
         embed = discord.Embed(title="I can give / make the following colours...",
-                              description=f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})")
+                              description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})")
         embed.add_field(name="\u200b", value=f"""**{colors}**\nIf you feel there should be more, DM me, our devs will see what you say.
 You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!colorme red` \nIf you want to remove a color from yourself, do `tp!colorme` with no arguments.
 
@@ -383,20 +394,22 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.command(aliases=['colorme', 'colourme', 'color'], usage="`tp!colorme <color>`")
     async def give_color(self, ctx, *, role: Creamy = None):
-        """Allows users to give themselves a color role. do `tp!colors` to see what you can add to Yourself
+        """Allows users to give themselves a color role. do `tp!colors` to see what you can add to yourself.
             If there arent any colors, do `tp!rainbow` to create the roles"""
         with open('colors.json', 'r') as f:
             data = json.load(f)
             color_roles = [discord.utils.get(
                 ctx.guild.roles, name=x) for x in data]
             if role is None:
-                m = await ctx.send("Okie, starting to remove your roles..")
                 for x in color_roles:
                     if x in ctx.author.roles:
-                        await asyncio.sleep(0.5)
                         await ctx.author.remove_roles(x)
-                await m.edit(content="Role(s) removed.", delete_after=delay)
+                await ctx.send(f"Your color has been removed.")
             elif role in color_roles:
+                for x in color_roles:
+                    if x in ctx.author.roles:
+                        await ctx.send("You already have a color role. Please remove your previous color role by doing `tp!colorme` first!")
+                        return
                 await ctx.author.add_roles(role)
                 await ctx.reply(f"Alright, {role} was given.\n**Reminder, if you want to remove your colors, just run `tp!colorme` just like that to remove them!**")
 
@@ -406,7 +419,6 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def server_avatar(self, ctx):
         """Get the current server icon"""
-
         if not ctx.guild.icon:
             return await ctx.reply("This server does not have a icon...")
         embed = discord.Embed(
@@ -428,7 +440,6 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def banner(self, ctx):
         """Get the current banner image """
-
         if not ctx.guild.banner:
             return await ctx.reply("This server does not have a banner...")
         await ctx.reply(f"Banner of **{ctx.guild.name}**\n{ctx.guild.banner_url_as(format='png')}")
@@ -487,12 +498,13 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         await ctx.send(embed=embed)
 
     @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(usage="`tp!massrole <role>`")
+    @commands.command(alias=['ms'], usage="`tp!massrole <role>`", hidden=True)
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
-    @commands.check(permissions.is_owner)
+    @permissions.has_permissions(manage_roles=True)
     async def massrole(self, ctx, *, role: discord.Role):
-        """Mass give a role to all users in the server"""
+        """Mass give a role to all users in the server (Ignores bots)"""
+        added = 0
         if role.is_default():
             return await ctx.reply(f"Cant give a default role to users! {role.mention}")
         if role.position > ctx.author.top_role.position:
@@ -500,10 +512,31 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         async with ctx.channel.typing():
             msg_1 = await ctx.send("Working...")
             for member in ctx.guild.members:
-                if member.bot:
-                    continue
-                await member.add_roles(role)
-            await msg_1.edit(content=f"**{role.name}** role was given to all users in the server!")
+                if not member.bot:
+                    if role not in member.roles:
+                        await member.add_roles(role)
+                        added += 1
+            await msg_1.edit(content=f"**{role.name}** role was given to {added} users in the server!")
+
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.command(alias=['msr'], usage="`tp!massrole_remove <role>`", hidden=True)
+    @commands.bot_has_permissions(embed_links=True)
+    @commands.guild_only()
+    @permissions.has_permissions(manage_roles=True)
+    async def massrole_remove(self, ctx, *, role: discord.Role):
+        """Mass removes a role from everyone in the server (Doesn't ignore bots)"""
+        removed = 0
+        if role.is_default():
+            return await ctx.reply(f"Cant remove a default role from all users! {role.mention}")
+        if role.position > ctx.author.top_role.position:
+            return await ctx.reply(f"You cant remove a role that is higher than your top role! {role.mention}")
+        async with ctx.channel.typing():
+            msg_1 = await ctx.send("Working...")
+            for member in ctx.guild.members:
+                if role in member.roles:
+                    await member.remove_roles(role)
+                    removed += 1
+            await msg_1.edit(content=f"**{role.name}** role was removed from {removed} users in this server!")
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(aliases=['userinfo', 'ui', 'mi'], usage="`tp!ui @user`")
@@ -548,7 +581,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
         embed = discord.Embed()
         embed.title = f"{self.bot.user.name}"
-        embed.description = f"[Add me]({config.Invite}) | [Join the server]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})"
+        embed.description = f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})"
         embed.url = f"{Website}"
         user = user or ctx.author
         embed.add_field(name="User", value=f"`{user}`", inline=True)
@@ -581,31 +614,6 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 #        embed.add_field(name="Activity", value=user.activity)
 #        if isinstance(user.activity, discord.Spotify):
 #            embed.add_field(name="Listening To", value=user.activity.title)
-
-
-#######Baby Shaking Zone Media Only Channel#########
-
-
-    @commands.Cog.listener(name='on_message')
-    async def onlymedia(self, message):
-        if message.channel.id in [755722577279713281, 780157565010313258]:
-            if not message.attachments:
-                await message.delete()
-####################################################
-
-####anxiety zone prevent other people from talking in announcements####
-    @commands.Cog.listener(name='on_message')
-    async def OwnerOwnly(self, message):
-        whitelist = [101118549958877184, 417052810161684511,
-                     393996898945728523, 454421372911878145,
-                     542572136112324629, 468373112841306112,
-                     146151306216734720, 343048549744902144,
-                     683530527239962627, 828858385113939969]
-        if message.channel.id == 755722577049026562:
-            if message.author.id not in whitelist:
-                await message.delete()
-########################################################################
-
 
 def setup(bot):
     bot.add_cog(DiscordCmds(bot))
