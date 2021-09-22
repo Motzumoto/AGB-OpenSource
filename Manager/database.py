@@ -12,7 +12,7 @@ db = mysql.connector.connect(
     database=config.database,
     port=config.port,
     buffered=True,
-    autocommit=True
+    autocommit=True,
 )
 
 csr = db.cursor()

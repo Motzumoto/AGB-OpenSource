@@ -4,8 +4,8 @@ import aiohttp
 
 
 def setup(bot):
-	# Not a cog
-	pass
+    # Not a cog
+    pass
 
 
 async def async_post_json(url, data=None, headers=None):
@@ -41,7 +41,7 @@ async def async_dl(url, headers=None):
         async with session.get(url) as response:
             assert response.status == 200
             while True:
-                chunk = await response.content.read(4*1024)  # 4k
+                chunk = await response.content.read(4 * 1024)  # 4k
                 data += chunk
                 total_size += len(chunk)
                 if not chunk:

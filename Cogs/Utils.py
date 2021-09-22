@@ -1,5 +1,3 @@
-
-
 import random
 
 from discord import Embed
@@ -24,19 +22,11 @@ class Utils(commands.Cog):
 
 
 def error_embed(title, description):
-    return Embed(
-        title=title,
-        description=description,
-        color=0xff0000
-    )
+    return Embed(title=title, description=description, color=0xFF0000)
 
 
 def success_embed(title, description):
-    return Embed(
-        title=title,
-        description=description,
-        color=EMBED_COLOUR
-    )
+    return Embed(title=title, description=description, color=EMBED_COLOUR)
 
 
 def maxInt(val: int = 0):

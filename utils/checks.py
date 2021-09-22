@@ -12,12 +12,15 @@ async def check_permissions(ctx, perms, *, check=all):
         return True
 
     resolved = ctx.channel.permissions_for(ctx.author)
-    return check(getattr(resolved, name, None) == value for name, value in perms.items())
+    return check(
+        getattr(resolved, name, None) == value for name, value in perms.items()
+    )
 
 
 def has_permissions(*, check=all, **perms):
     async def pred(ctx):
         return await check_permissions(ctx, perms, check=check)
+
     return commands.check(pred)
 
 
@@ -30,12 +33,15 @@ async def check_guild_permissions(ctx, perms, *, check=all):
         return False
 
     resolved = ctx.author.guild_permissions
-    return check(getattr(resolved, name, None) == value for name, value in perms.items())
+    return check(
+        getattr(resolved, name, None) == value for name, value in perms.items()
+    )
 
 
 def has_guild_permissions(*, check=all, **perms):
     async def pred(ctx):
         return await check_guild_permissions(ctx, perms, check=check)
+
     return commands.check(pred)
 
 
@@ -47,9 +53,12 @@ async def check_voter(user_id):
     if user_id in owners:
         return True
     async with aiohttp.ClientSession() as s:
-        async with s.get(f'https://top.gg/api/bots/723726581864071178/check?userId={user_id}', headers={'Authorization': TOP_GG_TOKEN, 'Content-Type': "application/json"}) as r:
+        async with s.get(
+            f"https://top.gg/api/bots/723726581864071178/check?userId={user_id}",
+            headers={"Authorization": TOP_GG_TOKEN, "Content-Type": "application/json"},
+        ) as r:
             vote = await r.json()
-            if vote['voted'] == 1:
+            if vote["voted"] == 1:
                 return True
             else:
                 return False
@@ -61,8 +70,9 @@ def voter_only():
             return True
         check_vote = await check_voter(ctx.author.id)
         if check_vote == False:
-            raise NotVoted('Please vote!')
+            raise NotVoted("Please vote!")
         return True
+
     return commands.check(predicate)
 
 
@@ -71,29 +81,33 @@ def voter_only():
 
 def is_mod():
     async def pred(ctx):
-        return await check_guild_permissions(ctx, {'manage_guild': True})
+        return await check_guild_permissions(ctx, {"manage_guild": True})
+
     return commands.check(pred)
 
 
 def is_admin():
     async def pred(ctx):
-        return await check_guild_permissions(ctx, {'administrator': True})
+        return await check_guild_permissions(ctx, {"administrator": True})
+
     return commands.check(pred)
 
 
 def mod_or_permissions(**perms):
-    perms['manage_guild'] = True
+    perms["manage_guild"] = True
 
     async def predicate(ctx):
         return await check_guild_permissions(ctx, perms, check=any)
+
     return commands.check(predicate)
 
 
 def admin_or_permissions(**perms):
-    perms['administrator'] = True
+    perms["administrator"] = True
 
     async def predicate(ctx):
         return await check_guild_permissions(ctx, perms, check=any)
+
     return commands.check(predicate)
 
 
@@ -103,4 +117,5 @@ def is_in_guilds(*guild_ids):
         if guild is None:
             return False
         return guild.id in guild_ids
+
     return commands.check(predicate)

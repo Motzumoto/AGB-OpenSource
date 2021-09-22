@@ -17,7 +17,8 @@ __all__ = [
 URL_RE = re.compile(r"(https?|s?ftp)://(\S+)", re.I)
 
 INVITE_URL_RE = re.compile(
-    r"(discord\.(?:gg|io|me|li)|discord(?:app)?\.com\/invite)\/(\S+)", re.I)
+    r"(discord\.(?:gg|io|me|li)|discord(?:app)?\.com\/invite)\/(\S+)", re.I
+)
 
 # This only matches the @ for sanitizing
 MASS_MENTION_RE = re.compile(r"(@)(?=everyone|here)")
@@ -31,8 +32,7 @@ SMART_QUOTE_REPLACEMENT_DICT = {
     "\u201D": '"',  # Right double quote
 }
 
-SMART_QUOTE_REPLACE_RE = re.compile(
-    "|".join(SMART_QUOTE_REPLACEMENT_DICT.keys()))
+SMART_QUOTE_REPLACE_RE = re.compile("|".join(SMART_QUOTE_REPLACEMENT_DICT.keys()))
 
 SPOILER_CONTENT_RE = re.compile(
     r"(?s)(?<!\\)(?P<OPEN>\|{2})(?P<SPOILERED>.*?)(?<!\\)(?P<CLOSE>\|{2})"

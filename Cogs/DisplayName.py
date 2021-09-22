@@ -10,7 +10,7 @@ bot = None
 
 
 def setup(bot):
-	# This module isn't actually a cog - but it is a place
+    # This module isn't actually a cog - but it is a place
     # we can start small fires and watch them burn the entire
     # house to the ground.
     bot.add_cog(DisplayName(bot))
@@ -32,7 +32,8 @@ class DisplayName(commands.Cog):
             # Strip out @here and @everyone first
             zerospace = "​"
             message = message.replace(
-                "@everyone", "@{}everyone".format(zerospace)).replace("@here", "@{}here".format(zerospace))
+                "@everyone", "@{}everyone".format(zerospace)
+            ).replace("@here", "@{}here".format(zerospace))
         # Check for matches
         matches_re = re.finditer(r"\<[!&#\@]*[^<\@!&#]+[0-9]\>", message)
         matches = []
@@ -57,7 +58,7 @@ class DisplayName(commands.Cog):
                 mem_name = self.name(mem)
             else:
                 # Must have bot then
-                memID = re.sub(r'\W+', '', match)
+                memID = re.sub(r"\W+", "", match)
                 mem = self.bot.get_user(int(memID))
                 if mem == None:
                     continue
@@ -126,9 +127,12 @@ class DisplayName(commands.Cog):
                 mem_name = mem_disc = None
             if mem_name:
                 for member in mems:
-                    if member.name.lower() == mem_name.lower() and int(member.discriminator) == mem_disc:
+                    if (
+                        member.name.lower() == mem_name.lower()
+                        and int(member.discriminator) == mem_disc
+                    ):
                         return member
-        mem_id = re.sub(r'\W+', '', name)
+        mem_id = re.sub(r"\W+", "", name)
         new_mem = self.memberForID(mem_id, server)
         if new_mem:
             return new_mem
@@ -142,11 +146,20 @@ class DisplayName(commands.Cog):
             return None
         for channel in server.channels:
             if typeCheck:
-                if typeCheck.lower() == "text" and not type(channel) is discord.TextChannel:
+                if (
+                    typeCheck.lower() == "text"
+                    and not type(channel) is discord.TextChannel
+                ):
                     continue
-                if typeCheck.lower() == "voice" and not type(channel) is discord.VoiceChannel:
+                if (
+                    typeCheck.lower() == "voice"
+                    and not type(channel) is discord.VoiceChannel
+                ):
                     continue
-                if typeCheck.lower() == "category" and not type(channel) is discord.CategoryChannel:
+                if (
+                    typeCheck.lower() == "category"
+                    and not type(channel) is discord.CategoryChannel
+                ):
                     continue
             if channel.id == checkid:
                 return channel
@@ -156,15 +169,24 @@ class DisplayName(commands.Cog):
         name = str(name)
         for channel in server.channels:
             if typeCheck:
-                if typeCheck.lower() == "text" and not type(channel) is discord.TextChannel:
+                if (
+                    typeCheck.lower() == "text"
+                    and not type(channel) is discord.TextChannel
+                ):
                     continue
-                if typeCheck.lower() == "voice" and not type(channel) is discord.VoiceChannel:
+                if (
+                    typeCheck.lower() == "voice"
+                    and not type(channel) is discord.VoiceChannel
+                ):
                     continue
-                if typeCheck.lower() == "category" and not type(channel) is discord.CategoryChannel:
+                if (
+                    typeCheck.lower() == "category"
+                    and not type(channel) is discord.CategoryChannel
+                ):
                     continue
             if channel.name.lower() == name.lower():
                 return channel
-        chanID = re.sub(r'\W+', '', name)
+        chanID = re.sub(r"\W+", "", name)
         newChan = self.channelForID(chanID, server, typeCheck)
         if newChan:
             return newChan
@@ -189,7 +211,7 @@ class DisplayName(commands.Cog):
             if role.name.lower() == name.lower():
                 return role
         # No role yet - try ID
-        roleID = ''.join(list(filter(str.isdigit, name)))
+        roleID = "".join(list(filter(str.isdigit, name)))
         newRole = self.roleForID(roleID, server)
         if newRole:
             return newRole
@@ -215,7 +237,7 @@ class DisplayName(commands.Cog):
             else:
                 # Now we check if we got an ID instead
                 # Get just the numbers
-                memID = ''.join(list(filter(str.isdigit, name)))
+                memID = "".join(list(filter(str.isdigit, name)))
                 newMem = self.memberForID(memID, server)
                 if newMem:
                     # We FOUND it!
@@ -225,7 +247,7 @@ class DisplayName(commands.Cog):
                     return {"Member": None, "Int": None}
         try:
             # Let's cast the last item as an int and catch any exceptions
-            theInt = int(theList[len(theList)-1])
+            theInt = int(theList[len(theList) - 1])
             newMemberName = " ".join(theList[:-1])
             amember = self.memberForName(newMemberName, server)
             if amember:
@@ -233,7 +255,7 @@ class DisplayName(commands.Cog):
             else:
                 # Now we check if we got an ID instead
                 # Get just the numbers
-                memID = ''.join(list(filter(str.isdigit, newMemberName)))
+                memID = "".join(list(filter(str.isdigit, newMemberName)))
                 newMem = self.memberForID(memID, server)
                 if newMem:
                     # We FOUND it!
@@ -250,7 +272,7 @@ class DisplayName(commands.Cog):
             else:
                 # Now we check if we got an ID instead
                 # Get just the numbers
-                memID = ''.join(list(filter(str.isdigit, name)))
+                memID = "".join(list(filter(str.isdigit, name)))
                 newMem = self.memberForID(memID, server)
                 if newMem:
                     # We FOUND it!
@@ -275,7 +297,7 @@ class DisplayName(commands.Cog):
             else:
                 # Now we check if we got an ID instead
                 # Get just the numbers
-                memID = ''.join(list(filter(str.isdigit, name)))
+                memID = "".join(list(filter(str.isdigit, name)))
                 newMem = self.roleForID(memID, server)
                 if newMem:
                     # We FOUND it!
@@ -285,7 +307,7 @@ class DisplayName(commands.Cog):
                     return {"Role": None, "Int": None}
         try:
             # Let's cast the last item as an int and catch any exceptions
-            theInt = int(theList[len(theList)-1])
+            theInt = int(theList[len(theList) - 1])
             newMemberName = " ".join(theList[:-1])
             amember = self.roleForName(newMemberName, server)
             if amember:
@@ -293,7 +315,7 @@ class DisplayName(commands.Cog):
             else:
                 # Now we check if we got an ID instead
                 # Get just the numbers
-                memID = ''.join(list(filter(str.isdigit, newMemberName)))
+                memID = "".join(list(filter(str.isdigit, newMemberName)))
                 newMem = self.roleForID(memID, server)
                 if newMem:
                     # We FOUND it!
@@ -310,7 +332,7 @@ class DisplayName(commands.Cog):
             else:
                 # Now we check if we got an ID instead
                 # Get just the numbers
-                memID = ''.join(list(filter(str.isdigit, name)))
+                memID = "".join(list(filter(str.isdigit, name)))
                 newMem = self.roleForID(memID, server)
                 if newMem:
                     # We FOUND it!

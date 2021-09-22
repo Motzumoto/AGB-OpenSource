@@ -5,13 +5,14 @@ from discord.ext import commands
 
 
 def setup(bot):
-	# Add the bot and deps
-	bot.add_cog(PickList(bot))
+    # Add the bot and deps
+    bot.add_cog(PickList(bot))
 
 
 class PickList(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
     # Fluff class to post the reactions we need
 
     @commands.Cog.listener()
@@ -45,8 +46,8 @@ class Picker:
         except:
             # The following "works", but is super slow - and if we can't clear
             # all reactions, it's probably just best to leave them there and bail.
-            '''for r in react_list:
-                await message.remove_reaction(r,message.author)'''
+            """for r in react_list:
+            await message.remove_reaction(r,message.author)"""
 
     async def pick(self):
         # This actually brings up the pick list and handles the nonsense
@@ -67,7 +68,8 @@ class Picker:
             current += 1
             current_number = current if current < 10 else 0
             current_reactions.append(
-            	"{}\N{COMBINING ENCLOSING KEYCAP}".format(current_number))
+                "{}\N{COMBINING ENCLOSING KEYCAP}".format(current_number)
+            )
             msg += "{}. {}\n".format(current, item)
         msg += "```"
         # Add the stop reaction
@@ -82,9 +84,16 @@ class Picker:
         # Now we would wait...
 
         def check(reaction, user):
-            return reaction.message.id == self.self_message.id and user == self.ctx.author and str(reaction.emoji) in current_reactions
+            return (
+                reaction.message.id == self.self_message.id
+                and user == self.ctx.author
+                and str(reaction.emoji) in current_reactions
+            )
+
         try:
-            reaction, user = await self.ctx.bot.wait_for('picklist_reaction', timeout=self.timeout, check=check)
+            reaction, user = await self.ctx.bot.wait_for(
+                "picklist_reaction", timeout=self.timeout, check=check
+            )
         except:
             # Didn't get a reaction
             await self._remove_reactions(current_reactions)
@@ -93,7 +102,7 @@ class Picker:
         await self._remove_reactions(current_reactions)
         # Get the adjusted index
         ind = current_reactions.index(str(reaction.emoji))
-        if ind == len(current_reactions)-1:
+        if ind == len(current_reactions) - 1:
             ind = -1
         return (ind, self.self_message)
 
@@ -111,8 +120,8 @@ class PagePicker(Picker):
 
     def _get_page_contents(self, page_number):
         # Returns the contents of the page passed
-        start = self.max*page_number
-        return self.list[start:start+self.max]
+        start = self.max * page_number
+        return self.list[start : start + self.max]
 
     async def pick(self):
         # This brings up the page picker and handles the events
@@ -122,7 +131,7 @@ class PagePicker(Picker):
         if self.ctx == None or not len(self.list):
             return (-3, None)
         page = 0  # Set the initial page index
-        pages = int(math.ceil(len(self.list)/self.max))
+        pages = int(math.ceil(len(self.list) / self.max))
         # Setup the embed
         embed = {
             "title": self.title,
@@ -131,7 +140,7 @@ class PagePicker(Picker):
             "color": self.ctx.author,
             "pm_after": 25,
             "fields": self._get_page_contents(page),
-            "footer": "Page {} of {}".format(page+1, pages)
+            "footer": "Page {} of {}".format(page + 1, pages),
         }
         if self.message:
             self.self_message = self.message
@@ -146,10 +155,17 @@ class PagePicker(Picker):
         # Now we would wait...
 
         def check(reaction, user):
-            return reaction.message.id == self.self_message.id and user == self.ctx.author and str(reaction.emoji) in self.reactions
+            return (
+                reaction.message.id == self.self_message.id
+                and user == self.ctx.author
+                and str(reaction.emoji) in self.reactions
+            )
+
         while True:
             try:
-                reaction, user = await self.ctx.bot.wait_for('picklist_reaction', timeout=self.timeout, check=check)
+                reaction, user = await self.ctx.bot.wait_for(
+                    "picklist_reaction", timeout=self.timeout, check=check
+                )
             except:
                 # Didn't get a reaction
                 await self._remove_reactions(self.reactions)
@@ -160,21 +176,40 @@ class PagePicker(Picker):
                 # We bailed - let's clear reactions and close it down
                 await self._remove_reactions(self.reactions)
                 return (page, self.self_message)
-            page = 0 if ind == 0 else page-1 if ind == 1 else page + \
-            	1 if ind == 2 else pages if ind == 3 else page
+            page = (
+                0
+                if ind == 0
+                else page - 1
+                if ind == 1
+                else page + 1
+                if ind == 2
+                else pages
+                if ind == 3
+                else page
+            )
             if ind == 4:
                 # User selects a page
-                page_instruction = await self.ctx.send("Type the number of that page to go to from {} to {}.".format(1, pages))
+                page_instruction = await self.ctx.send(
+                    "Type the number of that page to go to from {} to {}.".format(
+                        1, pages
+                    )
+                )
 
                 def check_page(message):
                     try:
                         num = int(message.content)
                     except:
                         return False
-                    return message.channel == self.self_message.channel and user == message.author
+                    return (
+                        message.channel == self.self_message.channel
+                        and user == message.author
+                    )
+
                 try:
-                    page_message = await self.ctx.bot.wait_for('message', timeout=self.timeout, check=check_page)
-                    page = int(page_message.content)-1
+                    page_message = await self.ctx.bot.wait_for(
+                        "message", timeout=self.timeout, check=check_page
+                    )
+                    page = int(page_message.content) - 1
                 except:
                     # Didn't get a message
                     pass
@@ -185,9 +220,9 @@ class PagePicker(Picker):
                     await page_message.delete()
                 except:
                     pass
-            page = 0 if page < 0 else pages-1 if page > pages-1 else page
+            page = 0 if page < 0 else pages - 1 if page > pages - 1 else page
             embed["fields"] = self._get_page_contents(page)
-            embed["footer"] = "Page {} of {}".format(page+1, pages)
+            embed["footer"] = "Page {} of {}".format(page + 1, pages)
             await Message.Embed(**embed).edit(self.ctx, self.self_message)
         await self._remove_reactions(self.reactions)
         # Get the adjusted index

@@ -1,4 +1,4 @@
-
+import asyncio
 import logging
 import os
 from datetime import datetime
@@ -8,7 +8,6 @@ import discord
 import Manager.database
 import statcord
 from utils import default
-import asyncio
 from utils.data import Bot
 
 # reimplement uvloop
@@ -20,12 +19,12 @@ except ImportError:
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("discord")
 logger.setLevel(logging.INFO)
-handler = logging.FileHandler(
-    filename='discord.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 handler.setFormatter(
-    logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
+)
 logger.addHandler(handler)
 
 
@@ -45,6 +44,8 @@ Website = "https://agb-dev.xyz"
 Server = "https://discord.gg/cNRNeaX"
 Vote = "https://top.gg/bot/723726581864071178/vote"
 Invite = "https://discord.com/api/oauth2/authorize?client_id=723726581864071178&permissions=470150214&scope=bot"
+BID = ""
+CHAT_API_KEY = ""
 
 mydb = Manager.database.db
 cursor = Manager.database.csr
@@ -58,13 +59,14 @@ bot = Bot(
     command_attrs=dict(hidden=True),
     help_command=None,
     activity=discord.Game(name="initializing..."),
-    # shard_count = 3,
+    shard_count=1,
     chunk_guilds_at_startup=False,
     intents=intents,
     allowed_mentions=discord.AllowedMentions(
-        roles=False, users=True, everyone=False, replied_user=False),
+        roles=False, users=True, everyone=False, replied_user=False
+    ),
     case_insensitive=True,
-    strip_after_prefix=True
+    strip_after_prefix=True,
 )
 
 bot.launch_time = datetime.utcnow()
@@ -83,6 +85,8 @@ key = config.statcord
 api = statcord.Client(bot, key)
 api.start_loop()
 
+hap = 0
+
 
 @bot.event
 async def on_command(ctx):
@@ -90,7 +94,6 @@ async def on_command(ctx):
         api.command_run(ctx)
     except:
         pass
-
 
 
 @bot.event
@@ -104,12 +107,12 @@ async def on_message_edit(before, after):
 
 @bot.check
 def no_badwords(ctx):
-    return 'N word' not in ctx.message.content.lower()
+    return "nigger" not in ctx.message.content.lower()
 
 
 @bot.check
 def no_nwords(ctx):
-    return 'Reversed N Word' not in ctx.message.content.lower()
+    return "reggin" not in ctx.message.content.lower()
 
 
 bot.run(config.token)

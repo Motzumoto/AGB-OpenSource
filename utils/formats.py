@@ -4,25 +4,25 @@ class plural:
 
     def __format__(self, format_spec):
         v = self.value
-        singular, sep, plural = format_spec.partition('|')
-        plural = plural or f'{singular}s'
+        singular, sep, plural = format_spec.partition("|")
+        plural = plural or f"{singular}s"
         if abs(v) != 1:
-            return f'{v} {plural}'
-        return f'{v} {singular}'
+            return f"{v} {plural}"
+        return f"{v} {singular}"
 
 
-def human_join(seq, delim=', ', final='or'):
+def human_join(seq, delim=", ", final="or"):
     size = len(seq)
     if size == 0:
-        return ''
+        return ""
 
     if size == 1:
         return seq[0]
 
     if size == 2:
-        return f'{seq[0]} {final} {seq[1]}'
+        return f"{seq[0]} {final} {seq[1]}"
 
-    return delim.join(seq[:-1]) + f' {final} {seq[-1]}'
+    return delim.join(seq[:-1]) + f" {final} {seq[-1]}"
 
 
 class TabularData:
@@ -58,14 +58,14 @@ class TabularData:
         +-------+-----+
         """
 
-        sep = '+'.join('-' * w for w in self._widths)
-        sep = f'+{sep}+'
+        sep = "+".join("-" * w for w in self._widths)
+        sep = f"+{sep}+"
 
         to_draw = [sep]
 
         def get_entry(d):
-            elem = '|'.join(f'{e:^{self._widths[i]}}' for i, e in enumerate(d))
-            return f'|{elem}|'
+            elem = "|".join(f"{e:^{self._widths[i]}}" for i, e in enumerate(d))
+            return f"|{elem}|"
 
         to_draw.append(get_entry(self._columns))
         to_draw.append(sep)
@@ -74,4 +74,4 @@ class TabularData:
             to_draw.append(get_entry(row))
 
         to_draw.append(sep)
-        return '\n'.join(to_draw)
+        return "\n".join(to_draw)

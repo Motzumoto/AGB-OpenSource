@@ -16,27 +16,27 @@ from . import common_filters
 
 
 def config(filename: str = "config"):
-    """ Fetch default config file """
+    """Fetch default config file"""
     try:
-        with open(f"{filename}.json", encoding='utf-8') as data:
+        with open(f"{filename}.json", encoding="utf-8") as data:
             return json.load(data)
     except FileNotFoundError:
         raise FileNotFoundError("config.json file wasn't found")
 
 
 def emoji_config(filename: str = "emojis"):
-    """ Fetch emoji config file """
+    """Fetch emoji config file"""
     try:
-        with open(f"{filename}.json", encoding='utf-8') as emogee:
+        with open(f"{filename}.json", encoding="utf-8") as emogee:
             return json.load(emogee)
     except FileNotFoundError:
         raise FileNotFoundError("emojis.json file wasn't found")
 
 
 def db_conf(filename: str = "db_config"):
-    """ Fetch database config """
+    """Fetch database config"""
     try:
-        with open(f"{filename}.json", encoding='utf-8') as dabase:
+        with open(f"{filename}.json", encoding="utf-8") as dabase:
             return json.load(dabase)
     except FileNotFoundError:
         raise FileNotFoundError("db_config.json file wasn't found")
@@ -44,8 +44,10 @@ def db_conf(filename: str = "db_config"):
 
 def get(file):
     try:
-        with open(file, encoding='utf-8') as data:
-            return json.load(data, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
+        with open(file, encoding="utf-8") as data:
+            return json.load(
+                data, object_hook=lambda d: namedtuple("X", d.keys())(*d.values())
+            )
     except AttributeError:
         raise AttributeError("Unknown argument")
     except FileNotFoundError:
@@ -53,9 +55,8 @@ def get(file):
 
 
 def traceback_maker(err, advance: bool = True):
-    _traceback = ''.join(traceback.format_tb(err.__traceback__))
-    error = ('```py\n{1}{0}: {2}\n```').format(
-        type(err).__name__, _traceback, err)
+    _traceback = "".join(traceback.format_tb(err.__traceback__))
+    error = ("```py\n{1}{0}: {2}\n```").format(type(err).__name__, _traceback, err)
     return error if advance else f"{type(err).__name__}: {err}"
 
 
@@ -254,8 +255,9 @@ def bordered(*columns: Sequence[str], ascii_border: bool = False) -> str:
     }
 
     sep = " " * 4  # Separator between boxes
-    widths = tuple(max(len(row) for row in column) +
-                   9 for column in columns)  # width of each col
+    widths = tuple(
+        max(len(row) for row in column) + 9 for column in columns
+    )  # width of each col
     colsdone = [False] * len(columns)  # whether or not each column is done
     lines = [sep.join("{TL}" + "{HZ}" * width + "{TR}" for width in widths)]
 
@@ -430,8 +432,13 @@ def escape(text: str, *, mass_mentions: bool = False, formatting: bool = False) 
         text = discord.utils.escape_markdown(text)
     return text
 
+
 def text_to_file(
-    text: str, filename: str = "file.txt", *, spoiler: bool = False, encoding: str = "utf-8"
+    text: str,
+    filename: str = "file.txt",
+    *,
+    spoiler: bool = False,
+    encoding: str = "utf-8",
 ):
     """Prepares text to be sent as a file on Discord, without character limit.
     This writes text into a bytes object that can be used for the ``file`` or ``files`` parameters
@@ -453,18 +460,20 @@ def text_to_file(
     return discord.File(file, filename, spoiler=spoiler)
 
 
-async def prettyResults(ctx, filename: str = "Results", resultmsg: str = "Here's the results:", loop=None):
+async def prettyResults(
+    ctx, filename: str = "Results", resultmsg: str = "Here's the results:", loop=None
+):
     if not loop:
         return await ctx.send("The result was empty...")
 
     pretty = "\r\n".join(
-        [f"[{str(num).zfill(2)}] {data}" for num, data in enumerate(loop, start=1)])
+        [f"[{str(num).zfill(2)}] {data}" for num, data in enumerate(loop, start=1)]
+    )
 
     if len(loop) < 15:
         return await ctx.send(f"{resultmsg}```ini\n{pretty}```")
 
-    data = BytesIO(pretty.encode('utf-8'))
+    data = BytesIO(pretty.encode("utf-8"))
     await ctx.send(
-        content=resultmsg,
-        file=discord.File(data, filename=timetext(filename.title()))
+        content=resultmsg, file=discord.File(data, filename=timetext(filename.title()))
     )
