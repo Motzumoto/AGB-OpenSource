@@ -4,7 +4,7 @@ import aiohttp
 import discord
 import nekos
 from discord.ext import commands
-from index import config, EMBED_COLOUR, cursor, mydb
+from index import EMBED_COLOUR, config, cursor, mydb
 from utils import permissions
 from utils.checks import *
 
