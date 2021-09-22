@@ -1,12 +1,12 @@
-import json
+import random
 
 import aiohttp
 import discord
 import nekos
 from discord.ext import commands
-from index import EMBED_COLOUR, config, cursor, mydb
-from utils import default, permissions
-from utils.checks import voter_only
+from index import config, EMBED_COLOUR, cursor, mydb
+from utils import permissions
+from utils.checks import *
 
 
 class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
@@ -14,7 +14,9 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = default.get("config.json")
+        self.modules = ['nsfw_neko_gif', 'anal', 'les', 'hentai',
+                        'bj', 'cum_jpg', 'tits', 'pussy_jpg', 'pwankg',
+                        'classic', 'spank', 'boobs', 'random_hentai_gif']
         for command in self.walk_commands():
             command.nsfw = True
 
@@ -31,11 +33,22 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
             url=self.bot.user.avatar_url_as(static_format="png"))
         await ctx.send(embed=embed)
 
+    async def get_hentai_img(self):
+        if random.randint(1, 2) == 1:
+            url = nekos.img(random.choice(self.modules))
+        else:
+            other_stuff = ['bondage', 'hentai', 'thighs']
+            async with aiohttp.ClientSession() as s:
+                async with s.get(f'https://shiro.gg/api/images/nsfw/{random.choice(other_stuff)}') as r:
+                    j = await r.json()
+                    url = j['url']
+        return url
+
     @commands.command(aliases=['post', 'ap'], usage="`tp!ap #channel`")
     @voter_only()
     @commands.cooldown(rate=1, per=2.5, type=commands.BucketType.user)
     @permissions.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(embed_links=True, manage_channels=True)
+    @commands.bot_has_permissions(embed_links=True, manage_channels=True, manage_webhooks=True)
     async def autopost(self, ctx, *, channel: discord.TextChannel):
         """Mention a channel to autopost hentai to. example: `tp!autopost #auto-nsfw`"""
         if not channel.is_nsfw():
@@ -53,59 +66,47 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
                 cursor.execute(
                     f"UPDATE guilds SET hentai_channel = '{channel.id}' WHERE guildID = {ctx.guild.id}")
                 mydb.commit()
-                await ctx.send(f"{channel.mention} has been added to the database. I will start posting in 3 minutes.")
+                await ctx.send(f"{channel.mention} has been added to the database. I will start posting shortly!")
             else:
                 await ctx.send("whoops, guild already has a fuckin' channel my dude")
 
         mydb.commit()
 
-        #     with open("autoposting.json", 'r') as f:
-        #         auto = json.load(f)
-
-        #         if not str(channel.guild.id) in auto:
-        #             auto[str(channel.guild.id)] = {}
-        #         if "hentai_channel" in auto[str(channel.guild.id)]:
-        #             raise FileExistsError
-
-        #         auto[str(channel.guild.id)]["hentai_channel"] = channel.id
-        #         i = 0
-        #         for e in auto:
-        #             if "hentai_channel" in auto[e]:
-        #                 i += 1
-
-        #     with open("autoposting.json", 'w') as f:
-        #         json.dump(auto, f, indent=4)
-        #         await ctx.send(f"{channel.mention} has been added to the database. I will start posting in 3 minutes.\nAlso, please be patient, there are {i} other different servers using this feature, so posting times can and will be slower than expected, please be patient with us.")
-        # except FileExistsError:
-        #     await ctx.send("whoops, guild already has a fuckin' channel my dude")
-
     @autopost.error
     async def autopost_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(title=f"Error Caught!", color=discord.Colour.red(
+        if isinstance(error, commands.MissingPermissions):
+            await self.create_embed(ctx, error)
+            return
+        elif isinstance(error, NotVoted):
+            embed = discord.Embed(title="Error Caught!", color=discord.Colour.red(
+            ), description=f"You need to vote to run this command! You can vote **[here]({config.Vote})**.")
+            embed.set_thumbnail(
+                url=self.bot.user.avatar_url_as(static_format="png"))
+            await ctx.send(embed=embed)
+            return           
+            
+        elif isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title="Error Caught!", color=discord.Colour.red(
             ), description="Please send the channel you want me to autopost to.\nExample: `tp!autopost #auto-nsfw`")
             embed.set_thumbnail(
                 url=self.bot.user.avatar_url_as(static_format="png"))
             await ctx.send(embed=embed)
             return
         elif isinstance(error, commands.ChannelNotFound):
-            embed = discord.Embed(title=f"Error Caught!", color=discord.Colour.red(
+            embed = discord.Embed(title="Error Caught!", color=discord.Colour.red(
             ), description="Hey I couldn't find that channel! Please make sure you mentioned the channel.\nExample: `tp!autopost #auto-nsfw`")
             embed.set_thumbnail(
                 url=self.bot.user.avatar_url_as(static_format="png"))
             await ctx.send(embed=embed)
             return
         elif isinstance(error, commands.TooManyArguments):
-            embed = discord.Embed(title=f"Error Caught!", color=discord.Colour.red(
-            ), description="Hey don't do that! You sent too many channels for me to post to. I can only post to one channel per server, please follow my rules.")
+            embed = discord.Embed(title="Error Caught!", color=discord.Colour.red(
+            ), description="Hey don't do that! You sent too many channels for me to post to. I can only post to one channel per server, don't try to break me.")
             embed.set_thumbnail(
                 url=self.bot.user.avatar_url_as(static_format="png"))
             await ctx.send(embed=embed)
             return
         elif isinstance(error, commands.BotMissingPermissions):
-            await self.create_embed(ctx, error)
-            return
-        elif isinstance(error, commands.MissingPermissions):
             await self.create_embed(ctx, error)
             return
         elif isinstance(error, discord.Forbidden):
@@ -131,41 +132,16 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
                     f"UPDATE guilds SET hentai_channel = NULL WHERE guildID = {ctx.guild.id}")
                 await ctx.reply(f"Alright, your auto posting channel has been removed from our database.")
 
-        # with open("autoposting.json", 'r') as f:
-        #     auto = json.load(f)
-        #     try:
-        #         del auto[str(ctx.guild.id)]['hentai_channel']
-        #     except KeyError:
-        #         return await ctx.reply("you don't have a fukin' channel idot.")
-        # with open("autoposting.json", "w") as f:
-        #     json.dump(auto, f, indent=4)
-        #     await ctx.reply(f"Alright, your auto posting channel has been removed from our database.")
-
-    # @commands.Cog.listener(name='on_guild_remove')
-    # async def removensfwdata(self, guild):
-    #     cursor.execute(f"SELECT hentai_channel FROM guilds WHERE guildID = {guild.id}")
-    #     res = cursor.fetchall()
-
-    #     for row in res:
-    #         if row[0] == None:
-    #             print(f"Left {guild.id}, but they didn't have any autoposting data.")
-    #         else:
-    #             cursor.execute(f"UPDATE guilds SET hentai_channel = NULL WHERE guildID = {guild.id}")
-    #             print(f"Left {guild.id} and removed their autoposting data.")
-
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
     @voter_only()
     @commands.is_nsfw()
     async def classic(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("classic"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
-        embed.add_field(name="Look at these",
-                        value=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", inline=False)
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -174,11 +150,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def trap(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("trap"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -187,11 +162,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def boobs(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("boobs"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -200,11 +174,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def pussy(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("pussy"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -213,11 +186,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def hentai(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
-        embed.set_image(url=nekos.img("random_hentai_gif"))
+        embed.set_image(url=(await self.get_hentai_img()))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -226,11 +198,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def neko(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("neko"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -239,11 +210,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def lesbian(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("les"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -252,11 +222,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def tits(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("tits"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -265,11 +234,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def wallpaper(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("wallpaper"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -278,11 +246,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def anal(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("anal"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -291,11 +258,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def feet(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("feet"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -304,11 +270,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def hololewd(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("hololewd"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -340,11 +305,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def lewdkemo(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("lewdkemo"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -353,22 +317,20 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def pwg(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("pwankg"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(hidden=True)
     @commands.check(permissions.is_owner)
     async def nsfwneko(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("nsfw_neko_gif"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -377,11 +339,10 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
     @voter_only()
     @commands.is_nsfw()
     async def blowjob(self, ctx):
-        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
+        embed = discord.Embed(title="Enjoy", description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", colour=EMBED_COLOUR,
                               timestamp=ctx.message.created_at)
         embed.set_image(url=nekos.img("blowjob"))
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -399,27 +360,8 @@ class Nsfw(commands.Cog, name='nsfw', command_attrs=dict(nsfw=True)):
                 embed.set_footer(text=f" {ctx.author}",
                                  icon_url=ctx.author.avatar_url)
                 embed.add_field(
-                    name="Enjoy", value=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", inline=False)
+                    name="Enjoy", value=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})", inline=False)
                 await ctx.reply(embed=embed)
-
-    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    @commands.command(aliases=['h2'])
-    @commands.bot_has_permissions(embed_links=True)
-    @voter_only()
-    @commands.is_nsfw()
-    async def hentai2(self, ctx):
-        async with aiohttp.ClientSession() as data:
-            async with data.get('https://shiro.gg/api/images/nsfw/hentai') as r:
-                data = await r.json()
-                embed = discord.Embed(
-                    colour=EMBED_COLOUR, timestamp=ctx.message.created_at)
-                embed.set_image(url=data['url'])
-                embed.set_footer(text=f" {ctx.author}",
-                                 icon_url=ctx.author.avatar_url)
-                embed.add_field(
-                    name="Enjoy", value=f"[Add me]({self.config.Invite}) | [Join the server]({self.config.Server}) | [Vote]({self.config.Vote})", inline=False)
-                await ctx.reply(embed=embed)
-
 
 def setup(bot):
     bot.add_cog(Nsfw(bot))
