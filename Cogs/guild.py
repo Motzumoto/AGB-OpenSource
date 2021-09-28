@@ -63,7 +63,7 @@ class DiscordCmds(commands.Cog, name="discord"):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        bad_words = ["nigger"]
+        bad_words = ["n word"]
         for word in bad_words:
             if word in before.content.lower() or word in after.content.lower():
                 return

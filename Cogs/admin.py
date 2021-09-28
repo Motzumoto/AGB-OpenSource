@@ -114,13 +114,13 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        if "nigger" in guild.name.lower():
+        if "N word" in guild.name.lower():
             await self.try_to_send_msg_in_a_channel(
                 guild, "im gonna leave cuz of the server name"
             )
             return await guild.leave()
         for channel in guild.channels:
-            if "nigger" in channel.name.lower():
+            if "n word" in channel.name.lower():
                 await self.try_to_send_msg_in_a_channel(
                     guild, f"im gonna leave cuz of the channel name {channel.mention}"
                 )
