@@ -7,6 +7,7 @@ import time
 from datetime import datetime, timedelta
 from typing import List, Union
 
+import aiohttp
 import discord
 import googletrans
 import psutil
@@ -40,36 +41,30 @@ class Information(commands.Cog, name="info"):
         self.process = psutil.Process(os.getpid())
 
     def cog_unload(self):
-        self.process.close()
-
-    def parse_weather_data(self, data):
-        data = data["main"]
-        del data["humidity"]
-        del data["pressure"]
-        return data
+        self.process.stop()
 
     def weather_message(self, data, location):
         location = location.title()
         embed = discord.Embed(
-            title=f"{location} Weather",
-            description=f"Here is the weather data for {location}.",
+            title=f"{data['name']} Weather",
+            description=f"Here is the weather data for {data['name']}.",
             color=EMBED_COLOUR,
         )
         embed.add_field(
-            name=f"Temperature", value=f"{str(data['temp'])}° F", inline=False
+            name=f"Temperature", value=f"{str(data['temp'])}°F", inline=False
         )
         embed.add_field(
             name=f"Minimum temperature",
-            value=f"{str(data['temp_min'])}° F",
+            value=f"{str(data['temp_min'])}°F",
             inline=False,
         )
         embed.add_field(
             name=f"Maximum temperature",
-            value=f"{str(data['temp_max'])}° F",
+            value=f"{str(data['temp_max'])}°F",
             inline=False,
         )
         embed.add_field(
-            name=f"Feels like", value=f"{str(data['feels_like'])}° F", inline=False
+            name=f"Feels like", value=f"{str(data['feels_like'])}°F", inline=False
         )
         return embed
 
@@ -91,17 +86,25 @@ class Information(commands.Cog, name="info"):
     @commands.command(usage="`tp!weather <location>`")
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def Weather(self, ctx, *, location=None):
-        if location == None:
-            await ctx.send("Please send a valid location.")
-            return
-        API_KEY = "65c4264d97b2fe33c8da2979f23e8928"
-        URL = f"http://api.openweathermap.org/data/2.5/weather?q={location.lower()}&appid={API_KEY}&units=imperial"
-        try:
-            data = json.loads(requests.get(URL).content)
-            data = self.parse_weather_data(data)
-            await ctx.send(embed=self.weather_message(data, location))
-        except KeyError:
-            await ctx.send(embed=self.error_message(location))
+        async with aiohttp.ClientSession() as session:
+            if location == None:
+                await ctx.send("Please send a valid location.")
+                return
+            params = {
+                "q": location.lower(),
+                "appid": config.Weather,
+                "units": "imperial",
+            }
+            async with session.get(
+                "http://api.openweathermap.org/data/2.5/weather", params=params
+            ) as resp:
+                # await ctx.reply(type(resp))
+                data = await resp.json()
+                # URL = f"http://api.openweathermap.org/data/2.5/weather?q={location.lower()}&appid={config.Weather}&units=imperial"
+                try:
+                    await ctx.send(embed=self.weather_message(data, location))
+                except KeyError:
+                    await ctx.send(embed=self.error_message(location))
 
     @commands.command(usage="`tp!vote`")
     @commands.cooldown(1, 3, commands.BucketType.user)

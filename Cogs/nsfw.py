@@ -67,6 +67,8 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     )
     async def autopost(self, ctx, *, channel: discord.TextChannel):
         """Mention a channel to autopost hentai to. example: `tp!autopost #auto-nsfw`"""
+        # await ctx.send(f"This command is currently disabled because it is no longer working (for now). Please join the support server to know what is going on - {config.Server}")
+
         if not channel.is_nsfw():
             return await ctx.send("That shit isn't NSFW - fuck that.")
         # try:
@@ -89,8 +91,6 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 )
             else:
                 await ctx.send("whoops, guild already has a fuckin' channel my dude")
-
-        mydb.commit()
 
     @autopost.error
     async def autopost_error(self, ctx, error):
@@ -147,6 +147,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     @permissions.has_permissions(manage_channels=True)
     async def autopost_remove(self, ctx):
         """Remove the auto hentai posting channel."""
+        # await ctx.send(f"This command is currently disabled because it is no longer working (for now). Please join the support server to know what is going on - {config.Server}")
 
         cursor.execute(
             f"SELECT hentai_channel FROM guilds WHERE guildID = {ctx.guild.id}"
@@ -163,6 +164,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 await ctx.reply(
                     f"Alright, your auto posting channel has been removed from our database."
                 )
+                mydb.commit()
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
@@ -172,12 +174,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def classic(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("classic"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -188,12 +193,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def trap(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("trap"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -204,12 +212,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def boobs(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("boobs"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -220,12 +231,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def pussy(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("pussy"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -236,12 +250,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def hentai(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=(await self.get_hentai_img()))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -252,12 +269,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def neko(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("neko"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -268,12 +288,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def lesbian(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("les"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -284,12 +307,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def tits(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("tits"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -300,12 +326,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def wallpaper(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("wallpaper"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -316,12 +345,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def anal(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("anal"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -332,12 +364,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def feet(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("feet"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -348,12 +383,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def hololewd(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("hololewd"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -369,14 +407,20 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 title=f"{ctx.author} Spanks themselves...", colour=EMBED_COLOUR
             )
             embed.set_image(url=nekos.img("spank"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f"{ctx.author} | Powered by ponbus.com",
+                icon_url=ctx.author.avatar_url,
+            )
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(
                 title=f"{ctx.author} Spanks {user.name}...", colour=EMBED_COLOUR
             )
             embed.set_image(url=nekos.img("spank"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f"{ctx.author} | Powered by ponbus.com",
+                icon_url=ctx.author.avatar_url,
+            )
             await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -387,12 +431,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def lewdkemo(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("lewdkemo"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -403,12 +450,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def pwg(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("pwankg"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -417,12 +467,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def nsfwneko(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("nsfw_neko_gif"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -433,12 +486,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     async def blowjob(self, ctx):
         embed = discord.Embed(
             title="Enjoy",
-            description=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
         embed.set_image(url=nekos.img("blowjob"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -454,10 +510,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                     colour=EMBED_COLOUR, timestamp=ctx.message.created_at
                 )
                 embed.set_image(url=data["url"])
-                embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+                embed.set_footer(
+                    text=f"{ctx.author} | Powered by ponbus.com",
+                    icon_url=ctx.author.avatar_url,
+                )
                 embed.add_field(
                     name="Enjoy",
-                    value=f"[Add me]({self.config.Invite}) | [Support]({config.Server}) | [Vote]({self.config.Vote})",
+                    value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
                     inline=False,
                 )
                 await ctx.reply(embed=embed)

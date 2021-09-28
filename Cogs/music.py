@@ -75,7 +75,7 @@ class Player(wavelink.Player):
 
         try:
             self.waiting = True
-            with async_timeout.timeout(300):
+            with async_timeout.timeout(20):
                 track = await self.queue.get()
         except asyncio.TimeoutError:
             # No music has been played for 5 minutes, cleanup and disconnect...
@@ -473,8 +473,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
         channel: typing.Union[discord.VoiceChannel, discord.StageChannel] = None,
     ):
         """Connect to a voice channel."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -492,8 +498,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def play(self, ctx, *, query: str):
         """Play or queue a song with the given query."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        # try:
+        #     await ctx.message.delete()
+        # except discord.Forbidden:
+        #     pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -529,8 +541,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.user)
     async def pause(self, ctx):
         """Pause the currently playing song."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -557,8 +575,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def resume(self, ctx):
         """Resume a currently paused player."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -585,8 +609,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def skip(self, ctx):
         """Skip the currently playing song."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -617,8 +647,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def stop(self, ctx):
         """Disconnect the player."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -641,8 +677,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def volume(self, ctx, *, vol: int):
         """Change the players volume, between 1 and 100."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -661,8 +703,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def shuffle(self, ctx):
         """Shuffle the players queue."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -695,8 +743,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.bot_has_permissions(embed_links=True)
     async def vol_up(self, ctx):
         """Command used for volume up button."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -713,8 +767,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.bot_has_permissions(embed_links=True)
     async def vol_down(self, ctx):
         """Command used for volume down button."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -733,8 +793,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     async def equalizer(self, ctx, *, equalizer: str):
         """Change the players equalizer.
         Valid Equalizers:flat, boost, metal, piano"""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -763,8 +829,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def queue(self, ctx):
         """Display the players queued songs."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -787,8 +859,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def nowplaying(self, ctx):
         """Update the player controller."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx
@@ -802,8 +880,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def swap_dj(self, ctx, *, member: discord.Member = None):
         """Swap the current DJ to another member in the voice channel."""
-        # await ctx.send("This currently isnt working as we're experiencing a lot of issues right now. Please try again later.")
-        # return
+        await ctx.send(
+            "This currently isnt working as we're experiencing a lot of issues right now. Please try again later."
+        )
+        return
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         player: Player = self.bot.wavelink.get_player(
             guild_id=ctx.guild.id, cls=Player, context=ctx

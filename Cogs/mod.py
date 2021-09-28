@@ -234,6 +234,7 @@ class Moderator(commands.Cog, name="mod"):
                     pass
 
     @commands.command(aliases=["enabler", "ron"], usage="`tp!ron`")
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @permissions.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(embed_links=True, manage_guild=True)
     async def raid_on(self, ctx):
@@ -251,6 +252,7 @@ class Moderator(commands.Cog, name="mod"):
         )
 
     @commands.command(aliases=["disabler", "roff"], usage="`tp!roff`")
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @permissions.has_permissions(manage_guild=True)
     @commands.bot_has_permissions(embed_links=True, manage_guild=True)
     async def raid_off(self, ctx):
@@ -393,7 +395,10 @@ class Moderator(commands.Cog, name="mod"):
                 timestamp=ctx.message.created_at,
             )
             embed.add_field(name="Prefix for this server:", value=f"{row[2]}")
-            embed.set_footer(text=f"{ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f"{ctx.author} | Powered by ponbus.com",
+                icon_url=ctx.author.avatar_url,
+            )
             await ctx.send(embed=embed)
 
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
@@ -455,7 +460,10 @@ class Moderator(commands.Cog, name="mod"):
             name=f"{self.bot.user.name} has the following permissions:",
             value=f"{perms}",
         )
-        embed.set_footer(text=f"{ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"{ctx.author} | Powered by ponbus.com",
+            icon_url=ctx.author.avatar_url,
+        )
         await ctx.send(embed=embed)
 
     @commands.cooldown(1, 500, commands.BucketType.guild)

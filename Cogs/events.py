@@ -14,7 +14,7 @@ class events(commands.Cog):
         self.presence_loop.start()
 
     def cog_unload(self):
-        self.presence_loop.close()
+        self.presence_loop.stop()
 
     @commands.Cog.listener()
     async def on_message(self, ctx):
@@ -261,14 +261,13 @@ class events(commands.Cog):
     async def dbl_vote_reward(self, data):
         print(f"{default.date()} | Recieved a vote:\n{data}")
 
-    @tasks.loop(count=None, minutes=1)
+    @tasks.loop(count=None, seconds=30)
     async def presence_loop(self):
         await self.bot.wait_until_ready()
         datetime.utcnow()
         delta_uptime = datetime.utcnow() - self.bot.launch_time
         delta_uptime = delta_uptime - timedelta(microseconds=delta_uptime.microseconds)
         omegalul = random.choice(["watching", "playing", "listening", "competing"])
-
         funny_statuses = [
             f"tp!help | {len(self.bot.guilds)} Servers",
             f"tp!help | {len(self.bot.commands)} commands!",
@@ -301,9 +300,6 @@ class events(commands.Cog):
                     name=random.choice(funny_statuses),
                 )
             )
-
-    def cog_unload(self):
-        self.presence_loop.close()
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
@@ -372,13 +368,6 @@ class events(commands.Cog):
             print(
                 f"{default.date()} | New guild joined: {guild.id} | But it was already in the DB"
             )
-
-    # @commands.command(hidden=True)
-    # @commands.check(permissions.is_owner)
-    # async def postcount(self, ctx):
-    #     await self.blist_api.post_bot_stats()
-    #     await ctx.send("Done!")
-
 
 def setup(bot):
     bot.add_cog(events(bot))

@@ -44,7 +44,7 @@ Website = "https://agb-dev.xyz"
 Server = "https://discord.gg/cNRNeaX"
 Vote = "https://top.gg/bot/723726581864071178/vote"
 Invite = "https://discord.com/api/oauth2/authorize?client_id=723726581864071178&permissions=470150214&scope=bot"
-BID = ""
+BID = "157421"
 CHAT_API_KEY = ""
 
 mydb = Manager.database.db
@@ -107,12 +107,12 @@ async def on_message_edit(before, after):
 
 @bot.check
 def no_badwords(ctx):
-    return "nigger" not in ctx.message.content.lower()
+    return "n word" not in ctx.message.content.lower()
 
 
 @bot.check
 def no_nwords(ctx):
-    return "reggin" not in ctx.message.content.lower()
+    return "reversed n word" not in ctx.message.content.lower()
 
 
 bot.run(config.token)

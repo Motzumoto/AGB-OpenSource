@@ -83,10 +83,10 @@ class Fun(commands.Cog, name="fun"):
         self.bot.alex_api = self.alex_api
 
     def cog_unload(self):
-        self.session.close()
-        self.reddit.close()
-        self.ttt_games.close()
-        self.params.close()
+        self.session.stop()
+        self.reddit.stop()
+        self.ttt_games.stop()
+        self.params.stop()
 
     def format_help_for_context(self, ctx: commands.Context):
         pre_processed = super().format_help_for_context(ctx)
@@ -734,7 +734,9 @@ class Fun(commands.Cog, name="fun"):
         embed = discord.Embed(colour=EMBED_COLOUR, title=f"{':salt:'*7}").set_image(
             url="attachment://salty.png"
         )
-        embed.set_footer(text=f"{ctx.author.name} > {user.name}")
+        embed.set_footer(
+            text=f"{ctx.author.name} > {user.name} | Powered by ponbus.com"
+        )
         image = discord.File(
             await (await self.alex_api.salty(image=user.avatar_url)).read(), "salty.png"
         )
@@ -753,7 +755,9 @@ class Fun(commands.Cog, name="fun"):
         embed = discord.Embed(colour=EMBED_COLOUR, title=f"Dock of shame.").set_image(
             url="attachment://shame.png"
         )
-        embed.set_footer(text=f"{ctx.author.name} > {user.name}")
+        embed.set_footer(
+            text=f"{ctx.author.name} > {user.name} | Powered by ponbus.com"
+        )
         image = discord.File(
             await (await self.alex_api.shame(image=user.avatar_url)).read(), "shame.png"
         )
@@ -790,7 +794,9 @@ class Fun(commands.Cog, name="fun"):
                 colorinf = await self.alex_api.colour(colour=hex)
                 embed = discord.Embed(colour=EMBED_COLOUR, title=f"{colorinf.name}")
                 embed.set_image(url=colorinf.image)
-                embed.set_footer(text=f"Rendered by {ctx.author}")
+                embed.set_footer(
+                    text=f"Rendered by {ctx.author} | Powered by ponbus.com"
+                )
                 await ctx.send(embed=embed)
             else:
                 await ctx.send(
