@@ -85,9 +85,6 @@ key = config.statcord
 api = statcord.Client(bot, key)
 api.start_loop()
 
-hap = 0
-
-
 @bot.event
 async def on_command(ctx):
     try:

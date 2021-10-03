@@ -8,9 +8,6 @@ from discord.ext import commands, tasks
 from index import EMBED_COLOUR, config, cursor, mydb
 from utils import default
 
-hap = 0
-
-
 class autoposting(commands.Cog, name="ap"):
     def __init__(self, bot):
         self.bot = bot
@@ -52,8 +49,6 @@ class autoposting(commands.Cog, name="ap"):
     async def autoh(self):
         await self.bot.wait_until_ready()
         me = self.bot.get_user(101118549958877184)
-        hap_update = hap
-        hap_update += 1
         print(f"{default.date()} | Autoposting - Posted Batch")
         embed = discord.Embed(
             title="Enjoy your poggers porn lmao",
