@@ -50,10 +50,14 @@
 </p>
 
 > Rename `config.example.json` -> `config.json` and fill out the *token* & *prefix* (required).
+<p>
 • Fill out the required config options, otherwise this wouldn't work lmao.
+</p>
 
 > Rename `db_config.example.json` -> `db_config.json` and fill out all the fields there. **MySQL Database required**
 
+<p>
 • Fill out your database configuration, if you don't the bot won't run lmao. Yes, you do need a MySQL Database.
+</p>
 
 <i>`If there are any issues, please contact the developers.` : <a href="mailto:contact@agb-dev.xyz">Email</i>
