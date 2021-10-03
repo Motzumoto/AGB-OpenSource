@@ -37,3 +37,23 @@
 	    <img src="https://top.gg/api/widget/723726581864071178.svg" alt="top.gg page">
 	</a>
 </p>
+
+<hr><hr>
+
+<h1 align="center">
+	<br>Self Hosting "How-To"
+</h1>
+
+> pip install -r requirements.txt
+<p>
+• Install the Python requirements for the project, otherwise this wouldn't work.
+</p>
+
+> Rename `config.example.json` -> `config.json` and fill out the *token* & *prefix* (required).
+• Fill out the required config options, otherwise this wouldn't work lmao.
+
+> Rename `db_config.example.json` -> `db_config.json` and fill out all the fields there. **MySQL Database required**
+
+• Fill out your database configuration, if you don't the bot won't run lmao. Yes, you do need a MySQL Database.
+
+<i>`If there are any issues, please contact the developers.` : <a href="mailto:contact@agb-dev.xyz">Email</i>
