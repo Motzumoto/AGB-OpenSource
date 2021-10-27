@@ -31,12 +31,12 @@ try:
     import cairosvg
 
     svg_convert = "cairo"
-except:
+except BaseException:
     try:
         from wand.image import Image
 
         svg_convert = "wand"
-    except:
+    except BaseException:
         svg_convert = None
 
 matplotlib.use("agg")
@@ -106,15 +106,17 @@ class Fun(commands.Cog, name="fun"):
         self.bot.loop.create_task(self.session.close())
 
     def get_actors(self, bot, offender, target):
-        return (
-            {"id": bot.id, "nick": bot.display_name, "formatted": bot.mention},
-            {
-                "id": offender.id,
-                "nick": offender.display_name,
-                "formatted": "<@{}>".format(offender.id),
-            },
-            {"id": target.id, "nick": target.display_name, "formatted": target.mention},
-        )
+        return ({"id": bot.id,
+                 "nick": bot.display_name,
+                 "formatted": bot.mention},
+                {"id": offender.id,
+                 "nick": offender.display_name,
+                 "formatted": "<@{}>".format(offender.id),
+                 },
+                {"id": target.id,
+                 "nick": target.display_name,
+                 "formatted": target.mention},
+                )
 
     @staticmethod
     def calculate_member_perc(history: List[discord.Message]) -> dict:
@@ -123,9 +125,8 @@ class Fun(commands.Cog, name="fun"):
         for msg in history:
             # Name formatting
             if len(msg.author.display_name) >= 20:
-                short_name = "{}...".format(msg.author.display_name[:20]).replace(
-                    "$", "\\$"
-                )
+                short_name = "{}...".format(
+                    msg.author.display_name[:20]).replace("$", "\\$")
             else:
                 short_name = (
                     msg.author.display_name.replace("$", "\\$")
@@ -177,12 +178,15 @@ class Fun(commands.Cog, name="fun"):
             labels = labels + ["Others {:g}%".format(others)]
         if len(channel_or_guild.name) >= 19:
             if isinstance(channel_or_guild, discord.Guild):
-                channel_or_guild_name = "{}...".format(channel_or_guild.name[:19])
+                channel_or_guild_name = "{}...".format(
+                    channel_or_guild.name[:19])
             else:
-                channel_or_guild_name = "#{}...".format(channel_or_guild.name[:19])
+                channel_or_guild_name = "#{}...".format(
+                    channel_or_guild.name[:19])
         else:
             channel_or_guild_name = channel_or_guild.name
-        title = plt.title("Stats in {}".format(channel_or_guild_name), color="white")
+        title = plt.title("Stats in {}".format(
+            channel_or_guild_name), color="white")
         title.set_va("top")
         title.set_ha("center")
         plt.gca().axis("equal")
@@ -338,7 +342,8 @@ class Fun(commands.Cog, name="fun"):
         channel_list = []
         for channel in ctx.guild.text_channels:
             channel: discord.TextChannel
-            if channel.permissions_for(ctx.message.author).read_messages is False:
+            if channel.permissions_for(
+                    ctx.message.author).read_messages is False:
                 continue
             if channel.permissions_for(ctx.guild.me).read_messages is False:
                 continue
@@ -417,7 +422,7 @@ class Fun(commands.Cog, name="fun"):
     #     try:
     #         ret = await loop.run_in_executor(None, self.trans.translate, message)
     #     except Exception as e:
-    #         return await ctx.send(f'An error occurred: {e.__class__.__name__}: {e}')
+    # return await ctx.send(f'An error occurred: {e.__class__.__name__}: {e}')
 
     #     embed = discord.Embed(title='Translated', colour=0x4284F3)
     #     src = googletrans.LANGUAGES.get(ret.src, '(auto-detected)').title()
@@ -491,17 +496,20 @@ class Fun(commands.Cog, name="fun"):
 
             if len(chars) == 2:
                 if "fe0f" in chars:
-                    # remove variation-selector-16 so that the appropriate url can be built without it
+                    # remove variation-selector-16 so that the appropriate url
+                    # can be built without it
                     chars.remove("fe0f")
             if "20e3" in chars:
                 # COMBINING ENCLOSING KEYCAP doesn't want to play nice either
                 chars.remove("fe0f")
 
             if svg_convert is not None:
-                url = "https://twemoji.maxcdn.com/2/svg/" + "-".join(chars) + ".svg"
+                url = "https://twemoji.maxcdn.com/2/svg/" + \
+                    "-".join(chars) + ".svg"
                 convert = True
             else:
-                url = "https://twemoji.maxcdn.com/2/72x72/" + "-".join(chars) + ".png"
+                url = "https://twemoji.maxcdn.com/2/72x72/" + \
+                    "-".join(chars) + ".png"
 
         async with self.session.get(url) as resp:
             if resp.status != 200:
@@ -752,9 +760,10 @@ class Fun(commands.Cog, name="fun"):
         if not user:
             user = ctx.author
 
-        embed = discord.Embed(colour=EMBED_COLOUR, title=f"Dock of shame.").set_image(
-            url="attachment://shame.png"
-        )
+        embed = discord.Embed(
+            colour=EMBED_COLOUR,
+            title=f"Dock of shame.").set_image(
+            url="attachment://shame.png")
         embed.set_footer(
             text=f"{ctx.author.name} > {user.name} | Powered by ponbus.com"
         )
@@ -792,7 +801,8 @@ class Fun(commands.Cog, name="fun"):
         try:
             if len(hex) == 6:
                 colorinf = await self.alex_api.colour(colour=hex)
-                embed = discord.Embed(colour=EMBED_COLOUR, title=f"{colorinf.name}")
+                embed = discord.Embed(
+                    colour=EMBED_COLOUR, title=f"{colorinf.name}")
                 embed.set_image(url=colorinf.image)
                 embed.set_footer(
                     text=f"Rendered by {ctx.author} | Powered by ponbus.com"
@@ -802,7 +812,7 @@ class Fun(commands.Cog, name="fun"):
                 await ctx.send(
                     "A hex color code without transparency is composed of 6 characters, no more, no less."
                 )
-        except:
+        except BaseException:
             await ctx.send(
                 f"Failed to obtain color information. Maybe {hex} isn't a valid code."
             )
@@ -876,7 +886,9 @@ class Fun(commands.Cog, name="fun"):
         if user.id == 318483487231574016:
 
             embedd = discord.Embed(colour=EMBED_COLOUR)
-            embedd.add_field(name=f"{user.name}'s pp size", value="Non-Existent")
+            embedd.add_field(
+                name=f"{user.name}'s pp size",
+                value="Non-Existent")
             await ctx.reply(embed=embedd)
             return
         if user.id == 101118549958877184:
@@ -1121,7 +1133,7 @@ class Fun(commands.Cog, name="fun"):
 
     @staticmethod
     def _check_draw(board):
-        return not " " in board
+        return " " not in board
 
     def _ai_think(self, m):
         rx, cx, dx = self._find_streaks(m, "x")
@@ -1179,7 +1191,12 @@ class Fun(commands.Cog, name="fun"):
         "O.o",
     ]
     KAOMOJI_CONFUSE = [" (o_O)?", " (°ロ°) !?", " (ーー;)?", " owo?"]
-    KAOMOJI_SPARKLES = [" \\*:･ﾟ✧\\*:･ﾟ✧ ", " ☆\\*:・ﾟ ", "〜☆ ", " uguu.., ", "-.-"]
+    KAOMOJI_SPARKLES = [
+        " \\*:･ﾟ✧\\*:･ﾟ✧ ",
+        " ☆\\*:・ﾟ ",
+        "〜☆ ",
+        " uguu.., ",
+        "-.-"]
 
     @commands.command(aliases=["owo"], usage="`tp!uwu <Optional:text>`")
     async def uwu(self, ctx: commands.Context, *, text: str = None):
@@ -1227,7 +1244,7 @@ class Fun(commands.Cog, name="fun"):
         """
         word = word.lower()
         uwu = word.rstrip(".?!,")
-        punctuations = word[len(uwu) :]
+        punctuations = word[len(uwu):]
         final_punctuation = punctuations[-1] if punctuations else ""
         extra_punctuation = punctuations[:-1] if punctuations else ""
 
@@ -1401,7 +1418,9 @@ class Fun(commands.Cog, name="fun"):
         """
         mem = ctx.author
         try:
-            problem = str(ctx.message.clean_content.replace(f"{ctx.prefix}math", ""))
+            problem = str(
+                ctx.message.clean_content.replace(
+                    f"{ctx.prefix}math", ""))
             # If a problem isn't given
             if problem == "":
                 e = discord.Embed(
@@ -1412,7 +1431,9 @@ class Fun(commands.Cog, name="fun"):
                 return
             #    If the user's problem is too long
             if len(problem) > 500:
-                e = discord.Embed(description=f"Too long, try again.", color=0x3498DB)
+                e = discord.Embed(
+                    description=f"Too long, try again.",
+                    color=0x3498DB)
                 await ctx.reply(embed=e)
                 return
             problem = (
@@ -1490,13 +1511,18 @@ class Fun(commands.Cog, name="fun"):
         # r= r.json()["Global"]
         embed.add_field(name="New Cases", value=f'{resp["NewConfirmed"]:,}')
         embed.add_field(name="New Deaths", value=f'{resp["NewDeaths"]:,}')
-        embed.add_field(name="Newly Recovered", value=f'{resp["NewRecovered"]:,}')
-        embed.add_field(name="Total Confirmed", value=f'{resp["TotalConfirmed"]:,}')
+        embed.add_field(
+            name="Newly Recovered",
+            value=f'{resp["NewRecovered"]:,}')
+        embed.add_field(
+            name="Total Confirmed",
+            value=f'{resp["TotalConfirmed"]:,}')
         embed.add_field(name="Total Deaths", value=f'{resp["TotalDeaths"]:,}')
-        embed.add_field(name="Total Recovered", value=f'{resp["TotalRecovered"]:,}')
+        embed.add_field(
+            name="Total Recovered",
+            value=f'{resp["TotalRecovered"]:,}')
         embed.set_footer(
-            text="Heads up! - Individual countries may not report the same information in the same way."
-        )
+            text="Heads up! - Individual countries may not report the same information in the same way.")
         await ctx.reply(embed=embed)
 
     # @commands.cooldown(3, 8, commands.BucketType.user)
@@ -1527,7 +1553,7 @@ class Fun(commands.Cog, name="fun"):
     #         return
     #     if message.channel.id == chat_channel_id:
     #         ctx = await self.bot.get_context(message)
-    #         await ctx.invoke(self.bot.get_command('chat'), message=message.content)
+    # await ctx.invoke(self.bot.get_command('chat'), message=message.content)
 
     @commands.command(usage="`tp!mock <user>`")
     @commands.bot_has_permissions(embed_links=True)
@@ -1577,8 +1603,9 @@ class Fun(commands.Cog, name="fun"):
                     result = await self.cap_change(search_msg.embeds[0].description)
         time = ctx.message.created_at
         embed = discord.Embed(
-            description=result, timestamp=ctx.message.created_at, url=f"{Website}"
-        )
+            description=result,
+            timestamp=ctx.message.created_at,
+            url=f"{Website}")
         embed.colour = getattr(author, "colour", discord.Colour.default())
         embed.set_author(name=author.display_name, icon_url=author.avatar_url)
         embed.set_thumbnail(url="https://i.imgur.com/upItEiG.jpg")
@@ -1628,7 +1655,8 @@ class Fun(commands.Cog, name="fun"):
             await ctx.reply(content=content, file=discord.File(bio, filename=filename))
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    @commands.command(aliases=["hit", "punch", "yeet"], usage="`tp!slap <user>`")
+    @commands.command(aliases=["hit", "punch", "yeet"],
+                      usage="`tp!slap <user>`")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def slap(self, ctx, *, user: discord.Member):
@@ -1643,7 +1671,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("slap"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(
@@ -1654,7 +1684,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("slap"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -1673,7 +1705,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("poke"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(
@@ -1684,7 +1718,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("poke"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -1699,7 +1735,8 @@ class Fun(commands.Cog, name="fun"):
         await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    @commands.command(aliases=["cuddle", "love", "hold"], usage="`tp!hug <user>`")
+    @commands.command(aliases=["cuddle", "love",
+                      "hold"], usage="`tp!hug <user>`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def hug(self, ctx, *, user: discord.Member):
@@ -1714,7 +1751,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("hug"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(
@@ -1725,7 +1764,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("hug"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -1750,7 +1791,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("kiss"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
         else:
             cute = ["awww", "adorable", "cute"]
@@ -1762,7 +1805,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("kiss"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -1800,7 +1845,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("pat"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(
@@ -1811,7 +1858,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("pat"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -1830,7 +1879,9 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("tickle"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
         else:
             embed = discord.Embed(
@@ -1841,11 +1892,14 @@ class Fun(commands.Cog, name="fun"):
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("tickle"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f" {ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(embed=embed)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    @commands.command(usage="`tp!kill <user>`", aliases=["jump", "murder", "slay"])
+    @commands.command(usage="`tp!kill <user>`",
+                      aliases=["jump", "murder", "slay"])
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def kill(self, ctx, *, user: discord.Member):
@@ -1928,7 +1982,9 @@ class Fun(commands.Cog, name="fun"):
                 description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
             )
             embed.set_image(url=url)
-            embed.set_footer(text=f"{ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f"{ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(content="Alright, have this meme.", embed=embed)
 
     @commands.guild_only()
@@ -1967,7 +2023,9 @@ class Fun(commands.Cog, name="fun"):
                 description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
             )
             embed.set_image(url=url)
-            embed.set_footer(text=f"{ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(
+                text=f"{ctx.author}",
+                icon_url=ctx.author.avatar_url)
             await ctx.reply(
                 content="HAHA OH MY GOD THAT IS SO FUNNY!!!! <:stfupls:880141007029669979>",
                 embed=embed,
@@ -1977,7 +2035,7 @@ class Fun(commands.Cog, name="fun"):
     @commands.command(usage="`tp!hack <user>`")
     async def hack(self, ctx, user: discord.Member = None):
         """Hack a user, totally real and legit"""
-        if user == None:
+        if user is None:
             async with ctx.channel.typing():
                 await ctx.send("I can't hack air, mention someone.")
 
@@ -2198,7 +2256,8 @@ class Fun(commands.Cog, name="fun"):
             f"Everyone, let's pay respects to **{filter_mass_mentions(answer)}**! Press the f reaction on this message to pay respects."
         )
         await message.add_reaction("\U0001f1eb")
-        self.channels[str(ctx.channel.id)] = {"msg_id": message.id, "reacted": []}
+        self.channels[str(ctx.channel.id)] = {
+            "msg_id": message.id, "reacted": []}
         await asyncio.sleep(120)
         try:
             await message.delete()
@@ -2222,14 +2281,14 @@ class Fun(commands.Cog, name="fun"):
             return
         if user.id == self.bot.user.id:
             return
-        if user.id not in self.channels[str(reaction.message.channel.id)]["reacted"]:
+        if user.id not in self.channels[str(
+                reaction.message.channel.id)]["reacted"]:
             if str(reaction.emoji) == "\U0001f1eb":
                 await reaction.message.channel.send(
                     f"**{user.name}** has paid their respects."
                 )
-                self.channels[str(reaction.message.channel.id)]["reacted"].append(
-                    user.id
-                )
+                self.channels[str(reaction.message.channel.id)
+                              ]["reacted"].append(user.id)
 
     @commands.command(usage="`tp!lenny`")
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -2365,7 +2424,8 @@ class Fun(commands.Cog, name="fun"):
         await ctx.reply(f"**{user.name}** is **{hot:.2f}%** hot {emoji}")
 
     @commands.cooldown(rate=1, per=2.5, type=commands.BucketType.user)
-    @commands.command(aliases=["gay", "homo", "gayrate"], usage="`tp!howgay <user>`")
+    @commands.command(aliases=["gay", "homo", "gayrate"],
+                      usage="`tp!howgay <user>`")
     async def howgay(self, ctx, *, user: discord.Member = None):
         """Tells you how gay a user is lol."""
         user = user or ctx.author
@@ -2374,7 +2434,8 @@ class Fun(commands.Cog, name="fun"):
         #    return await ctx.reply(f"**{user.name}** cant be gay, homo.")
 
         # if user.id == 503963293497425920:
-        #    return await ctx.reply(f"**{user.name}** is not gay and he is a cool kid")
+        # return await ctx.reply(f"**{user.name}** is not gay and he is a cool
+        # kid")
 
         if user.id == 723726581864071178:
             return await ctx.reply("I'm a fuckin bot lmao.")
@@ -2393,7 +2454,8 @@ class Fun(commands.Cog, name="fun"):
         await ctx.reply(f"**{user.name}** is **{gay:.2f}%** gay {emoji}")
 
     @commands.cooldown(rate=1, per=2.5, type=commands.BucketType.user)
-    @commands.command(aliases=["howsimp", "areyouasimp"], usage="`tp!simp <user>`")
+    @commands.command(aliases=["howsimp", "areyouasimp"],
+                      usage="`tp!simp <user>`")
     async def simp(self, ctx, *, user: discord.Member = None):
         """Tells you if a user is a simp lol."""
         user = user or ctx.author
@@ -2423,7 +2485,8 @@ class Fun(commands.Cog, name="fun"):
         await ctx.reply(f"**{user.name}** is **{simp:.2f}%** simp {emoji}")
 
     @commands.cooldown(rate=1, per=2.5, type=commands.BucketType.user)
-    @commands.command(aliases=["howhorny", "hornyrate"], usage="`tp!horny <user>`")
+    @commands.command(aliases=["howhorny", "hornyrate"],
+                      usage="`tp!horny <user>`")
     async def horny(self, ctx, *, user: discord.Member = None):
         """Tells you how horny someone is :flushed:"""
         user = user or ctx.author

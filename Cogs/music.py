@@ -103,7 +103,7 @@ class Player(wavelink.Player):
         elif not await self.is_position_fresh():
             try:
                 await self.controller.message.delete()
-            except:
+            except BaseException:
                 pass
 
             self.controller.stop()
@@ -161,7 +161,7 @@ class Player(wavelink.Player):
         """Clear internal states, remove player controller and disconnect."""
         try:
             await self.controller.message.delete()
-        except:
+        except BaseException:
             pass
 
         self.controller.stop()
@@ -367,7 +367,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
         if member.bot:
             return
 
-        player: Player = self.bot.wavelink.get_player(member.guild.id, cls=Player)
+        player: Player = self.bot.wavelink.get_player(
+            member.guild.id, cls=Player)
 
         if not player.channel_id or not player.context:
             player.node.players.pop(member.guild.id)
@@ -668,7 +669,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
         await player.teardown()
         try:
             await player.disconnect()
-        except:
+        except BaseException:
             pass
         await ctx.send("Disconnected from the channel.", delete_after=15)
 
@@ -854,7 +855,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
         )
         await paginator.start(ctx)
 
-    @commands.command(aliases=["np", "now_playing", "current"], usage="`tp!np`")
+    @commands.command(aliases=["np", "now_playing",
+                      "current"], usage="`tp!np`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def nowplaying(self, ctx):

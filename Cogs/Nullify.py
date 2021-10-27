@@ -20,6 +20,6 @@ def clean(string, deaden_links=False):
         # Wrap all links in <>
         for match in matches:
             string = string.replace(match, "<{}>".format(match))
-    return string.replace("@everyone", "@{}everyone".format(zerospace)).replace(
-        "@here", "@{}here".format(zerospace)
-    )
+    return string.replace("@everyone",
+                          "@{}everyone".format(zerospace)).replace("@here",
+                                                                   "@{}here".format(zerospace))

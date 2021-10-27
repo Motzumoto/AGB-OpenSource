@@ -11,7 +11,7 @@ class Parser:
         self.index = 0
         self.vars = {"pi": 3.141592653589793, "e": 2.718281828459045}
         for var in vars.keys():
-            if self.vars.get(var) != None:
+            if self.vars.get(var) is not None:
                 raise Exception("Cannot reasync define the value of " + var)
             self.vars[var] = vars[var]
 
@@ -28,7 +28,7 @@ class Parser:
         return value
 
     def peek(self):
-        return self.string[self.index : self.index + 1]
+        return self.string[self.index: self.index + 1]
 
     def hasNext(self):
         return self.index < len(self.string)
@@ -129,7 +129,7 @@ class Parser:
                 break
 
         value = self.vars.get(var, None)
-        if value == None:
+        if value is None:
             raise Exception("Unrecognized variable: '" + var + "'")
         return float(value)
 

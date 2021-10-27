@@ -91,10 +91,15 @@ class UserFriendlyTime(commands.Converter):
     """That way quotes aren't absolutely necessary."""
 
     def __init__(self, converter=None, *, default=None):
-        if isinstance(converter, type) and issubclass(converter, commands.Converter):
+        if isinstance(
+                converter,
+                type) and issubclass(
+                converter,
+                commands.Converter):
             converter = converter()
 
-        if converter is not None and not isinstance(converter, commands.Converter):
+        if converter is not None and not isinstance(
+                converter, commands.Converter):
             raise TypeError("commands.Converter subclass necessary.")
 
         self.converter = converter
@@ -133,13 +138,17 @@ class UserFriendlyTime(commands.Converter):
 
             match = regex.match(argument)
             if match is not None and match.group(0):
-                data = {k: int(v) for k, v in match.groupdict(default=0).items()}
-                remaining = argument[match.end() :].strip()
+                data = {
+                    k: int(v) for k,
+                    v in match.groupdict(
+                        default=0).items()}
+                remaining = argument[match.end():].strip()
                 result.dt = now + relativedelta(**data)
                 return await result.check_constraints(ctx, now, remaining)
 
             # apparently nlp does not like "from now"
-            # it likes "from x" in other cases though so let me handle the 'now' case
+            # it likes "from x" in other cases though so let me handle the
+            # 'now' case
             if argument.endswith("from now"):
                 argument = argument[:-8].strip()
 
@@ -171,8 +180,7 @@ class UserFriendlyTime(commands.Converter):
                 raise commands.BadArgument(
                     "Time is either in an inappropriate location, which "
                     "must be either at the end or beginning of your input, "
-                    "or I just flat out did not understand what you meant. Sorry."
-                )
+                    "or I just flat out did not understand what you meant. Sorry.")
 
             if not status.hasTime:
                 # replace it with the current time
@@ -202,14 +210,14 @@ class UserFriendlyTime(commands.Converter):
                             "If the time is quoted, you must unquote it."
                         )
 
-                    remaining = argument[end + 1 :].lstrip(" ,.!")
+                    remaining = argument[end + 1:].lstrip(" ,.!")
                 else:
                     remaining = argument[end:].lstrip(" ,.!")
             elif len(argument) == end:
                 remaining = argument[:begin].strip()
 
             return await result.check_constraints(ctx, now, remaining)
-        except:
+        except BaseException:
             import traceback
 
             traceback.print_exc()

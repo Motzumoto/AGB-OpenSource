@@ -60,7 +60,7 @@ class DisplayName(commands.Cog):
                 # Must have bot then
                 memID = re.sub(r"\W+", "", match)
                 mem = self.bot.get_user(int(memID))
-                if mem == None:
+                if mem is None:
                     continue
                 mem_name = mem.name
             message = message.replace(match, mem_name)
@@ -84,13 +84,13 @@ class DisplayName(commands.Cog):
         return None
 
     def memberForID(self, checkid, server):
-        if server == None:
+        if server is None:
             mems = self.bot.users
         else:
             mems = server.members
         try:
             checkid = int(checkid)
-        except:
+        except BaseException:
             return None
         for member in mems:
             if member.id == checkid:
@@ -98,7 +98,7 @@ class DisplayName(commands.Cog):
         return None
 
     def memberForName(self, name, server):
-        if server == None:
+        if server is None:
             # No server passed - this is likely happening
             # in dm - let's get a user as-is.
             mems = self.bot.users
@@ -123,7 +123,7 @@ class DisplayName(commands.Cog):
             try:
                 mem_name = mem_parts[0]
                 mem_disc = int(mem_parts[1])
-            except:
+            except BaseException:
                 mem_name = mem_disc = None
             if mem_name:
                 for member in mems:
@@ -142,23 +142,23 @@ class DisplayName(commands.Cog):
     def channelForID(self, checkid, server, typeCheck=None):
         try:
             checkid = int(checkid)
-        except:
+        except BaseException:
             return None
         for channel in server.channels:
             if typeCheck:
                 if (
                     typeCheck.lower() == "text"
-                    and not type(channel) is discord.TextChannel
+                    and not isinstance(channel, discord.TextChannel)
                 ):
                     continue
                 if (
                     typeCheck.lower() == "voice"
-                    and not type(channel) is discord.VoiceChannel
+                    and not isinstance(channel, discord.VoiceChannel)
                 ):
                     continue
                 if (
                     typeCheck.lower() == "category"
-                    and not type(channel) is discord.CategoryChannel
+                    and not isinstance(channel, discord.CategoryChannel)
                 ):
                     continue
             if channel.id == checkid:
@@ -171,17 +171,17 @@ class DisplayName(commands.Cog):
             if typeCheck:
                 if (
                     typeCheck.lower() == "text"
-                    and not type(channel) is discord.TextChannel
+                    and not isinstance(channel, discord.TextChannel)
                 ):
                     continue
                 if (
                     typeCheck.lower() == "voice"
-                    and not type(channel) is discord.VoiceChannel
+                    and not isinstance(channel, discord.VoiceChannel)
                 ):
                     continue
                 if (
                     typeCheck.lower() == "category"
-                    and not type(channel) is discord.CategoryChannel
+                    and not isinstance(channel, discord.CategoryChannel)
                 ):
                     continue
             if channel.name.lower() == name.lower():
@@ -195,7 +195,7 @@ class DisplayName(commands.Cog):
     def roleForID(self, checkid, server):
         try:
             checkid = int(checkid)
-        except:
+        except BaseException:
             return None
         for role in server.roles:
             if role.id == checkid:
@@ -229,7 +229,8 @@ class DisplayName(commands.Cog):
         # We see if we have multiple parts split by a space
         if len(theList) < 2:
             # Only one part - no int included (or not separated by space)
-            # Check if member exists - and if not throw an error, if so, throw a diff error
+            # Check if member exists - and if not throw an error, if so, throw
+            # a diff error
             amember = self.memberForName(name, server)
             if amember:
                 # We at least have a member
@@ -289,7 +290,8 @@ class DisplayName(commands.Cog):
         # We see if we have multiple parts split by a space
         if len(theList) < 2:
             # Only one part - no int included (or not separated by space)
-            # Check if role exists - and if not throw an error, if so, throw a diff error
+            # Check if role exists - and if not throw an error, if so, throw a
+            # diff error
             amember = self.roleForName(name, server)
             if amember:
                 # We at least have a member

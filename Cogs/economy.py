@@ -64,7 +64,8 @@ class Economy(commands.Cog, name="economy"):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def deposit(self, ctx, amount=0):
         if ctx.invoked_subcommand is None:
-            cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
+            cursor.execute(
+                f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
             row = cursor.fetchall()
             bal = row[0][1]
 
@@ -132,7 +133,8 @@ class Economy(commands.Cog, name="economy"):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def withdraw(self, ctx, amount=0):
         if ctx.invoked_subcommand is None:
-            cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
+            cursor.execute(
+                f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
             row = cursor.fetchall()
             bal = row[0][1]
             bank_bal = row[0][2]
@@ -196,7 +198,7 @@ class Economy(commands.Cog, name="economy"):
     @commands.cooldown(rate=1, per=30, type=commands.BucketType.user)
     async def rob(self, ctx, user: Union[discord.Member, discord.User] = None):
         usr = user
-        if usr == None:
+        if usr is None:
             await ctx.reply(
                 "Please mention a user to rob. smh. <:beta:863514446646870076>"
             )
@@ -222,7 +224,8 @@ class Economy(commands.Cog, name="economy"):
         mydb.commit()
 
         if chance > 65:
-            cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
+            cursor.execute(
+                f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
             row2 = cursor.fetchall()
             # apply the robbed amount to the message author
             cursor.execute(
@@ -266,7 +269,7 @@ class Economy(commands.Cog, name="economy"):
 
         await ctx.channel.trigger_typing()
 
-        if user == None:
+        if user is None:
             await ctx.reply("Please mention a user to pay.")
             ctx.command.reset_cooldown(ctx)
             return
@@ -283,13 +286,15 @@ class Economy(commands.Cog, name="economy"):
             )
 
         # Fetch the author's banking information.
-        cursor.execute("SELECT * FROM userEco WHERE userId = %s", (ctx.author.id,))
+        cursor.execute(
+            "SELECT * FROM userEco WHERE userId = %s", (ctx.author.id,))
         row = cursor.fetchall()
 
         # Check if they have enough in their account.
         if row[0][2] < amount:
             total = row[0][1] + row[0][2]
-            # If they don't have enough money combined, tell them they can't do the transaction.
+            # If they don't have enough money combined, tell them they can't do
+            # the transaction.
             if total < amount:
                 await ctx.reply(
                     f"You don't have enough to pay - you only have ${total}."
@@ -299,7 +304,9 @@ class Economy(commands.Cog, name="economy"):
 
             else:  # If they do have enough money in total, tell them it is possible but they need to do a bank transfer.
                 to_transfer = amount - row[0][2]
-                # await ctx.reply(f"You don't have enough in your bank\nTry transfering from your wallet into the bank with `tp!dep {to_transfer}`")
+                # await ctx.reply(f"You don't have enough in your bank\nTry
+                # transfering from your wallet into the bank with `tp!dep
+                # {to_transfer}`")
                 await ctx.reply(
                     f"You don't have enough money in your bank.\nWould you like to transfer ${to_transfer} into your bank from your wallet and continue? [y/N]"
                 )
@@ -323,10 +330,9 @@ class Economy(commands.Cog, name="economy"):
                         new_bank = row[0][2] + to_transfer
                         cursor.execute(
                             "UPDATE userEco SET balance = %s WHERE userId = %s",
-                            (
-                                new_wallet,
-                                ctx.author.id,
-                            ),
+                            (new_wallet,
+                             ctx.author.id,
+                             ),
                         )
                         cursor.execute(
                             "UPDATE userEco SET bank = %s WHERE userId = %s",
@@ -337,14 +343,14 @@ class Economy(commands.Cog, name="economy"):
                         )
 
                         cursor.execute(
-                            "SELECT * FROM userEco WHERE userId = %s", (ctx.author.id,)
-                        )
+                            "SELECT * FROM userEco WHERE userId = %s", (ctx.author.id,))
                         row = cursor.fetchall()
 
                     else:
                         return
 
-        cursor.execute("SELECT * FROM globalVars WHERE variableName = 'taxData'")
+        cursor.execute(
+            "SELECT * FROM globalVars WHERE variableName = 'taxData'")
         tax_info = cursor.fetchall()
         taxed_amount = int(amount * (1 - tax_info[0][1]))
         # await ctx.send(tax_info[0][1])
@@ -374,7 +380,8 @@ class Economy(commands.Cog, name="economy"):
         )
 
         if tax_info[0][2] is not None and tax_info[0][1] != 0:
-            cursor.execute("SELECT * FROM userEco WHERE userId = %s", (tax_info[0][2],))
+            cursor.execute(
+                "SELECT * FROM userEco WHERE userId = %s", (tax_info[0][2],))
             tax_collect_bank = cursor.fetchall()
             new_balance = tax_collect_bank[0][2] + (amount - taxed_amount)
             cursor.execute(
@@ -418,7 +425,8 @@ class Economy(commands.Cog, name="economy"):
         """Work for your shitty 9-5 job for a small wage"""
         earned = random.randint(500, 10000)
         cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
-        # 0 = userId, 1 = balance, 2 = bank, 3 = userTag, 4 = lastDaily, 5 = isBot
+        # 0 = userId, 1 = balance, 2 = bank, 3 = userTag, 4 = lastDaily, 5 =
+        # isBot
         row = cursor.fetchone()[1]
         cursor.execute(
             f"UPDATE userEco SET balance = {row + earned} WHERE userId = {ctx.author.id}"
@@ -550,8 +558,9 @@ class Economy(commands.Cog, name="economy"):
         )
         mydb.commit()
         embed = discord.Embed(
-            title="Searched for money", description=edescription, color=EMBED_COLOUR
-        )
+            title="Searched for money",
+            description=edescription,
+            color=EMBED_COLOUR)
         embed.set_thumbnail(url=ctx.author.avatar_url)
         await ctx.reply(embed=embed)
 
@@ -598,24 +607,31 @@ class Economy(commands.Cog, name="economy"):
         slotOutput = f"| {slot1} | {slot2} | {slot3} |"
 
         decent = discord.Embed(
-            title="Slots - You Won <:beta:863514446646870076>", color=EMBED_COLOUR
-        )
-        decent.add_field(name=f"{slotOutput}", value=f"You won **${int(2*amount):,}**")
+            title="Slots - You Won <:beta:863514446646870076>",
+            color=EMBED_COLOUR)
+        decent.add_field(
+            name=f"{slotOutput}",
+            value=f"You won **${int(2*amount):,}**")
 
         great = discord.Embed(
-            title="Slots - You Won <:beta:863514446646870076>", color=EMBED_COLOUR
-        )
-        great.add_field(name=f"{slotOutput}", value=f"You won **${int(5*amount):,}**")
+            title="Slots - You Won <:beta:863514446646870076>",
+            color=EMBED_COLOUR)
+        great.add_field(name=f"{slotOutput}",
+                        value=f"You won **${int(5*amount):,}**")
 
         ok = discord.Embed(
-            title="Slots - You Won <:beta:863514446646870076>", color=EMBED_COLOUR
-        )
-        ok.add_field(name=f"{slotOutput}", value=f"You won **${int(1.5*amount):,}**")
+            title="Slots - You Won <:beta:863514446646870076>",
+            color=EMBED_COLOUR)
+        ok.add_field(
+            name=f"{slotOutput}",
+            value=f"You won **${int(1.5*amount):,}**")
 
         lost = discord.Embed(
-            title="Slots - You Lost <:beta:863514446646870076>", color=EMBED_COLOUR
-        )
-        lost.add_field(name=f"{slotOutput}", value=f"You lost **${int(1*amount):,}**")
+            title="Slots - You Lost <:beta:863514446646870076>",
+            color=EMBED_COLOUR)
+        lost.add_field(
+            name=f"{slotOutput}",
+            value=f"You lost **${int(1*amount):,}**")
 
         if slot1 == slot2 == slot3:
             cursor.execute(

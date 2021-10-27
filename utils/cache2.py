@@ -32,8 +32,9 @@ class ExpiringCache(dict):
         # Have to do this in two steps...
         current_time = time.monotonic()
         to_remove = [
-            k for (k, (v, t)) in self.items() if current_time > (t + self.__ttl)
-        ]
+            k for (
+                k, (v, t)) in self.items() if current_time > (
+                t + self.__ttl)]
         for k in to_remove:
             del self[k]
 
@@ -105,7 +106,8 @@ def cache(maxsize=128, strategy=Strategy.lru, ignore_kwargs=False):
                 value = func(*args, **kwargs)
 
                 if inspect.isawaitable(value):
-                    return _wrap_and_store_coroutine(_internal_cache, key, value)
+                    return _wrap_and_store_coroutine(
+                        _internal_cache, key, value)
 
                 _internal_cache[key] = value
                 return value

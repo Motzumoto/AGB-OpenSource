@@ -26,7 +26,8 @@ class MemberNotFound(Exception):
     pass
 
 
-# edited from RoboDanny (i had a plan to use this but i just dont remember for what)
+# edited from RoboDanny (i had a plan to use this but i just dont remember
+# for what)
 
 
 class Arguments(argparse.ArgumentParser):
@@ -67,10 +68,8 @@ class MemberID(commands.Converter):
             except MemberNotFound:
                 # hackban case
                 return type(
-                    "_Hackban",
-                    (),
-                    {"id": member_id, "__str__": lambda s: f"Member ID {s.id}"},
-                )()
+                    "_Hackban", (), {
+                        "id": member_id, "__str__": lambda s: f"Member ID {s.id}"}, )()
 
         if not can_execute_action(ctx, ctx.author, m):
             raise commands.BadArgument(
@@ -94,10 +93,14 @@ class BannedMember(commands.Converter):
                 ) from None
 
         ban_list = await ctx.guild.bans()
-        entity = discord.utils.find(lambda u: str(u.user) == argument, ban_list)
+        entity = discord.utils.find(
+            lambda u: str(
+                u.user) == argument,
+            ban_list)
 
         if entity is None:
-            raise commands.BadArgument("This member has not been banned before.")
+            raise commands.BadArgument(
+                "This member has not been banned before.")
         return entity
 
 
@@ -170,7 +173,7 @@ class Moderator(commands.Cog, name="mod"):
         #     self.prefixes = row[2]
         try:
             self.bot.command_prefix = self.get_prefix
-        except:
+        except BaseException:
             pass
         self.default_prefix = "tp!"
         cursor.execute(f"SELECT userId FROM users WHERE blacklisted = 'true'")
@@ -188,13 +191,15 @@ class Moderator(commands.Cog, name="mod"):
             cursor.execute(
                 f"SELECT prefix FROM guilds WHERE guildId = {message.guild.id}"
             )
-        except:
+        except BaseException:
             pass
         for row in cursor.fetchall():
             self.prefixes = row[0]
         prefix = (
-            self.prefixes if getattr(message, "guild", None) else self.default_prefix
-        )
+            self.prefixes if getattr(
+                message,
+                "guild",
+                None) else self.default_prefix)
         mydb.commit()
         return commands.when_mentioned_or(prefix)(bot, message)
 
@@ -230,7 +235,7 @@ class Moderator(commands.Cog, name="mod"):
                     )
                 try:
                     await channel.send(embed=embed)
-                except:
+                except BaseException:
                     pass
 
     @commands.command(aliases=["enabler", "ron"], usage="`tp!ron`")
@@ -309,11 +314,17 @@ class Moderator(commands.Cog, name="mod"):
 
         spammers = await strategy(ctx, search)
         deleted = sum(spammers.values())
-        messages = [f'{deleted} message{" was" if deleted == 1 else "s were"} removed.']
+        messages = [
+            f'{deleted} message{" was" if deleted == 1 else "s were"} removed.']
         if deleted:
             messages.append("")
-            spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
-            messages.extend(f"- **{author}**: {count}" for author, count in spammers)
+            spammers = sorted(
+                spammers.items(),
+                key=lambda t: t[1],
+                reverse=True)
+            messages.extend(
+                f"- **{author}**: {count}" for author,
+                count in spammers)
 
         await ctx.send("\n".join(messages), delete_after=delay)
 
@@ -381,8 +392,9 @@ class Moderator(commands.Cog, name="mod"):
         #     else:
         #         pass
         try:
-            cursor.execute(f"SELECT * FROM guilds WHERE guildId = {ctx.guild.id}")
-        except:
+            cursor.execute(
+                f"SELECT * FROM guilds WHERE guildId = {ctx.guild.id}")
+        except BaseException:
             pass
         result = cursor.fetchall()
         for row in result:
@@ -547,7 +559,8 @@ class Moderator(commands.Cog, name="mod"):
                 await m.edit(content=f"Alright, all rainbow roles have been deleted.")
 
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
-    @commands.command(aliases=["nick"], usage="`tp!nick <user> <optional:name>`")
+    @commands.command(aliases=["nick"],
+                      usage="`tp!nick <user> <optional:name>`")
     @commands.guild_only()
     @permissions.has_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(embed_links=True, manage_nicknames=True)
@@ -575,7 +588,8 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(embed_links=True, manage_channels=True)
     @commands.guild_only()
-    @commands.command(aliases=["slow", "slowmode", "sm"], usage="`tp!slowmode <time>`")
+    @commands.command(aliases=["slow", "slowmode", "sm"],
+                      usage="`tp!slowmode <time>`")
     async def toggleslow(self, ctx: commands.Context, time: int = 0):
         """
         Slow the chat."""
@@ -605,7 +619,8 @@ class Moderator(commands.Cog, name="mod"):
                 ("Slow mode has been disabled for {0.mention}".format(ctx.channel))
             )
 
-    @commands.command(aliases=["newmembers"], usage="`tp!newusers <optional:count>`")
+    @commands.command(aliases=["newmembers"],
+                      usage="`tp!newusers <optional:count>`")
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     @commands.guild_only()
     async def newusers(self, ctx, *, count=5):
@@ -619,11 +634,15 @@ class Moderator(commands.Cog, name="mod"):
         if not ctx.guild.chunked:
             await self.bot.request_offline_members(ctx.guild)
 
-        members = sorted(ctx.guild.members, key=lambda m: m.joined_at, reverse=True)[
-            :count
-        ]
+        members = sorted(
+            ctx.guild.members,
+            key=lambda m: m.joined_at,
+            reverse=True)[
+            :count]
 
-        embed = discord.Embed(title="New Members", colour=discord.Colour.green())
+        embed = discord.Embed(
+            title="New Members",
+            colour=discord.Colour.green())
 
         for member in members:
             body = f"Joined {time.human_timedelta(member.joined_at)}\nCreated {time.human_timedelta(member.created_at)}"
@@ -688,10 +707,12 @@ class Moderator(commands.Cog, name="mod"):
                             try:
                                 await member.edit(nick="No Hoisting")
                                 await asyncio.sleep(random.randint(1, 5))
-                                temp.update({"numbers": temp.get("numbers", 0) + 1})
-                            except:
+                                temp.update(
+                                    {"numbers": temp.get("numbers", 0) + 1})
+                            except BaseException:
                                 failed += 1
-        stats = "\n".join([f"`{char}` - `{amount}`" for char, amount in temp.items()])
+        stats = "\n".join(
+            [f"`{char}` - `{amount}`" for char, amount in temp.items()])
         await initial.edit(
             content=f"I have unhoisted `{sum(temp.values())}` nicks and failed to edit `{failed}` nicks.\nHere are some stats:\n\n{stats}"
         )
@@ -717,13 +738,14 @@ class Moderator(commands.Cog, name="mod"):
                     await member.edit(nick=None)
                     await asyncio.sleep(random.randint(1, 5))
                     count += 1
-                except:
+                except BaseException:
                     pass
         await inital.edit(content=f"{count} nicknames have been reset.")
 
     @commands.command(usage="`tp!bans`")
     @permissions.has_permissions(ban_members=True)
-    @commands.bot_has_permissions(embed_links=True, manage_roles=True, ban_members=True)
+    @commands.bot_has_permissions(embed_links=True,
+                                  manage_roles=True, ban_members=True)
     async def bans(self, ctx):
         """Shows the servers bans with the ban reason"""
         filename = f"{ctx.guild.id}"
@@ -739,7 +761,7 @@ class Moderator(commands.Cog, name="mod"):
                 content="Sorry if this took a while to send, but here is all of this servers bans!",
                 file=discord.File(f"{str(filename)}.txt"),
             )
-        except:
+        except BaseException:
             await ctx.send(
                 "I couldn't send the file of this servers bans for whatever reason"
             )
@@ -774,7 +796,7 @@ class Moderator(commands.Cog, name="mod"):
             await member.send(
                 f"You were banned in **{ctx.guild.name}** : **{reason}**."
             )
-        except:
+        except BaseException:
             pass
         try:
             await ctx.guild.ban(member, reason=reason)
@@ -831,7 +853,7 @@ class Moderator(commands.Cog, name="mod"):
                                 reason = (
                                     f"Action done by {ctx.author} (ID: {ctx.author.id})"
                                 )
-                        except:
+                        except BaseException:
                             pass
                         await ctx.guild.ban(member, reason=reason)
                         banned_members += 1
@@ -915,7 +937,9 @@ class Moderator(commands.Cog, name="mod"):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(str(ctx.command))
 
-    @find.command(name="username", aliases=["name"], usage="`tp!find name <search>`")
+    @find.command(name="username",
+                  aliases=["name"],
+                  usage="`tp!find name <search>`")
     async def find_name(self, ctx, *, search: str):
         loop = [
             f"{i} ({i.id})"
@@ -1019,7 +1043,7 @@ class Moderator(commands.Cog, name="mod"):
             await ctx.send(e)
         try:
             await asyncio.sleep(1800)
-            if not muted_role in member.roles:
+            if muted_role not in member.roles:
                 return
             else:
                 await member.remove_roles(
@@ -1039,7 +1063,8 @@ class Moderator(commands.Cog, name="mod"):
     #            await user.remove_roles(muted_role)
     #            await user.send(f"You have been unmuted in {ctx.guild}")
 
-    @commands.command(usage="`tp!permamute <member> <optional:reason>`", aliases=["pm"])
+    @commands.command(usage="`tp!permamute <member> <optional:reason>`",
+                      aliases=["pm"])
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     @commands.guild_only()
     @permissions.has_permissions(manage_roles=True)
@@ -1093,7 +1118,8 @@ class Moderator(commands.Cog, name="mod"):
         )
         await ctx.send(default.actionmessage("unmuted"))
 
-    # Forked from and edited https://github.com/Rapptz/RoboDanny/blob/715a5cf8545b94d61823f62db484be4fac1c95b1/cogs/mod.py#L1163
+    # Forked from and edited
+    # https://github.com/Rapptz/RoboDanny/blob/715a5cf8545b94d61823f62db484be4fac1c95b1/cogs/mod.py#L1163
 
     @commands.group(invoke_without_command=True, usage="`tp!help purge`")
     @commands.guild_only()
@@ -1150,10 +1176,14 @@ class Moderator(commands.Cog, name="mod"):
 
         spammers = Counter(m.author.display_name for m in deleted)
         deleted = len(deleted)
-        messages = [f'{deleted} message{" was" if deleted == 1 else "s were"} removed.']
+        messages = [
+            f'{deleted} message{" was" if deleted == 1 else "s were"} removed.']
         if deleted:
             messages.append("")
-            spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
+            spammers = sorted(
+                spammers.items(),
+                key=lambda t: t[1],
+                reverse=True)
             messages.extend(f"**{name}**: {count}" for name, count in spammers)
 
         to_send = "\n".join(messages)
@@ -1260,9 +1290,9 @@ class Moderator(commands.Cog, name="mod"):
         getprefix = prefix if prefix else self.config.prefix
 
         def predicate(m):
-            return (m.webhook_id is None and m.author.bot) or m.content.startswith(
-                tuple(getprefix)
-            )
+            return (
+                m.webhook_id is None and m.author.bot) or m.content.startswith(
+                tuple(getprefix))
 
         await self.do_removal(ctx, search, predicate)
 
@@ -1285,7 +1315,8 @@ class Moderator(commands.Cog, name="mod"):
 
         await self.do_removal(ctx, search, predicate)
 
-    @purge.command(name="reactions", usage="`tp!purge reactions <optional:search>`")
+    @purge.command(name="reactions",
+                   usage="`tp!purge reactions <optional:search>`")
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def reactions(self, ctx, search=100):
         """Removes all reactions from messages that have them."""
@@ -1325,9 +1356,9 @@ class Moderator(commands.Cog, name="mod"):
         getprefix = prefix if prefix else self.config.prefix
 
         def predicate(m):
-            return (m.webhook_id is None and m.author.bot) or m.content.startswith(
-                tuple(getprefix)
-            )
+            return (
+                m.webhook_id is None and m.author.bot) or m.content.startswith(
+                tuple(getprefix))
 
         await self.do_removal(ctx, search, predicate)
 

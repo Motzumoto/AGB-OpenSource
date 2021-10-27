@@ -28,7 +28,7 @@ class Error(commands.Cog):
         try:
             embed.add_field(name="Channel", value=ctx.message.channel.mention)
             embed.add_field(name="Guild", value=ctx.message.guild.name)
-        except:
+        except BaseException:
             pass
         embed.add_field(name="Error", value=error)
         embed.set_thumbnail(url=ctx.message.author.avatar_url)
@@ -38,8 +38,8 @@ class Error(commands.Cog):
             )
         )
         embed.set_author(
-            name=ctx.message.author.name, icon_url=ctx.message.author.avatar_url
-        )
+            name=ctx.message.author.name,
+            icon_url=ctx.message.author.avatar_url)
         embed.set_footer(
             text="{} | {}".format(
                 ctx.message.created_at, self.process.memory_info().rss
@@ -81,7 +81,9 @@ class Error(commands.Cog):
                 color=discord.Colour.red(),
                 description=f"This command `({ctx.command})` is for voters only!\n Vote **[here]({Vote})**",
             )
-            embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+            embed.set_thumbnail(
+                url=self.bot.user.avatar_url_as(
+                    static_format="png"))
             if retry_after:
                 return
             else:
@@ -143,8 +145,8 @@ class Error(commands.Cog):
             embed.add_field(name="Channel", value=ctx.message.channel.mention)
             embed.add_field(name="Guild", value=ctx.message.guild.name)
             embed.add_field(
-                name="Error", value="You don't have permission to run this command."
-            )
+                name="Error",
+                value="You don't have permission to run this command.")
             embed.set_thumbnail(url=ctx.message.author.avatar_url)
             embed.set_footer(
                 text="{} | {}".format(
@@ -152,8 +154,8 @@ class Error(commands.Cog):
                 )
             )
             embed.set_author(
-                name=ctx.message.author.name, icon_url=ctx.message.author.avatar_url
-            )
+                name=ctx.message.author.name,
+                icon_url=ctx.message.author.avatar_url)
             embed.set_footer(
                 text="{} | {}".format(
                     ctx.message.created_at, self.process.memory_info().rss

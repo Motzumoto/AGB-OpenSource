@@ -40,12 +40,14 @@ class Picker:
             await message.add_reaction(r)
 
     async def _remove_reactions(self, react_list=[]):
-        # Try to remove all reactions - if that fails, iterate and remove our own
+        # Try to remove all reactions - if that fails, iterate and remove our
+        # own
         try:
             await self.self_message.clear_reactions()
-        except:
+        except BaseException:
             # The following "works", but is super slow - and if we can't clear
-            # all reactions, it's probably just best to leave them there and bail.
+            # all reactions, it's probably just best to leave them there and
+            # bail.
             """for r in react_list:
             await message.remove_reaction(r,message.author)"""
 
@@ -54,7 +56,7 @@ class Picker:
         # Returns a tuple of (return_code, message)
         # The return code is -1 for cancel, -2 for timeout, -3 for error, 0+ is index
         # Let's check our prerequisites first
-        if self.ctx == None or not len(self.list) or len(self.list) > self.max:
+        if self.ctx is None or not len(self.list) or len(self.list) > self.max:
             return (-3, None)
         msg = ""
         if self.title:
@@ -94,7 +96,7 @@ class Picker:
             reaction, user = await self.ctx.bot.wait_for(
                 "picklist_reaction", timeout=self.timeout, check=check
             )
-        except:
+        except BaseException:
             # Didn't get a reaction
             await self._remove_reactions(current_reactions)
             return (-2, self.self_message)
@@ -110,7 +112,8 @@ class Picker:
 class PagePicker(Picker):
     def __init__(self, **kwargs):
         Picker.__init__(self, **kwargs)
-        # Expects self.list to contain the fields needed - each a dict with {"name":name,"value":value,"inline":inline}
+        # Expects self.list to contain the fields needed - each a dict with
+        # {"name":name,"value":value,"inline":inline}
         self.max = kwargs.get("max", 10)  # Must be between 1 and 25
         self.max = 1 if self.max < 1 else 10 if self.max > 10 else self.max
         # These will always be in the same order
@@ -121,14 +124,14 @@ class PagePicker(Picker):
     def _get_page_contents(self, page_number):
         # Returns the contents of the page passed
         start = self.max * page_number
-        return self.list[start : start + self.max]
+        return self.list[start: start + self.max]
 
     async def pick(self):
         # This brings up the page picker and handles the events
         # It will return a tuple of (last_page_seen, message)
         # The return code is -1 for cancel, -2 for timeout, -3 for error, 0+ is index
         # Let's check our prerequisites first
-        if self.ctx == None or not len(self.list):
+        if self.ctx is None or not len(self.list):
             return (-3, None)
         page = 0  # Set the initial page index
         pages = int(math.ceil(len(self.list) / self.max))
@@ -166,7 +169,7 @@ class PagePicker(Picker):
                 reaction, user = await self.ctx.bot.wait_for(
                     "picklist_reaction", timeout=self.timeout, check=check
                 )
-            except:
+            except BaseException:
                 # Didn't get a reaction
                 await self._remove_reactions(self.reactions)
                 return (page, self.self_message)
@@ -198,7 +201,7 @@ class PagePicker(Picker):
                 def check_page(message):
                     try:
                         num = int(message.content)
-                    except:
+                    except BaseException:
                         return False
                     return (
                         message.channel == self.self_message.channel
@@ -210,7 +213,7 @@ class PagePicker(Picker):
                         "message", timeout=self.timeout, check=check_page
                     )
                     page = int(page_message.content) - 1
-                except:
+                except BaseException:
                     # Didn't get a message
                     pass
                 # Delete the instruction
@@ -218,7 +221,7 @@ class PagePicker(Picker):
                 # Try to delete the user's page message too
                 try:
                     await page_message.delete()
-                except:
+                except BaseException:
                     pass
             page = 0 if page < 0 else pages - 1 if page > pages - 1 else page
             embed["fields"] = self._get_page_contents(page)

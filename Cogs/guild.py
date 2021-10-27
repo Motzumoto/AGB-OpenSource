@@ -33,7 +33,8 @@ class DiscordCmds(commands.Cog, name="discord"):
         self.config = default.get("config.json")
         self.bot.sniped_messages = {}
         self.bot.edit_sniped_messages = {}
-        self.halloween_re = re.compile(r"h(a|4)(l|1)(l|1)(o|0)w(e|3)(e|3)n", re.I)
+        self.halloween_re = re.compile(
+            r"h(a|4)(l|1)(l|1)(o|0)w(e|3)(e|3)n", re.I)
 
     @commands.Cog.listener(name="on_message")
     async def halloween(self, message):
@@ -58,7 +59,7 @@ class DiscordCmds(commands.Cog, name="discord"):
                 message.created_at,
                 message.attachments,
             )
-        except:
+        except BaseException:
             pass
 
     @commands.Cog.listener()
@@ -104,8 +105,8 @@ class DiscordCmds(commands.Cog, name="discord"):
                 timestamp=time,
             )
             embed.set_author(
-                name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url
-            )
+                name=f"{author.name}#{author.discriminator}",
+                icon_url=author.avatar_url)
             embed.add_field(
                 name="Attachments",
                 value=files[:-1] if len(attachments) != 0 else "None",
@@ -113,7 +114,7 @@ class DiscordCmds(commands.Cog, name="discord"):
             embed.set_footer(text=f"Deleted in #{channel_name}")
 
             await ctx.send(embed=embed)
-        except:
+        except BaseException:
             await ctx.send("Nothing has been recently deleted.")
 
     @commands.command(aliases=["es"], usage="`tp!es`")
@@ -136,8 +137,8 @@ class DiscordCmds(commands.Cog, name="discord"):
                 color=EMBED_COLOUR,
             )
             embed.set_author(
-                name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url
-            )
+                name=f"{author.name}#{author.discriminator}",
+                icon_url=author.avatar_url)
             embed.set_footer(text=f"Edited in #{channel_name}")
             embed.add_field(
                 name="‎‎‎‎‎‎",
@@ -146,7 +147,7 @@ class DiscordCmds(commands.Cog, name="discord"):
             )
 
             await ctx.send(embed=embed)
-        except:
+        except BaseException:
             await ctx.send("Nothing has been recently edited.")
 
     # thanks again nirlep for this
@@ -185,12 +186,12 @@ class DiscordCmds(commands.Cog, name="discord"):
     async def avatar(self, ctx, *, user: Union[discord.User, discord.Member] = None):
         """Get someones avatar"""
         user = user or ctx.author
-        au = "av" + (
-            ".gif" if str(user.avatar_url).split("?")[0].endswith(".gif") else ".png"
-        )
+        au = "av" + (".gif" if str(user.avatar_url).split("?")
+                     [0].endswith(".gif") else ".png")
         embed = discord.Embed(
-            title="User Icon", colour=EMBED_COLOUR, description=f"{user}'s avatar is:"
-        )
+            title="User Icon",
+            colour=EMBED_COLOUR,
+            description=f"{user}'s avatar is:")
         embed.set_image(url=user.avatar_url_as(size=1024))
         # await user.avatar_url.save(au)
         # await ctx.reply(file=discord.File(open(au, "rb"), au))
@@ -207,7 +208,8 @@ class DiscordCmds(commands.Cog, name="discord"):
 
         allroles = ""
 
-        for num, role in enumerate(sorted(ctx.guild.roles, reverse=True), start=1):
+        for num, role in enumerate(
+                sorted(ctx.guild.roles, reverse=True), start=1):
             allroles += f"[{str(num).zfill(2)}] {role.id}\t{role.name}\t[ Users: {len(role.members)} ]\r\n"
 
         data = BytesIO(allroles.encode("utf-8"))
@@ -274,16 +276,16 @@ class DiscordCmds(commands.Cog, name="discord"):
                 await channel.history(limit=1, oldest_first=True).flatten()
             )[0]
         except (discord.Forbidden, discord.HTTPException):
-            print(f"{default.date()} | Unable to read message history for {channel.id}")
+            print(
+                f"{default.date()} | Unable to read message history for {channel.id}")
             await ctx.reply("Unable to read message history for that channel")
             return
 
         em = discord.Embed(
-            description=f"[First Message in {channel.mention}]({message.jump_url})"
-        )
+            description=f"[First Message in {channel.mention}]({message.jump_url})")
         em.set_author(
-            name=message.author.display_name, icon_url=message.author.avatar_url
-        )
+            name=message.author.display_name,
+            icon_url=message.author.avatar_url)
 
         await ctx.reply(embed=em)
 
@@ -309,28 +311,39 @@ class DiscordCmds(commands.Cog, name="discord"):
 
         embed.add_field(name="Server Name", value=ctx.guild.name, inline=True)
         embed.add_field(name="Server ID", value=ctx.guild.id, inline=True)
+        embed.add_field(name="Bots", value=len(
+            [bot for bot in ctx.guild.members if bot.bot]))
         embed.add_field(
-            name="Bots", value=len([bot for bot in ctx.guild.members if bot.bot])
-        )
+            name="Text channels",
+            value=len(
+                ctx.guild.text_channels),
+            inline=True)
         embed.add_field(
-            name="Text channels", value=len(ctx.guild.text_channels), inline=True
-        )
+            name="Voice channels",
+            value=len(
+                ctx.guild.voice_channels),
+            inline=True)
         embed.add_field(
-            name="Voice channels", value=len(ctx.guild.voice_channels), inline=True
-        )
-        embed.add_field(name="Server on shard", value=ctx.guild.shard_id, inline=True)
-        embed.add_field(name="Members", value=ctx.guild.member_count, inline=True)
+            name="Server on shard",
+            value=ctx.guild.shard_id,
+            inline=True)
+        embed.add_field(
+            name="Members",
+            value=ctx.guild.member_count,
+            inline=True)
         if len(ctx.guild.roles) == 69:
             embed.add_field(
-                name="Roles", value=(f"{len(ctx.guild.roles)} Nice"), inline=True
-            )
+                name="Roles",
+                value=(f"{len(ctx.guild.roles)} Nice"),
+                inline=True)
         else:
             embed.add_field(
                 name="Roles", value=(f"{len(ctx.guild.roles)}"), inline=True
             )
         embed.add_field(
-            name="Emoji Limit", value=f"{ctx.guild.emoji_limit} Emojis", inline=True
-        )
+            name="Emoji Limit",
+            value=f"{ctx.guild.emoji_limit} Emojis",
+            inline=True)
         embed.add_field(
             name="Filesize Limit", value=f"{ctx.guild.filesize_limit} Bytes"
         )
@@ -339,8 +352,9 @@ class DiscordCmds(commands.Cog, name="discord"):
             value=f"{str(ctx.guild.bitrate_limit / 1000).split('.', 1)[0]} Kbps",
         )
         embed.add_field(
-            name="Security Level", value=ctx.guild.verification_level, inline=True
-        )
+            name="Security Level",
+            value=ctx.guild.verification_level,
+            inline=True)
         embed.add_field(
             name="Owner/ID",
             value=f"**Name**:{ctx.guild.owner} | **ID**:{ctx.guild.owner.id}",
@@ -371,22 +385,36 @@ class DiscordCmds(commands.Cog, name="discord"):
             description=f"{'Category: {}'.format(channel.category.name) if channel.category else 'This channel is not in a category'}",
             color=EMBED_COLOUR,
         )
-        embed.add_field(name="Channel Guild", value=ctx.guild.name, inline=False)
+        embed.add_field(
+            name="Channel Guild",
+            value=ctx.guild.name,
+            inline=False)
         embed.add_field(name="Channel Id", value=channel.id, inline=False)
         embed.add_field(
             name="Channel Topic",
             value=f"{channel.topic if channel.topic else 'No topic.'}",
             inline=False,
         )
-        embed.add_field(name="Channel Position", value=channel.position, inline=False)
         embed.add_field(
-            name="Channel Slowmode Delay", value=channel.slowmode_delay, inline=False
-        )
-        embed.add_field(name="Channel is nsfw?", value=channel.is_nsfw(), inline=False)
-        embed.add_field(name="Channel is news?", value=channel.is_news(), inline=False)
+            name="Channel Position",
+            value=channel.position,
+            inline=False)
         embed.add_field(
-            name="Channel Creation Time", value=channel.created_at, inline=False
-        )
+            name="Channel Slowmode Delay",
+            value=channel.slowmode_delay,
+            inline=False)
+        embed.add_field(
+            name="Channel is nsfw?",
+            value=channel.is_nsfw(),
+            inline=False)
+        embed.add_field(
+            name="Channel is news?",
+            value=channel.is_news(),
+            inline=False)
+        embed.add_field(
+            name="Channel Creation Time",
+            value=channel.created_at,
+            inline=False)
         embed.add_field(
             name="Channel Permissions Synced",
             value=channel.permissions_synced,
@@ -413,7 +441,9 @@ class DiscordCmds(commands.Cog, name="discord"):
             description=suggestion,
             colour=EMBED_COLOUR,
         )
-        embed.set_footer(text=f"ID: {ctx.author.id}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(
+            text=f"ID: {ctx.author.id}",
+            icon_url=ctx.author.avatar_url)
         message = await suggestion_channel.send(embed=embed)
         await ctx.reply(embed=thanks)
         await message.add_reaction(suggestion_no)
@@ -440,8 +470,8 @@ class DiscordCmds(commands.Cog, name="discord"):
             colour=EMBED_COLOUR,
         )
         embed.set_footer(
-            text=f"Bug reported by: {ctx.author.id}", icon_url=ctx.author.avatar_url
-        )
+            text=f"Bug reported by: {ctx.author.id}",
+            icon_url=ctx.author.avatar_url)
         message = await bug_channel.send(embed=embed)
         await ctx.reply(embed=thanks)
 
@@ -479,7 +509,10 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         If there arent any colors, do `tp!rainbow` to create the roles"""
         with open("colors.json", "r") as f:
             data = json.load(f)
-            color_roles = [discord.utils.get(ctx.guild.roles, name=x) for x in data]
+            color_roles = [
+                discord.utils.get(
+                    ctx.guild.roles,
+                    name=x) for x in data]
             if role is None:
                 for x in color_roles:
                     if x in ctx.author.roles:
@@ -511,9 +544,8 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             description=f"{ctx.guild.name}'s icon is:",
         )
         embed.set_image(url=ctx.guild.icon_url_as(size=1024))
-        au = "av" + (
-            ".gif" if str(ctx.guild.icon_url).split("?")[0].endswith(".gif") else ".png"
-        )
+        au = "av" + (".gif" if str(ctx.guild.icon_url).split("?")
+                     [0].endswith(".gif") else ".png")
         # await ctx.guild.icon_url.save(au)
         # await ctx.reply(file=discord.File(open(au, "rb"), au))
         await ctx.send(embed=embed)
@@ -549,7 +581,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                     voted = True
                 else:
                     voted = False
-                if voted == True:
+                if voted:
                     title = "Poggers!"
                     description = "You have voted in the last **12** hours."
                     embed = success_embed(title, description)
@@ -586,7 +618,9 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         embed.add_field(name="Position", value=role.position)
         embed.add_field(name="Managed", value=role.managed)
         if int(role.permissions.value) == 0:
-            embed.add_field(name="Permissions", value="No permissions granted.")
+            embed.add_field(
+                name="Permissions",
+                value="No permissions granted.")
         else:
             embed.add_field(name="Permissions", value=perms, inline=True)
         embed.add_field(name="Mention", value=f"{role.mention}")
@@ -621,7 +655,9 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             )
 
     @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(alias=["msr"], usage="`tp!massrole_remove <role>`", hidden=True)
+    @commands.command(alias=["msr"],
+                      usage="`tp!massrole_remove <role>`",
+                      hidden=True)
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     @permissions.has_permissions(manage_roles=True)
@@ -703,7 +739,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 return ""
 
         def boosterCheck():
-            if user.premium_since != None:
+            if user.premium_since is not None:
                 return f"{emojis.nitro_booster}"
             else:
                 return ""
@@ -720,7 +756,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 value=f"{embed_space}{houseCheck()}{earlySupporter()}{boosterCheck()}",
                 inline=True,
             )
-        except:
+        except BaseException:
             pass
         embed.add_field(
             name="Nickname",
@@ -741,10 +777,15 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 inline=False,
             )
             # .join(
-            # x.mention for x in user.roles[1:][::-1]) if user.roles else "None",
-            role_list = [r.mention for r in usr.roles if r != ctx.guild.default_role]
+            # x.mention for x in user.roles[1:][::-1]) if user.roles else
+            # "None",
+            role_list = [
+                r.mention for r in usr.roles if r != ctx.guild.default_role]
             if len(role_list):
-                embed.add_field(name="Roles", value=f", ".join(role_list), inline=False)
+                embed.add_field(
+                    name="Roles",
+                    value=f", ".join(role_list),
+                    inline=False)
             else:
                 embed.add_field(name="Roles", value=f"None", inline=False)
         await ctx.reply(

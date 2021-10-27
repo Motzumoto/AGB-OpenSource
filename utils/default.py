@@ -46,8 +46,9 @@ def get(file):
     try:
         with open(file, encoding="utf-8") as data:
             return json.load(
-                data, object_hook=lambda d: namedtuple("X", d.keys())(*d.values())
-            )
+                data, object_hook=lambda d: namedtuple(
+                    "X", d.keys())(
+                    *d.values()))
     except AttributeError:
         raise AttributeError("Unknown argument")
     except FileNotFoundError:
@@ -56,7 +57,8 @@ def get(file):
 
 def traceback_maker(err, advance: bool = True):
     _traceback = "".join(traceback.format_tb(err.__traceback__))
-    error = ("```py\n{1}{0}: {2}\n```").format(type(err).__name__, _traceback, err)
+    error = ("```py\n{1}{0}: {2}\n```").format(
+        type(err).__name__, _traceback, err)
     return error if advance else f"{type(err).__name__}: {err}"
 
 
@@ -115,7 +117,8 @@ async def type_message(
             await asyncio.sleep(len(content) * 0.01)
             return await destination.send(content=content, **kwargs)
     except discord.HTTPException:
-        # Not allowed to send messages to this destination (or, sending the message failed)
+        # Not allowed to send messages to this destination (or, sending the
+        # message failed)
         pass
 
 
@@ -156,7 +159,8 @@ def question(text: str) -> str:
     str
         The new message.
     """
-    return "\N{BLACK QUESTION MARK ORNAMENT}\N{VARIATION SELECTOR-16} {}".format(text)
+    return "\N{BLACK QUESTION MARK ORNAMENT}\N{VARIATION SELECTOR-16} {}".format(
+        text)
 
 
 def bold(text: str, escape_formatting: bool = True) -> str:
@@ -336,9 +340,11 @@ def pagify(
     while len(in_text) > page_length:
         this_page_len = page_length
         if escape_mass_mentions:
-            this_page_len -= in_text.count("@here", 0, page_length) + in_text.count(
-                "@everyone", 0, page_length
-            )
+            this_page_len -= in_text.count("@here",
+                                           0,
+                                           page_length) + in_text.count("@everyone",
+                                                                        0,
+                                                                        page_length)
         closest_delim = (in_text.rfind(d, 1, this_page_len) for d in delims)
         if priority:
             closest_delim = next((x for x in closest_delim if x > 0), -1)
@@ -410,7 +416,11 @@ def quote(text: str) -> str:
     return textwrap.indent(text, "> ", lambda l: True)
 
 
-def escape(text: str, *, mass_mentions: bool = False, formatting: bool = False) -> str:
+def escape(
+        text: str,
+        *,
+        mass_mentions: bool = False,
+        formatting: bool = False) -> str:
     """Get text with all mass mentions or markdown escaped.
     Parameters
     ----------

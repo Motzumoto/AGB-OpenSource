@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 from index import EMBED_COLOUR, config, cursor, mydb
 from utils import default
 
+
 class autoposting(commands.Cog, name="ap"):
     def __init__(self, bot):
         self.bot = bot
@@ -70,7 +71,7 @@ class autoposting(commands.Cog, name="ap"):
             )
             try:
                 embed.set_image(url=(await self.get_hentai_img()))
-            except:
+            except BaseException:
                 print(
                     f"{default.date()} |[ERR] I still could not get an image to post with... so we're just not gonna do anything lmao"
                 )
@@ -81,7 +82,7 @@ class autoposting(commands.Cog, name="ap"):
             return
         else:
             for row in cursor.fetchall():
-                if row[0] == None:
+                if row[0] is None:
                     return
                 else:
                     channel = self.bot.get_channel(int(row[0]))
@@ -94,8 +95,9 @@ class autoposting(commands.Cog, name="ap"):
                         cursor.execute(
                             f"UPDATE guilds SET hentai_channel = NULL WHERE hentai_channel = {row[0]}"
                         )  # NEW
-                        # cursor.execute(f"UPDATE guilds SET hentai_channel = NULL WHERE hentai_channel = {row[0]}") # OLD
-                    if channel != None:
+                        # cursor.execute(f"UPDATE guilds SET hentai_channel =
+                        # NULL WHERE hentai_channel = {row[0]}") # OLD
+                    if channel is not None:
                         if not channel.is_nsfw():
                             try:
                                 # Remove hentai channel from db
@@ -106,14 +108,13 @@ class autoposting(commands.Cog, name="ap"):
                                 print(
                                     f"{default.date()} | {channel.guild.id} has removed the NSFW tag | Deleting from database..."
                                 )
-                            except:
+                            except BaseException:
                                 pass
                         else:
                             try:
                                 webhooks = await channel.webhooks()
                                 webhook = discord.utils.get(
-                                    webhooks, name="AGB Autoposting", user=self.bot.user
-                                )
+                                    webhooks, name="AGB Autoposting", user=self.bot.user)
                                 if webhook is None:
                                     webhook = await channel.create_webhook(
                                         name="AGB Autoposting"
@@ -129,7 +130,8 @@ class autoposting(commands.Cog, name="ap"):
                                 discord.Webhook, discord.TextChannel
                             ] = (channel if webhook is None else webhook)
                             try:
-                                if isinstance(final_messagable, discord.TextChannel):
+                                if isinstance(
+                                        final_messagable, discord.TextChannel):
                                     await final_messagable.send(embed=embed)
                                 else:
                                     await self.send_from_webhook(

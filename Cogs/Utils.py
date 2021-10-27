@@ -5,7 +5,8 @@ from discord.ext import commands
 from index import EMBED_COLOUR
 
 # bot = None
-# url_regex = re.compile(r"(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?")
+# url_regex =
+# re.compile(r"(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?")
 
 
 def setup(bot):

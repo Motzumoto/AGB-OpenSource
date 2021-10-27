@@ -21,12 +21,14 @@ class events(commands.Cog):
 
         # Add server to database
         try:
-            cursor.execute(f"SELECT * FROM guilds WHERE guildId = {ctx.guild.id}")
-        except:
+            cursor.execute(
+                f"SELECT * FROM guilds WHERE guildId = {ctx.guild.id}")
+        except BaseException:
             pass
         row_count = cursor.rowcount
         if row_count == 0:
-            cursor.execute(f"INSERT INTO guilds (guildId) VALUES ({ctx.guild.id})")
+            cursor.execute(
+                f"INSERT INTO guilds (guildId) VALUES ({ctx.guild.id})")
             mydb.commit()
             print(
                 f"{default.date()} | New guild detected: {ctx.guild.id} | Added to database!"
@@ -49,26 +51,28 @@ class events(commands.Cog):
             print(
                 f"{default.date()} | {self.bot.user} is using {len(self.bot.shards)} shard."
             )
-        print(f"{default.date()} | Discord Python Version:", (discord.__version__))
+        print(
+            f"{default.date()} | Discord Python Version:",
+            (discord.__version__))
         try:
             self.bot.load_extension("Cogs.music")
-        except:
+        except BaseException:
             pass
         try:
             self.bot.load_extension("jishaku")
             print(f"{default.date()} | Loaded JSK.")
-        except:
+        except BaseException:
             pass
 
     @commands.Cog.listener()
     async def on_message(self, ctx):
         if ctx.guild is None:
             return
-        if ctx.guild.chunked == True:
+        if ctx.guild.chunked:
             return
         try:
             await ctx.guild.chunk()
-        except:
+        except BaseException:
             pass
 
     # @commands.Cog.listener(name="on_message")
@@ -119,10 +123,14 @@ class events(commands.Cog):
             embed.add_field(
                 name="Channel?:", value=f"{ctx.channel.name} {ctx.channel.id}."
             )
-            embed.add_field(name="Server?:", value=f"{ctx.guild.name} {ctx.guild.id}.")
-            embed.add_field(name=f"Who?:", value=f"{ctx.author}, {ctx.author.id}")
+            embed.add_field(name="Server?:",
+                            value=f"{ctx.guild.name} {ctx.guild.id}.")
+            embed.add_field(name=f"Who?:",
+                            value=f"{ctx.author}, {ctx.author.id}")
             try:
-                embed.add_field(name="Command?:", value=f"{ctx.message.clean_content}")
+                embed.add_field(
+                    name="Command?:",
+                    value=f"{ctx.message.clean_content}")
             except discord.errors.HTTPException:
                 embed.add_field(
                     name="Command?:", value="Command that was ran was too big."
@@ -146,8 +154,11 @@ class events(commands.Cog):
                 colour=discord.Colour.green(),
             )
             embed.add_field(name="Where?:", value=f"Private message")
-            embed.add_field(name="Who?:", value=f"{ctx.author}, {ctx.author.id}")
-            embed.add_field(name="Command?:", value=f"{ctx.message.clean_content}")
+            embed.add_field(name="Who?:",
+                            value=f"{ctx.author}, {ctx.author.id}")
+            embed.add_field(
+                name="Command?:",
+                value=f"{ctx.message.clean_content}")
             channel = self.bot.get_channel(842099510360408104)
             message_cooldown = commands.CooldownMapping.from_cooldown(
                 1.0, 60.0, commands.BucketType.user
@@ -167,8 +178,9 @@ class events(commands.Cog):
         else:
             pass
         try:
-            cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
-        except:
+            cursor.execute(
+                f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
+        except BaseException:
             pass
         eco_rows = cursor.rowcount
         if eco_rows == 0:
@@ -189,12 +201,14 @@ class events(commands.Cog):
         else:
             pass
         try:
-            cursor.execute(f"SELECT * FROM badges WHERE userId = {ctx.author.id}")
-        except:
+            cursor.execute(
+                f"SELECT * FROM badges WHERE userId = {ctx.author.id}")
+        except BaseException:
             pass
         badges_rows = cursor.rowcount
         if badges_rows == 0:
-            cursor.execute(f"INSERT INTO badges (userId) VALUES ({ctx.author.id})")
+            cursor.execute(
+                f"INSERT INTO badges (userId) VALUES ({ctx.author.id})")
             mydb.commit()
         else:
             return
@@ -225,12 +239,14 @@ class events(commands.Cog):
         else:
             pass
         try:
-            cursor.execute(f"SELECT * FROM users WHERE userId = {ctx.author.id}")
-        except:
+            cursor.execute(
+                f"SELECT * FROM users WHERE userId = {ctx.author.id}")
+        except BaseException:
             pass
         automod_rows = cursor.rowcount
         if automod_rows == 0:
-            cursor.execute(f"INSERT INTO users (userId) VALUES ({ctx.author.id})")
+            cursor.execute(
+                f"INSERT INTO users (userId) VALUES ({ctx.author.id})")
             mydb.commit()
         else:
             return
@@ -242,15 +258,18 @@ class events(commands.Cog):
         else:
             pass
         try:
-            cursor.execute(f"SELECT * FROM users WHERE userId = {ctx.author.id}")
-        except:
+            cursor.execute(
+                f"SELECT * FROM users WHERE userId = {ctx.author.id}")
+        except BaseException:
             pass
         automod_rows = cursor.rowcount
         if automod_rows == 0:
-            cursor.execute(f"INSERT INTO users (userId) VALUES ({ctx.author.id})")
+            cursor.execute(
+                f"INSERT INTO users (userId) VALUES ({ctx.author.id})")
             mydb.commit()
         else:
-            cursor.execute(f"SELECT * FROM users WHERE userId = {ctx.author.id}")
+            cursor.execute(
+                f"SELECT * FROM users WHERE userId = {ctx.author.id}")
             row = cursor.fetchall()
             cursor.execute(
                 f"UPDATE users SET usedCmds = {row[0][1] + 1} WHERE userId = {ctx.author.id}"
@@ -266,8 +285,10 @@ class events(commands.Cog):
         await self.bot.wait_until_ready()
         datetime.utcnow()
         delta_uptime = datetime.utcnow() - self.bot.launch_time
-        delta_uptime = delta_uptime - timedelta(microseconds=delta_uptime.microseconds)
-        omegalul = random.choice(["watching", "playing", "listening", "competing"])
+        delta_uptime = delta_uptime - \
+            timedelta(microseconds=delta_uptime.microseconds)
+        omegalul = random.choice(
+            ["watching", "playing", "listening", "competing"])
         funny_statuses = [
             f"tp!help | {len(self.bot.guilds)} Servers",
             f"tp!help | {len(self.bot.commands)} commands!",
@@ -312,12 +333,14 @@ class events(commands.Cog):
                 name=f":( forced to leave a server, heres their info:",
                 value=f"Server name: `{guild.name}`\n ID `{guild.id}`\n Member Count: `{guild.member_count}`.",
             )
-        except:
+        except BaseException:
             embed.add_field(
-                name=f"This is a false error. Completely ignore this", value="NaN"
-            )
+                name=f"This is a false error. Completely ignore this",
+                value="NaN")
             return
-        embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+        embed.set_thumbnail(
+            url=self.bot.user.avatar_url_as(
+                static_format="png"))
         channel = self.bot.get_channel(769080397669072939)
         await channel.send(embed=embed)
         # Remove server from database
@@ -340,7 +363,8 @@ class events(commands.Cog):
         try:
             await guild.me.edit(nick=nick)
         except discord.Forbidden:
-            return print(f"{default.date()} | Unable to change nickname in {guild.id}")
+            return print(
+                f"{default.date()} | Unable to change nickname in {guild.id}")
         else:
             print(f"{default.date()} | Changed nickname to {nick} in {guild.id}")
         embed = discord.Embed(
@@ -351,7 +375,9 @@ class events(commands.Cog):
             name="Here's the servers' info.",
             value=f"Server name: `{guild.name}`\n ID `{guild.id}`\n Member Count: `{guild.member_count}`.",
         )
-        embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+        embed.set_thumbnail(
+            url=self.bot.user.avatar_url_as(
+                static_format="png"))
         channel = self.bot.get_channel(769075552736641115)
         await channel.send(embed=embed)
         # Add server to database
@@ -368,6 +394,7 @@ class events(commands.Cog):
             print(
                 f"{default.date()} | New guild joined: {guild.id} | But it was already in the DB"
             )
+
 
 def setup(bot):
     bot.add_cog(events(bot))

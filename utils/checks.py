@@ -69,7 +69,7 @@ def voter_only():
         if ctx.author.id in owners:
             return True
         check_vote = await check_voter(ctx.author.id)
-        if check_vote == False:
+        if not check_vote:
             raise NotVoted("Please vote!")
         return True
 

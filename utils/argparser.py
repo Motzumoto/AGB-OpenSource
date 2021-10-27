@@ -8,7 +8,11 @@ class DefaultArguments(argparse.ArgumentParser):
 
 
 class Arguments:
-    def __init__(self, posix: bool = False, allow_abbrev: bool = False, **kwargs):
+    def __init__(
+            self,
+            posix: bool = False,
+            allow_abbrev: bool = False,
+            **kwargs):
         self.parser = DefaultArguments(
             allow_abbrev=allow_abbrev, add_help=False, **kwargs
         )
