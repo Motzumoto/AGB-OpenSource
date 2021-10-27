@@ -21,7 +21,10 @@ else:
 
 logger = logging.getLogger("discord")
 logger.setLevel(logging.INFO)
-handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
+handler = logging.FileHandler(
+    filename="discord.log",
+    encoding="utf-8",
+    mode="w")
 handler.setFormatter(
     logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
 )
@@ -85,11 +88,12 @@ key = config.statcord
 api = statcord.Client(bot, key)
 api.start_loop()
 
+
 @bot.event
 async def on_command(ctx):
     try:
         api.command_run(ctx)
-    except:
+    except BaseException:
         pass
 
 
