@@ -23,7 +23,7 @@ class events(commands.Cog):
         try:
             cursor.execute(
                 f"SELECT * FROM guilds WHERE guildId = {ctx.guild.id}")
-        except BaseException:
+        except:
             pass
         row_count = cursor.rowcount
         if row_count == 0:
@@ -56,12 +56,12 @@ class events(commands.Cog):
             (discord.__version__))
         try:
             self.bot.load_extension("Cogs.music")
-        except BaseException:
+        except:
             pass
         try:
             self.bot.load_extension("jishaku")
             print(f"{default.date()} | Loaded JSK.")
-        except BaseException:
+        except:
             pass
 
     @commands.Cog.listener()
@@ -72,7 +72,7 @@ class events(commands.Cog):
             return
         try:
             await ctx.guild.chunk()
-        except BaseException:
+        except:
             pass
 
     # @commands.Cog.listener(name="on_message")
@@ -180,7 +180,7 @@ class events(commands.Cog):
         try:
             cursor.execute(
                 f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
-        except BaseException:
+        except:
             pass
         eco_rows = cursor.rowcount
         if eco_rows == 0:
@@ -203,7 +203,7 @@ class events(commands.Cog):
         try:
             cursor.execute(
                 f"SELECT * FROM badges WHERE userId = {ctx.author.id}")
-        except BaseException:
+        except:
             pass
         badges_rows = cursor.rowcount
         if badges_rows == 0:
@@ -241,7 +241,7 @@ class events(commands.Cog):
         try:
             cursor.execute(
                 f"SELECT * FROM users WHERE userId = {ctx.author.id}")
-        except BaseException:
+        except:
             pass
         automod_rows = cursor.rowcount
         if automod_rows == 0:
@@ -260,7 +260,7 @@ class events(commands.Cog):
         try:
             cursor.execute(
                 f"SELECT * FROM users WHERE userId = {ctx.author.id}")
-        except BaseException:
+        except:
             pass
         automod_rows = cursor.rowcount
         if automod_rows == 0:
@@ -333,7 +333,7 @@ class events(commands.Cog):
                 name=f":( forced to leave a server, heres their info:",
                 value=f"Server name: `{guild.name}`\n ID `{guild.id}`\n Member Count: `{guild.member_count}`.",
             )
-        except BaseException:
+        except:
             embed.add_field(
                 name=f"This is a false error. Completely ignore this",
                 value="NaN")

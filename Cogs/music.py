@@ -103,7 +103,7 @@ class Player(wavelink.Player):
         elif not await self.is_position_fresh():
             try:
                 await self.controller.message.delete()
-            except BaseException:
+            except:
                 pass
 
             self.controller.stop()
@@ -161,7 +161,7 @@ class Player(wavelink.Player):
         """Clear internal states, remove player controller and disconnect."""
         try:
             await self.controller.message.delete()
-        except BaseException:
+        except:
             pass
 
         self.controller.stop()
@@ -669,7 +669,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin, name="music"):
         await player.teardown()
         try:
             await player.disconnect()
-        except BaseException:
+        except:
             pass
         await ctx.send("Disconnected from the channel.", delete_after=15)
 

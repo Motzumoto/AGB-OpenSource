@@ -28,7 +28,7 @@ class Error(commands.Cog):
         try:
             embed.add_field(name="Channel", value=ctx.message.channel.mention)
             embed.add_field(name="Guild", value=ctx.message.guild.name)
-        except BaseException:
+        except:
             pass
         embed.add_field(name="Error", value=error)
         embed.set_thumbnail(url=ctx.message.author.avatar_url)

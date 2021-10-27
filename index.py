@@ -93,7 +93,7 @@ api.start_loop()
 async def on_command(ctx):
     try:
         api.command_run(ctx)
-    except BaseException:
+    except:
         pass
 
 

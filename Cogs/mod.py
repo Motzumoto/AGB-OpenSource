@@ -173,7 +173,7 @@ class Moderator(commands.Cog, name="mod"):
         #     self.prefixes = row[2]
         try:
             self.bot.command_prefix = self.get_prefix
-        except BaseException:
+        except:
             pass
         self.default_prefix = "tp!"
         cursor.execute(f"SELECT userId FROM users WHERE blacklisted = 'true'")
@@ -191,7 +191,7 @@ class Moderator(commands.Cog, name="mod"):
             cursor.execute(
                 f"SELECT prefix FROM guilds WHERE guildId = {message.guild.id}"
             )
-        except BaseException:
+        except:
             pass
         for row in cursor.fetchall():
             self.prefixes = row[0]
@@ -235,7 +235,7 @@ class Moderator(commands.Cog, name="mod"):
                     )
                 try:
                     await channel.send(embed=embed)
-                except BaseException:
+                except:
                     pass
 
     @commands.command(aliases=["enabler", "ron"], usage="`tp!ron`")
@@ -394,7 +394,7 @@ class Moderator(commands.Cog, name="mod"):
         try:
             cursor.execute(
                 f"SELECT * FROM guilds WHERE guildId = {ctx.guild.id}")
-        except BaseException:
+        except:
             pass
         result = cursor.fetchall()
         for row in result:
@@ -709,7 +709,7 @@ class Moderator(commands.Cog, name="mod"):
                                 await asyncio.sleep(random.randint(1, 5))
                                 temp.update(
                                     {"numbers": temp.get("numbers", 0) + 1})
-                            except BaseException:
+                            except:
                                 failed += 1
         stats = "\n".join(
             [f"`{char}` - `{amount}`" for char, amount in temp.items()])
@@ -738,7 +738,7 @@ class Moderator(commands.Cog, name="mod"):
                     await member.edit(nick=None)
                     await asyncio.sleep(random.randint(1, 5))
                     count += 1
-                except BaseException:
+                except:
                     pass
         await inital.edit(content=f"{count} nicknames have been reset.")
 
@@ -761,7 +761,7 @@ class Moderator(commands.Cog, name="mod"):
                 content="Sorry if this took a while to send, but here is all of this servers bans!",
                 file=discord.File(f"{str(filename)}.txt"),
             )
-        except BaseException:
+        except:
             await ctx.send(
                 "I couldn't send the file of this servers bans for whatever reason"
             )
@@ -796,7 +796,7 @@ class Moderator(commands.Cog, name="mod"):
             await member.send(
                 f"You were banned in **{ctx.guild.name}** : **{reason}**."
             )
-        except BaseException:
+        except:
             pass
         try:
             await ctx.guild.ban(member, reason=reason)
@@ -853,7 +853,7 @@ class Moderator(commands.Cog, name="mod"):
                                 reason = (
                                     f"Action done by {ctx.author} (ID: {ctx.author.id})"
                                 )
-                        except BaseException:
+                        except:
                             pass
                         await ctx.guild.ban(member, reason=reason)
                         banned_members += 1

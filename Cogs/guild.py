@@ -59,7 +59,7 @@ class DiscordCmds(commands.Cog, name="discord"):
                 message.created_at,
                 message.attachments,
             )
-        except BaseException:
+        except:
             pass
 
     @commands.Cog.listener()
@@ -114,7 +114,7 @@ class DiscordCmds(commands.Cog, name="discord"):
             embed.set_footer(text=f"Deleted in #{channel_name}")
 
             await ctx.send(embed=embed)
-        except BaseException:
+        except:
             await ctx.send("Nothing has been recently deleted.")
 
     @commands.command(aliases=["es"], usage="`tp!es`")
@@ -147,7 +147,7 @@ class DiscordCmds(commands.Cog, name="discord"):
             )
 
             await ctx.send(embed=embed)
-        except BaseException:
+        except:
             await ctx.send("Nothing has been recently edited.")
 
     # thanks again nirlep for this
@@ -756,7 +756,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 value=f"{embed_space}{houseCheck()}{earlySupporter()}{boosterCheck()}",
                 inline=True,
             )
-        except BaseException:
+        except:
             pass
         embed.add_field(
             name="Nickname",

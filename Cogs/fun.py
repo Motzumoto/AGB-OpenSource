@@ -31,12 +31,12 @@ try:
     import cairosvg
 
     svg_convert = "cairo"
-except BaseException:
+except:
     try:
         from wand.image import Image
 
         svg_convert = "wand"
-    except BaseException:
+    except:
         svg_convert = None
 
 matplotlib.use("agg")
@@ -812,7 +812,7 @@ class Fun(commands.Cog, name="fun"):
                 await ctx.send(
                     "A hex color code without transparency is composed of 6 characters, no more, no less."
                 )
-        except BaseException:
+        except:
             await ctx.send(
                 f"Failed to obtain color information. Maybe {hex} isn't a valid code."
             )

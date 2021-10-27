@@ -388,12 +388,12 @@ class Information(commands.Cog, name="info"):
                 f.write(data + "\n")
                 #        await asyncio.sleep(5)
                 continue
-        except BaseException:
+        except:
             pass
         f.close()
         try:
             await ctx.send(file=discord.File(f"{str(filename)}.txt"))
-        except BaseException:
+        except:
             pass
         os.remove(f"{filename}.txt")
 

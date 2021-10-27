@@ -44,7 +44,7 @@ class Picker:
         # own
         try:
             await self.self_message.clear_reactions()
-        except BaseException:
+        except:
             # The following "works", but is super slow - and if we can't clear
             # all reactions, it's probably just best to leave them there and
             # bail.
@@ -96,7 +96,7 @@ class Picker:
             reaction, user = await self.ctx.bot.wait_for(
                 "picklist_reaction", timeout=self.timeout, check=check
             )
-        except BaseException:
+        except:
             # Didn't get a reaction
             await self._remove_reactions(current_reactions)
             return (-2, self.self_message)
@@ -169,7 +169,7 @@ class PagePicker(Picker):
                 reaction, user = await self.ctx.bot.wait_for(
                     "picklist_reaction", timeout=self.timeout, check=check
                 )
-            except BaseException:
+            except:
                 # Didn't get a reaction
                 await self._remove_reactions(self.reactions)
                 return (page, self.self_message)
@@ -201,7 +201,7 @@ class PagePicker(Picker):
                 def check_page(message):
                     try:
                         num = int(message.content)
-                    except BaseException:
+                    except:
                         return False
                     return (
                         message.channel == self.self_message.channel
@@ -213,7 +213,7 @@ class PagePicker(Picker):
                         "message", timeout=self.timeout, check=check_page
                     )
                     page = int(page_message.content) - 1
-                except BaseException:
+                except:
                     # Didn't get a message
                     pass
                 # Delete the instruction
@@ -221,7 +221,7 @@ class PagePicker(Picker):
                 # Try to delete the user's page message too
                 try:
                     await page_message.delete()
-                except BaseException:
+                except:
                     pass
             page = 0 if page < 0 else pages - 1 if page > pages - 1 else page
             embed["fields"] = self._get_page_contents(page)

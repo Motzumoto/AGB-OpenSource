@@ -90,7 +90,7 @@ class DisplayName(commands.Cog):
             mems = server.members
         try:
             checkid = int(checkid)
-        except BaseException:
+        except:
             return None
         for member in mems:
             if member.id == checkid:
@@ -123,7 +123,7 @@ class DisplayName(commands.Cog):
             try:
                 mem_name = mem_parts[0]
                 mem_disc = int(mem_parts[1])
-            except BaseException:
+            except:
                 mem_name = mem_disc = None
             if mem_name:
                 for member in mems:
@@ -142,7 +142,7 @@ class DisplayName(commands.Cog):
     def channelForID(self, checkid, server, typeCheck=None):
         try:
             checkid = int(checkid)
-        except BaseException:
+        except:
             return None
         for channel in server.channels:
             if typeCheck:
@@ -195,7 +195,7 @@ class DisplayName(commands.Cog):
     def roleForID(self, checkid, server):
         try:
             checkid = int(checkid)
-        except BaseException:
+        except:
             return None
         for role in server.roles:
             if role.id == checkid:

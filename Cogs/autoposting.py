@@ -71,7 +71,7 @@ class autoposting(commands.Cog, name="ap"):
             )
             try:
                 embed.set_image(url=(await self.get_hentai_img()))
-            except BaseException:
+            except:
                 print(
                     f"{default.date()} |[ERR] I still could not get an image to post with... so we're just not gonna do anything lmao"
                 )
@@ -108,7 +108,7 @@ class autoposting(commands.Cog, name="ap"):
                                 print(
                                     f"{default.date()} | {channel.guild.id} has removed the NSFW tag | Deleting from database..."
                                 )
-                            except BaseException:
+                            except:
                                 pass
                         else:
                             try:
