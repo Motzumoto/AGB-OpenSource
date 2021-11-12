@@ -56,4 +56,4 @@
 
 • Fill out your database configuration, if you don't the bot won't run lmao. Yes, you do need a Postgres Database.
 
-_`If there are any issues, please contact the developers.:`[Email](mailto:contact@agb-dev.xyz)_
+_`If there are any issues, please contact the developers.`:[Email](mailto:contact@agb-dev.xyz)_
