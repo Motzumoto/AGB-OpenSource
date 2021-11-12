@@ -53,8 +53,8 @@
 
 • Fill out the required config options, otherwise this wouldn't work lmao.
 
-> Rename `db_config.example.json` -> `db_config.json` and fill out all the fields there. **MySQL Database required**
+> Rename `db_config.example.json` -> `db_config.json` and fill out all the fields there. **Postgres Database required**
 
-• Fill out your database configuration, if you don't the bot won't run lmao. Yes, you do need a MySQL Database.
+• Fill out your database configuration, if you don't the bot won't run lmao. Yes, you do need a Postgres Database.
 
 _`If there are any issues, please contact the developers.` : [Email](mailto:contact@agb-dev.xyz)_
