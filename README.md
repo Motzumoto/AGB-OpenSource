@@ -1,5 +1,3 @@
-#   
-A Good Bot
 
 <h1 align='center'>
 	<br>A Good Bot
@@ -40,7 +38,7 @@ A Good Bot
 	    <img src="https://top.gg/api/widget/723726581864071178.svg" alt="top.gg page">
 	</a>
 </p>
-* * *
+
 
 * * *
 
