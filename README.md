@@ -42,8 +42,8 @@
 
 * * *
 
-#   
-Self Hosting "How-To"
+   
+#Self Hosting "How-To" (We don't actually support this)
 
 > pip install -r requirements.txt
 
