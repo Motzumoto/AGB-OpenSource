@@ -1,4 +1,3 @@
-
 <h1 align='center'>
 	<br>A Good Bot
 </h1>
