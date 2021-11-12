@@ -1,16 +1,17 @@
 import asyncio
 import datetime
 import random
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Union
 
 import discord
 from discord.ext import commands
-from discord.flags import alias_flag_value
-from index import config, cursor, mydb
+from index import config, cursor, mydb, cursor_n, mydb_n
 from utils import default
 
 from .Utils import *
+
+from Manager.commandManager import commandsEnabled
 
 
 class Economy(commands.Cog, name="economy"):
@@ -32,41 +33,49 @@ class Economy(commands.Cog, name="economy"):
             "naw": False,
         }
 
-    def format_number(self, number):
-        return "{:,}".format(number)
-
     @commands.command(usage="`tp!bank`")
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=2, per=5, type=commands.BucketType.user)
     async def bank(self, ctx):
         """Check your bank"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         embed = discord.Embed(
-            color=EMBED_COLOUR,
+            color=self.bot.embed_color,
             title=f"{ctx.author.display_name}'s Bank <:beta:863514446646870076>",
             description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
         )
-        cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
-        row = cursor.fetchall()
+        cursor_n.execute(
+            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+        )
+        row = cursor_n.fetchall()
         embed.add_field(
-            name="Balance",
+            name="`Balance`",
             value=f"You currently have **${int(row[0][2]):,}** in your bank. <:beta:863514446646870076>",
         )
-        embed.set_footer(text="tp!bank withdraw|deposit <amount>")
+        embed.set_footer(text="tp!bank withdraw|deposit amount")
         embed.set_thumbnail(url=ctx.author.avatar_url)
         await ctx.reply(embed=embed)
-        mydb.commit()
+        mydb_n.commit()
 
     @commands.group(
         aliases=["dep"],
         invoke_without_command=True,
         case_insensitive=True,
-        usage="`tp!deposit <amount>|all`",
+        usage="`tp!deposit amount|all`",
     )
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=2, per=5, type=commands.BucketType.user)
     async def deposit(self, ctx, amount=0):
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         if ctx.invoked_subcommand is None:
-            cursor.execute(
-                f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
-            row = cursor.fetchall()
+            cursor_n.execute(
+                f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            )
+            row = cursor_n.fetchall()
             bal = row[0][1]
 
             if amount <= 0:
@@ -83,7 +92,7 @@ class Economy(commands.Cog, name="economy"):
                 return
 
             embed = discord.Embed(
-                color=EMBED_COLOUR,
+                color=self.bot.embed_color,
                 title="Bank Deposit <:beta:863514446646870076>",
                 description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
             )
@@ -92,28 +101,28 @@ class Economy(commands.Cog, name="economy"):
                 value=f"You have deposited **${int(amount):,}** into your bank <:beta:863514446646870076>",
             )
             cursor.execute(
-                f"UPDATE userEco SET bank = bank + {amount} WHERE userId = {ctx.author.id}"
+                f"UPDATE public.\"userEco\" SET bank = bank + '{amount}' WHERE \"userId\" = '{ctx.author.id}'"
             )
             cursor.execute(
-                f"UPDATE userEco SET balance = {bal - amount} WHERE userId = {ctx.author.id}"
+                f"UPDATE public.\"userEco\" SET balance = '{bal - amount}' WHERE \"userId\" = '{ctx.author.id}'"
             )
             await ctx.reply(embed=embed)
-            mydb.commit()
+            mydb_n.commit()
             return
 
     @deposit.command(name="all", usage="`tp!deposit all`")
     async def dep_all(self, ctx):
-        cursor.execute(f"SELECT * FROM userEco WHERE userId= {ctx.author.id}")
-        row = cursor.fetchall()
+        cursor_n.execute(f"SELECT * FROM userEco WHERE userId= {ctx.author.id}")
+        row = cursor_n.fetchall()
 
-        cursor.execute(
-            f"UPDATE userEco SET bank = bank + {row[0][1]} WHERE userId = {ctx.author.id}"
+        cursor_n.execute(
+            f"UPDATE public.\"userEco\" SET bank = bank + '{row[0][1]}' WHERE \"userId\" = '{ctx.author.id}'"
         )
-        cursor.execute(
-            f"UPDATE userEco SET balance = {row[0][1] - row[0][1]} WHERE userId = {ctx.author.id}"
+        cursor_n.execute(
+            f"UPDATE public.\"userEco\" SET balance = '{row[0][1] - row[0][1]}' WHERE \"userId\" = '{ctx.author.id}'"
         )
         embed = discord.Embed(
-            color=EMBED_COLOUR,
+            color=self.bot.embed_color,
             title="Bank Deposit",
             description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
         )
@@ -122,23 +131,28 @@ class Economy(commands.Cog, name="economy"):
             value=f"You have deposited **${int(row[0][1]):,}** into your bank <:beta:863514446646870076>",
         )
         await ctx.reply(embed=embed)
-        mydb.commit()
+        mydb_n.commit()
 
     @commands.group(
         aliases=["with"],
         invoke_without_command=True,
         case_insensitive=True,
-        usage="`tp!withdraw <amount>|all`",
+        usage="`tp!withdraw amount|all`",
     )
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=2, per=5, type=commands.BucketType.user)
     async def withdraw(self, ctx, amount=0):
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         if ctx.invoked_subcommand is None:
-            cursor.execute(
-                f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
-            row = cursor.fetchall()
+            cursor_n.execute(
+                f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            )
+            row = cursor_n.fetchall()
             bal = row[0][1]
             bank_bal = row[0][2]
-
+            mydb_n.commit()
             if amount <= 0:
                 await ctx.reply(
                     "Please withdraw an amount greater than **0**! <:beta:863514446646870076>"
@@ -153,7 +167,7 @@ class Economy(commands.Cog, name="economy"):
                 return
 
             embed = discord.Embed(
-                color=EMBED_COLOUR,
+                color=self.bot.embed_color,
                 title="Bank Withdrawal <:beta:863514446646870076>",
                 description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
             )
@@ -161,29 +175,31 @@ class Economy(commands.Cog, name="economy"):
                 name="Successful Withdrawal",
                 value=f"You have withdrawn **${int(amount):,}** from your bank! <:beta:863514446646870076>",
             )
-            cursor.execute(
-                f"UPDATE userEco SET balance = {bal + amount} WHERE userId = {ctx.author.id}"
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET balance = '{bal + amount}' WHERE \"userId\" = '{ctx.author.id}'"
             )
-            cursor.execute(
-                f"UPDATE userEco SET bank = {bank_bal - amount} WHERE userId = {ctx.author.id}"
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET bank = '{bank_bal - amount}' WHERE \"userId\" = '{ctx.author.id}'"
             )
+            mydb_n.commit()
             await ctx.reply(embed=embed)
-            mydb.commit()
             return
 
     @withdraw.command(name="all", usage="`tp!withdraw all`")
     async def with_all(self, ctx):
-        cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
-        row = cursor.fetchall()
-
-        cursor.execute(
-            f"UPDATE userEco SET balance = {row[0][1] + row[0][2]} WHERE userId = {ctx.author.id}"
+        cursor_n.execute(
+            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
         )
-        cursor.execute(
-            f"UPDATE userEco SET bank = {row[0][2] - row[0][2]} WHERE userId = {ctx.author.id}"
+        row = cursor_n.fetchall()
+
+        cursor_n.execute(
+            f"UPDATE public.\"userEco\" SET balance = '{row[0][1] + row[0][2]}'' WHERE \"userId\" = '{ctx.author.id}'"
+        )
+        cursor_n.execute(
+            f"UPDATE public.\"userEco\" SET bank = '{row[0][2] - row[0][2]}'' WHERE \"userId\" = '{ctx.author.id}'"
         )
         embed = discord.Embed(
-            color=EMBED_COLOUR,
+            color=self.bot.embed_color,
             title="Bank Withdrawal",
             description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
         )
@@ -192,11 +208,15 @@ class Economy(commands.Cog, name="economy"):
             value=f"You have withdrawn **${int(row[0][2]):,}** from your bank! <:beta:863514446646870076>",
         )
         await ctx.reply(embed=embed)
-        mydb.commit()
+        mydb_n.commit()
 
-    @commands.command(aliases=["steal"], usage="`tp!rob <user>`")
+    @commands.command(aliases=["steal"], usage="`tp!rob @user`")
     @commands.cooldown(rate=1, per=30, type=commands.BucketType.user)
     async def rob(self, ctx, user: Union[discord.Member, discord.User] = None):
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         usr = user
         if usr is None:
             await ctx.reply(
@@ -224,8 +244,7 @@ class Economy(commands.Cog, name="economy"):
         mydb.commit()
 
         if chance > 65:
-            cursor.execute(
-                f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
+            cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
             row2 = cursor.fetchall()
             # apply the robbed amount to the message author
             cursor.execute(
@@ -234,7 +253,7 @@ class Economy(commands.Cog, name="economy"):
             embed = discord.Embed(
                 title=f"Robbed **{usr.display_name}** <:beta:863514446646870076>",
                 description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
-                color=EMBED_COLOUR,
+                color=self.bot.embed_color,
             )
             embed.add_field(
                 name="Successfully Robbed",
@@ -250,15 +269,15 @@ class Economy(commands.Cog, name="economy"):
             mydb.commit()
             await ctx.reply(embed=embed)
         else:
-            embed2 = discord.Embed(color=EMBED_COLOUR)
+            embed2 = discord.Embed(color=self.bot.embed_color)
             embed2.add_field(
                 name="Fail",
                 value=f"You failed to rob **{usr.display_name}**! <:beta:863514446646870076>",
             )
             await ctx.reply(embed=embed2)
 
-    @commands.command(usage="`tp!pay <user> <amount> [note]`")
-    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @commands.command(usage="`tp!pay @user <amount> [note]`")
+    @commands.cooldown(rate=2, per=10, type=commands.BucketType.user)
     async def pay(
         self,
         ctx,
@@ -266,6 +285,9 @@ class Economy(commands.Cog, name="economy"):
         amount: int = 0,
         note: str = None,
     ):
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
 
         await ctx.channel.trigger_typing()
 
@@ -286,8 +308,7 @@ class Economy(commands.Cog, name="economy"):
             )
 
         # Fetch the author's banking information.
-        cursor.execute(
-            "SELECT * FROM userEco WHERE userId = %s", (ctx.author.id,))
+        cursor.execute("SELECT * FROM userEco WHERE userId = %s", (ctx.author.id,))
         row = cursor.fetchall()
 
         # Check if they have enough in their account.
@@ -330,9 +351,10 @@ class Economy(commands.Cog, name="economy"):
                         new_bank = row[0][2] + to_transfer
                         cursor.execute(
                             "UPDATE userEco SET balance = %s WHERE userId = %s",
-                            (new_wallet,
-                             ctx.author.id,
-                             ),
+                            (
+                                new_wallet,
+                                ctx.author.id,
+                            ),
                         )
                         cursor.execute(
                             "UPDATE userEco SET bank = %s WHERE userId = %s",
@@ -343,14 +365,14 @@ class Economy(commands.Cog, name="economy"):
                         )
 
                         cursor.execute(
-                            "SELECT * FROM userEco WHERE userId = %s", (ctx.author.id,))
+                            "SELECT * FROM userEco WHERE userId = %s", (ctx.author.id,)
+                        )
                         row = cursor.fetchall()
 
                     else:
                         return
 
-        cursor.execute(
-            "SELECT * FROM globalVars WHERE variableName = 'taxData'")
+        cursor.execute("SELECT * FROM globalVars WHERE variableName = 'taxData'")
         tax_info = cursor.fetchall()
         taxed_amount = int(amount * (1 - tax_info[0][1]))
         # await ctx.send(tax_info[0][1])
@@ -380,8 +402,7 @@ class Economy(commands.Cog, name="economy"):
         )
 
         if tax_info[0][2] is not None and tax_info[0][1] != 0:
-            cursor.execute(
-                "SELECT * FROM userEco WHERE userId = %s", (tax_info[0][2],))
+            cursor.execute("SELECT * FROM userEco WHERE userId = %s", (tax_info[0][2],))
             tax_collect_bank = cursor.fetchall()
             new_balance = tax_collect_bank[0][2] + (amount - taxed_amount)
             cursor.execute(
@@ -423,6 +444,10 @@ class Economy(commands.Cog, name="economy"):
     @commands.cooldown(rate=1, per=900, type=commands.BucketType.user)
     async def work(self, ctx):
         """Work for your shitty 9-5 job for a small wage"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         earned = random.randint(500, 10000)
         cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
         # 0 = userId, 1 = balance, 2 = bank, 3 = userTag, 4 = lastDaily, 5 =
@@ -440,6 +465,10 @@ class Economy(commands.Cog, name="economy"):
     @commands.cooldown(rate=1, per=30, type=commands.BucketType.user)
     async def beg(self, ctx):
         """Beg for money like a homeless man"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         chance = random.randint(1, 10)  # 1/10 chance to fail
         earned = random.randint(50, 1000)
         cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
@@ -461,16 +490,20 @@ class Economy(commands.Cog, name="economy"):
             return
 
     @commands.command(aliases=["bal", "$"], usage="`tp!balance`")
-    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
     async def balance(self, ctx, user: Union[discord.Member, discord.User] = None):
         """Check your balance to see how much more money you can spend before you have to sell your organs"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         usr = user or ctx.author
         cursor.execute(f"SELECT * FROM userEco WHERE userId = {usr.id}")
         row = cursor.fetchall()
         embed = discord.Embed(
             title=f"User Balance <:beta:863514446646870076>",
             description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
-            color=EMBED_COLOUR,
+            color=self.bot.embed_color,
         )
         embed.add_field(
             name="Wallet",
@@ -490,6 +523,10 @@ class Economy(commands.Cog, name="economy"):
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def daily(self, ctx):
         """Get a decent amount of money from the air just cause"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         dailyAmount = 10000
         cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
         row = cursor.fetchall()
@@ -533,6 +570,9 @@ class Economy(commands.Cog, name="economy"):
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     async def search(self, ctx, place=None):
         """Search for money in various places"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
 
         def check(m):
             return m.channel == ctx.channel and m.author == ctx.author
@@ -560,7 +600,8 @@ class Economy(commands.Cog, name="economy"):
         embed = discord.Embed(
             title="Searched for money",
             description=edescription,
-            color=EMBED_COLOUR)
+            color=self.bot.embed_color,
+        )
         embed.set_thumbnail(url=ctx.author.avatar_url)
         await ctx.reply(embed=embed)
 
@@ -568,6 +609,9 @@ class Economy(commands.Cog, name="economy"):
     @commands.cooldown(rate=1, per=3.2, type=commands.BucketType.user)
     async def slots(self, ctx, amount: int = 0):
         """Play a game of slots, earn some or lose some."""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
 
         cursor.execute(f"SELECT * FROM userEco WHERE userId = {ctx.author.id}")
         row = cursor.fetchall()
@@ -608,30 +652,27 @@ class Economy(commands.Cog, name="economy"):
 
         decent = discord.Embed(
             title="Slots - You Won <:beta:863514446646870076>",
-            color=EMBED_COLOUR)
-        decent.add_field(
-            name=f"{slotOutput}",
-            value=f"You won **${int(2*amount):,}**")
+            color=self.bot.embed_color,
+        )
+        decent.add_field(name=f"{slotOutput}", value=f"You won **${int(2*amount):,}**")
 
         great = discord.Embed(
             title="Slots - You Won <:beta:863514446646870076>",
-            color=EMBED_COLOUR)
-        great.add_field(name=f"{slotOutput}",
-                        value=f"You won **${int(5*amount):,}**")
+            color=self.bot.embed_color,
+        )
+        great.add_field(name=f"{slotOutput}", value=f"You won **${int(5*amount):,}**")
 
         ok = discord.Embed(
             title="Slots - You Won <:beta:863514446646870076>",
-            color=EMBED_COLOUR)
-        ok.add_field(
-            name=f"{slotOutput}",
-            value=f"You won **${int(1.5*amount):,}**")
+            color=self.bot.embed_color,
+        )
+        ok.add_field(name=f"{slotOutput}", value=f"You won **${int(1.5*amount):,}**")
 
         lost = discord.Embed(
             title="Slots - You Lost <:beta:863514446646870076>",
-            color=EMBED_COLOUR)
-        lost.add_field(
-            name=f"{slotOutput}",
-            value=f"You lost **${int(1*amount):,}**")
+            color=self.bot.embed_color,
+        )
+        lost.add_field(name=f"{slotOutput}", value=f"You lost **${int(1*amount):,}**")
 
         if slot1 == slot2 == slot3:
             cursor.execute(

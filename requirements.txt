@@ -1,5 +1,4 @@
 alexflipnote.py
-uvloop
 cogwatch
 dblpy
 statcord.py
@@ -17,6 +16,7 @@ discord.py[voice]
 matplotlib
 googletrans
 nekos.py
+buttons
 cairosvg
 discord-ext-menus
 asyncpg
@@ -27,3 +27,8 @@ discordlists.py
 akanekopy
 topggpy
 ujson
+colorama
+colorlog
+aiomysql
+asyncmy
+psycopg[binary,pool]

@@ -1,16 +1,43 @@
 import random
-from typing import Union
-
 import aiohttp
+import asyncio
 import discord
 import nekos
+
+from typing import Union
 from discord.ext import commands, tasks
-from index import EMBED_COLOUR, config, cursor, mydb
+from index import EMBED_COLOUR, config, cursor_n, mydb_n, logger
 from utils import default
+
+BotList_Servers = [
+    336642139381301249,
+    716445624517656727,
+    523523486719803403,
+    658262945234681856,
+    608711879858192479,
+    446425626988249089,
+    387812458661937152,
+    414429834689773578,
+    645281161949741064,
+    527862771014959134,
+    733135938347073576,
+    766993740463603712,
+    724571620676599838,
+    568567800910839811,
+    641574644578648068,
+    532372609476591626,
+    374071874222686211,
+    789934742128558080,
+    694140006138118144,
+    743348125191897098,
+    110373943822540800,
+    491039338659053568,
+    891226286347923506,
+]
 
 
 class autoposting(commands.Cog, name="ap"):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.autoh.start()
         self.config = default.get("config.json")
@@ -46,75 +73,71 @@ class autoposting(commands.Cog, name="ap"):
     async def send_from_webhook(self, webhook: discord.Webhook, embed: discord.Embed):
         await webhook.send(embed=embed, avatar_url=self.bot.user.avatar_url)
 
-    @tasks.loop(count=None, minutes=3)
+    @tasks.loop(count=None, minutes=2)
     async def autoh(self):
         await self.bot.wait_until_ready()
+        posts = 0
+        logger.info("Starting autoposting")
         me = self.bot.get_user(101118549958877184)
-        print(f"{default.date()} | Autoposting - Posted Batch")
         embed = discord.Embed(
             title="Enjoy your poggers porn lmao",
             description=f"Posting can be slow, please take into consideration how many servers this bot is in and how many are using auto posting. Please be patient. If I completely stop posting, please rerun the command or join the support server.\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
             colour=EMBED_COLOUR,
         )
 
-        cursor.execute(
-            f"SELECT DISTINCT hentai_channel FROM guilds WHERE hentai_channel IS NOT NULL"
+        cursor_n.execute(
+            'SELECT DISTINCT "hentai_channel" FROM public.guilds WHERE "hentai_channel" IS NOT NULL'
         )
         try:
             embed.set_image(url=(await self.get_hentai_img()))
         except nekos.errors.NothingFound:
-            print(
-                f"{default.date()} | [ERR] AutoPosting - No image found.\nTrying again..."
-            )
-            await me.send(
-                "Attempt 1 at finding an image for autoposting failed... We're trying again."
-            )
+            logger.error(f"AutoPosting - No image found.\nTrying again...")
             try:
                 embed.set_image(url=(await self.get_hentai_img()))
             except:
-                print(
-                    f"{default.date()} |[ERR] I still could not get an image to post with... so we're just not gonna do anything lmao"
+                logger.error(
+                    f"I still could not get an image to post with... so we're just not gonna do anything lmao"
                 )
                 await me.send("Attempt 2 at finding an image for autoposting failed.")
-                return
+                pass
         except Exception as e:
-            print(f"{default.date()} | Error:", e)
+            logger.info(f"Autoposting error |", e)
             return
         else:
-            for row in cursor.fetchall():
+            for row in cursor_n.fetchall():
                 if row[0] is None:
                     return
                 else:
                     channel = self.bot.get_channel(int(row[0]))
-                    # guild = await self.bot.fetch_guild(int(row[0]))
                     if channel is None:
-                        # remove the channel from the database
-                        print(
-                            f"{default.date()} | [ERR] AutoPosting - Channel not found. Removing from database."
-                        )
-                        cursor.execute(
-                            f"UPDATE guilds SET hentai_channel = NULL WHERE hentai_channel = {row[0]}"
-                        )  # NEW
-                        # cursor.execute(f"UPDATE guilds SET hentai_channel =
-                        # NULL WHERE hentai_channel = {row[0]}") # OLD
+                        try:
+                            await channel.guild.chunk()
+                        except:
+                            pass
+                        pass
                     if channel is not None:
+                        if not channel.guild.chunked:
+                            await channel.guild.chunk()
+                            logger.info(
+                                f"Chunked {channel.guild.name} from autoposting."
+                            )
+                        if channel.guild.id == BotList_Servers:
+                            continue
                         if not channel.is_nsfw():
-                            try:
-                                # Remove hentai channel from db
-                                cursor.execute(
-                                    f"UPDATE guilds SET hentai_channel = NULL WHERE guildId = {channel.guild.id}"
-                                )
-                                mydb.commit()
-                                print(
-                                    f"{default.date()} | {channel.guild.id} has removed the NSFW tag | Deleting from database..."
-                                )
-                            except:
-                                pass
+                            # Remove hentai channel from db
+                            cursor_n.execute(
+                                f"UPDATE public.guilds SET hentai_channel = NULL WHERE guildId = '{channel.guild.id}'"
+                            )
+                            mydb_n.commit()
+                            logger.info(
+                                f"{channel.guild.id} is no longer NSFW, so I have removed the channel from the database."
+                            )
                         else:
                             try:
                                 webhooks = await channel.webhooks()
                                 webhook = discord.utils.get(
-                                    webhooks, name="AGB Autoposting", user=self.bot.user)
+                                    webhooks, name="AGB Autoposting", user=self.bot.user
+                                )
                                 if webhook is None:
                                     webhook = await channel.create_webhook(
                                         name="AGB Autoposting"
@@ -122,26 +145,34 @@ class autoposting(commands.Cog, name="ap"):
                             except discord.Forbidden:
                                 webhook = None
                             except Exception as e:
-                                print(
-                                    f"{default.date()} | Wasn't able to get webhook because of error: {e}"
+                                logger.info(
+                                    f"Wasn't able to get webhook because of error: {e}"
                                 )
                                 webhook = None
                             final_messagable: Union[
                                 discord.Webhook, discord.TextChannel
                             ] = (channel if webhook is None else webhook)
+                            posts += 1
                             try:
-                                if isinstance(
-                                        final_messagable, discord.TextChannel):
+                                if isinstance(final_messagable, discord.TextChannel):
                                     await final_messagable.send(embed=embed)
+                                    await asyncio.sleep(0.05)
                                 else:
                                     await self.send_from_webhook(
                                         final_messagable, embed
                                     )
+                                    await asyncio.sleep(0.05)
                             except Exception as e:
-                                cursor.execute(
-                                    f"UPDATE guilds SET hentai_channel = NULL WHERE guildId = {channel.guild.id}"
-                                )
-                                mydb.commit()
+                                logger.info(f"""Autoposting Error: {e}""")
+                                pass
+        logger.info(f"Autoposting - Posted Batch: {posts}")
+        # cursor_n.execute(
+        #     f"UPDATE guilds SET hentai_channel = NULL WHERE guildId = {channel.guild.id}"
+        # )
+        # mydb_n.commit()
+
+    def cog_unload(self):
+        self.autoh.stop()
 
 
 def setup(bot):

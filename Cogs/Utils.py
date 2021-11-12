@@ -8,6 +8,8 @@ from index import EMBED_COLOUR
 # url_regex =
 # re.compile(r"(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?")
 
+# motz git pull check
+
 
 def setup(bot):
     # This module isn't actually a cog - but it is a place

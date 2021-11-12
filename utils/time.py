@@ -5,12 +5,37 @@ import parsedatetime as pdt
 from dateutil.relativedelta import relativedelta
 from discord.ext import commands
 
-from .formats import human_join, plural
-
 # Monkey patch mins and secs into the units
 units = pdt.pdtLocales["en_US"].units
 units["minutes"].append("mins")
 units["seconds"].append("secs")
+
+
+class plural:
+    def __init__(self, value):
+        self.value = value
+
+    def __format__(self, format_spec):
+        v = self.value
+        singular, sep, plural = format_spec.partition("|")
+        plural = plural or f"{singular}s"
+        if abs(v) != 1:
+            return f"{v} {plural}"
+        return f"{v} {singular}"
+
+
+def human_join(seq, delim=", ", final="or"):
+    size = len(seq)
+    if size == 0:
+        return ""
+
+    if size == 1:
+        return seq[0]
+
+    if size == 2:
+        return f"{seq[0]} {final} {seq[1]}"
+
+    return delim.join(seq[:-1]) + f" {final} {seq[-1]}"
 
 
 class ShortTime:
@@ -91,15 +116,10 @@ class UserFriendlyTime(commands.Converter):
     """That way quotes aren't absolutely necessary."""
 
     def __init__(self, converter=None, *, default=None):
-        if isinstance(
-                converter,
-                type) and issubclass(
-                converter,
-                commands.Converter):
+        if isinstance(converter, type) and issubclass(converter, commands.Converter):
             converter = converter()
 
-        if converter is not None and not isinstance(
-                converter, commands.Converter):
+        if converter is not None and not isinstance(converter, commands.Converter):
             raise TypeError("commands.Converter subclass necessary.")
 
         self.converter = converter
@@ -138,11 +158,8 @@ class UserFriendlyTime(commands.Converter):
 
             match = regex.match(argument)
             if match is not None and match.group(0):
-                data = {
-                    k: int(v) for k,
-                    v in match.groupdict(
-                        default=0).items()}
-                remaining = argument[match.end():].strip()
+                data = {k: int(v) for k, v in match.groupdict(default=0).items()}
+                remaining = argument[match.end() :].strip()
                 result.dt = now + relativedelta(**data)
                 return await result.check_constraints(ctx, now, remaining)
 
@@ -180,7 +197,8 @@ class UserFriendlyTime(commands.Converter):
                 raise commands.BadArgument(
                     "Time is either in an inappropriate location, which "
                     "must be either at the end or beginning of your input, "
-                    "or I just flat out did not understand what you meant. Sorry.")
+                    "or I just flat out did not understand what you meant. Sorry."
+                )
 
             if not status.hasTime:
                 # replace it with the current time
@@ -210,7 +228,7 @@ class UserFriendlyTime(commands.Converter):
                             "If the time is quoted, you must unquote it."
                         )
 
-                    remaining = argument[end + 1:].lstrip(" ,.!")
+                    remaining = argument[end + 1 :].lstrip(" ,.!")
                 else:
                     remaining = argument[end:].lstrip(" ,.!")
             elif len(argument) == end:

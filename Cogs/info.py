@@ -13,9 +13,10 @@ import googletrans
 import psutil
 import requests
 from discord.ext import commands
-from index import EMBED_COLOUR, config, cursor, delay, emojis, mydb
+from index import EMBED_COLOUR, config, cursor, delay, emojis, mydb, logger
 from matplotlib.pyplot import title
-from utils import default, draw, permissions
+from utils import default, permissions
+from Manager.commandManager import commandsEnabled
 
 
 def list_items_in_english(l: List[str], oxford_comma: bool = True) -> str:
@@ -64,9 +65,8 @@ class Information(commands.Cog, name="info"):
             inline=False,
         )
         embed.add_field(
-            name=f"Feels like",
-            value=f"{str(data['feels_like'])}°F",
-            inline=False)
+            name=f"Feels like", value=f"{str(data['feels_like'])}°F", inline=False
+        )
         return embed
 
     def error_message(self, location):
@@ -79,17 +79,18 @@ class Information(commands.Cog, name="info"):
 
     async def create_embed(self, ctx, error):
         embed = discord.Embed(
-            title=f"Error Caught!",
-            color=discord.Colour.red(),
-            description=f"{error}")
-        embed.set_thumbnail(
-            url=self.bot.user.avatar_url_as(
-                static_format="png"))
+            title=f"Error Caught!", color=discord.Colour.red(), description=f"{error}"
+        )
+        embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
         await ctx.send(embed=embed)
 
-    @commands.command(usage="`tp!weather <location>`")
+    @commands.command(usage="`tp!weather location`")
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def Weather(self, ctx, *, location=None):
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         async with aiohttp.ClientSession() as session:
             if location is None:
                 await ctx.send("Please send a valid location.")
@@ -114,16 +115,16 @@ class Information(commands.Cog, name="info"):
     @commands.cooldown(1, 3, commands.BucketType.user)
     async def Vote(self, ctx):
         """Vote for the bot"""
-        embed = discord.Embed(
-            color=EMBED_COLOUR,
-            timestamp=ctx.message.created_at)
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
+        embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
         embed.set_author(
             name=ctx.bot.user.name,
             icon_url=ctx.bot.user.avatar_url_as(static_format="png"),
         )
-        embed.set_thumbnail(
-            url=ctx.bot.user.avatar_url_as(
-                static_format="png"))
+        embed.set_thumbnail(url=ctx.bot.user.avatar_url_as(static_format="png"))
         embed.add_field(
             name="Thank You!", value=f"[Click Me]({config.Vote})", inline=True
         )
@@ -144,13 +145,15 @@ class Information(commands.Cog, name="info"):
     @commands.command(usage="`=ping`")
     async def Ping(self, ctx):
         """Pong!"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         before = time.monotonic()
         before_ws = int(round(self.bot.latency * 1000, 2))
         message = await ctx.reply("Ping ")
         ping = (time.monotonic() - before) * 1000
-        embed = discord.Embed(
-            color=EMBED_COLOUR,
-            timestamp=ctx.message.created_at)
+        embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
         embed.set_author(
             name=ctx.bot.user.name,
             icon_url=ctx.bot.user.avatar_url_as(static_format="png"),
@@ -168,6 +171,10 @@ class Information(commands.Cog, name="info"):
     @commands.cooldown(1, 2, commands.BucketType.user)
     async def host(self, ctx):
         """Our hosting provider"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         embed = discord.Embed(
             color=EMBED_COLOUR,
             title="Hosting Provider",
@@ -181,9 +188,13 @@ class Information(commands.Cog, name="info"):
         await ctx.send(embed=embed)
 
     @commands.command(usage="`tp!todo`")
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=2, per=5, type=commands.BucketType.user)
     async def Todo(self, ctx):
         """Stuff to come, future updates i have planned for this bot"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         channel = self.bot.get_channel(784053877040873522)
         message = await channel.fetch_message(784054226439372832)
         await ctx.reply(message.content)
@@ -192,6 +203,10 @@ class Information(commands.Cog, name="info"):
     @commands.bot_has_permissions(embed_links=True)
     async def Credits(self, ctx):
         """Just a thank you command to the people who helped me make agb, thank you everyone who helped and who is continually helping me on this project"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         embed = discord.Embed(
             color=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
@@ -207,14 +222,17 @@ class Information(commands.Cog, name="info"):
         )
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=["supportserver",
-                               "feedbackserver",
-                               "support"],
-                      usage="`tp!support`")
+    @commands.command(
+        aliases=["supportserver", "feedbackserver", "support"], usage="`tp!support`"
+    )
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=2, per=5, type=commands.BucketType.user)
     async def Botserver(self, ctx):
         """Get an invite to our support server!"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         if (
             isinstance(ctx.channel, discord.DMChannel)
             or ctx.guild.id != 755722576445046806
@@ -227,12 +245,10 @@ class Information(commands.Cog, name="info"):
                 icon_url=ctx.bot.user.avatar_url_as(static_format="png"),
             )
             embed.add_field(
-                name="You can join here:",
-                value=f"[Click Here.]({config.Server})")
+                name="You can join here:", value=f"[Click Here.]({config.Server})"
+            )
             return await ctx.reply(embed=embed)
-        embed = discord.Embed(
-            color=ctx.author.color,
-            timestamp=ctx.message.created_at)
+        embed = discord.Embed(color=ctx.author.color, timestamp=ctx.message.created_at)
         embed.set_author(
             name=ctx.bot.user.name,
             icon_url=ctx.bot.user.avatar_url_as(static_format="png"),
@@ -244,26 +260,23 @@ class Information(commands.Cog, name="info"):
         await ctx.reply(embed=embed)
 
     @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(aliases=["joinme", "botinvite",
-                      "kek"], usage="`tp!invite`")
+    @commands.command(aliases=["joinme", "botinvite", "kek"], usage="`tp!invite`")
     @commands.bot_has_permissions(embed_links=True)
     async def Invite(self, ctx):
         """Invite me to your server"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
 
-        embed = discord.Embed(
-            color=EMBED_COLOUR,
-            timestamp=ctx.message.created_at)
+        embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
         embed.set_author(
             name=ctx.bot.user.name,
             icon_url=ctx.bot.user.avatar_url_as(static_format="png"),
         )
-        embed.set_thumbnail(
-            url=ctx.bot.user.avatar_url_as(
-                static_format="png"))
+        embed.set_thumbnail(url=ctx.bot.user.avatar_url_as(static_format="png"))
         embed.add_field(
-            name="Bot Invite",
-            value=f"[Invite Me!]({config.Invite})",
-            inline=True)
+            name="Bot Invite", value=f"[Invite Me!]({config.Invite})", inline=True
+        )
         embed.add_field(
             name=f"Support Server",
             value=f"[Join Our Server!!]({config.Server})",
@@ -277,10 +290,7 @@ class Information(commands.Cog, name="info"):
             inline=False,
         )
         embed.set_thumbnail(url=ctx.author.avatar_url)
-        try:
-            await ctx.reply(embed=embed)
-        except Exception as err:
-            await ctx.reply(err)
+        await ctx.send(embed=embed)
 
     # @commands.cooldown(1, 5, commands.BucketType.user)
     # @commands.command(usage="`tp!source`")
@@ -299,6 +309,9 @@ class Information(commands.Cog, name="info"):
     @commands.bot_has_permissions(embed_links=True)
     async def About(self, ctx):
         """About the bot"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
 
         ramUsage = self.process.memory_full_info().rss / 1024 ** 2
 
@@ -306,41 +319,26 @@ class Information(commands.Cog, name="info"):
 
         # create the cpu usage embed
         cpu = psutil.cpu_percent()
-        cpu_box = draw.draw_box(
-            round(cpu),
-            ":blue_square:",
-            ":black_large_square:")
+        cpu_box = default.draw_box(round(cpu), ":blue_square:", ":black_large_square:")
         ramlol = round(ramUsage) // 10
-        ram_box = draw.draw_box(
-            ramlol,
-            ":blue_square:",
-            ":black_large_square:")
+        ram_box = default.draw_box(ramlol, ":blue_square:", ":black_large_square:")
 
-        GUILD_MODAL = f"""
-        `{len(ctx.bot.guilds)} Guilds are visible,`
-        `I can see {round(len(self.bot.users))} users.`
-        """
+        # get total GB of ram in GB
+        total_ram = psutil.virtual_memory().total // 1015 ** 2
 
-        datetime.utcnow()
-        delta_uptime = datetime.utcnow() - self.bot.launch_time
-        delta_uptime = delta_uptime - \
-            timedelta(microseconds=delta_uptime.microseconds)
+        # total_ram = psutil.virtual_memory().total
+
+        GUILD_MODAL = f"""{len(ctx.bot.guilds)} Guilds are visible,\nI can see {round(len(self.bot.users))} users."""
 
         PERFORMANCE_MODAL = f"""
-        `RAM Usage: {ramUsage:.2f}MB / {psutil.virtual_memory().total >> 30}gb`
+        `RAM Usage: {ramUsage:.2f}MB / {str(total_ram)[:1] + '.' + str(total_ram)[1:2]}GB ({round(psutil.virtual_memory().percent)}%)`
         {ram_box}
-
         `CPU Usage: {cpu}%`
-        {cpu_box}
+        {cpu_box}"""
 
-        `Latency: {round(self.bot.latency * 1000, 2)}ms,`
-        `Loaded CMDs: {len([x.name for x in self.bot.commands])}`
-        `Uptime: {delta_uptime}`
-        """
+        BOT_INFO = f"""Latency: {round(self.bot.latency * 1000, 2)}ms\nLoaded CMDs: {len([x.name for x in self.bot.commands])}"""
 
-        embed = discord.Embed(
-            color=EMBED_COLOUR,
-            timestamp=ctx.message.created_at)
+        embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
         embed.set_thumbnail(url=ctx.bot.user.avatar_url)
 
         embed.add_field(
@@ -350,14 +348,19 @@ class Information(commands.Cog, name="info"):
             ),
             inline=True,
         )
+        embed.add_field(
+            name="Performance Overview", value=PERFORMANCE_MODAL, inline=False
+        )
+
         # embed.add_field(name="DB Connection", value=f"Con {mydb.connection_id}, v{mydb._server_version[0]}", inline=True)
         embed.add_field(
             name="Guild Information",
-            value=GUILD_MODAL,
-            inline=False)
+            value=f"{default.pycode(GUILD_MODAL)}",
+            inline=False,
+        )
 
         embed.add_field(
-            name="Performance Overview", value=PERFORMANCE_MODAL, inline=False
+            name="Bot Information", value=f"{default.pycode(BOT_INFO)}", inline=False
         )
         # embed.add_field(name="Total Members",
         # value=f' total users\n\n**DB Connection**\nCon {mydb.connection_id},
@@ -376,6 +379,10 @@ class Information(commands.Cog, name="info"):
     @commands.check(permissions.is_owner)
     @commands.command(aliases=["guilds"], hidden=True)
     async def Servers(self, ctx):
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         await ctx.send(
             "alright, fetching all the servers now, please wait, this can take some time...",
             delete_after=delay,
@@ -397,16 +404,20 @@ class Information(commands.Cog, name="info"):
             pass
         os.remove(f"{filename}.txt")
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(usage="`tp!say <message>`")
+    @commands.cooldown(1, random.randint(3, 5), commands.BucketType.user)
+    @commands.command(usage="`tp!say message`")
     @commands.bot_has_permissions(embed_links=True)
     async def Say(self, ctx, *, message):
         """Speak through the bot uwu"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         embed = discord.Embed(
             color=EMBED_COLOUR,
             title="AGB",
             url=f"{config.Website}",
-            description=str(message),
+            description=f"""{message}""",
             timestamp=ctx.message.created_at,
         )
         embed.set_footer(icon_url=ctx.author.avatar_url, text=ctx.author)
@@ -420,16 +431,16 @@ class Information(commands.Cog, name="info"):
     @commands.bot_has_permissions(embed_links=True)
     async def Policy(self, ctx):
         """Privacy Policy"""
-        embed = discord.Embed(
-            color=EMBED_COLOUR,
-            timestamp=ctx.message.created_at)
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
+        embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
         embed.set_author(
             name=ctx.bot.user.name,
             icon_url=ctx.bot.user.avatar_url_as(static_format="png"),
         )
-        embed.set_thumbnail(
-            url=ctx.bot.user.avatar_url_as(
-                static_format="png"))
+        embed.set_thumbnail(url=ctx.bot.user.avatar_url_as(static_format="png"))
         embed.add_field(
             name="Direct Link To The Privacy Policy ",
             value=f"[Click Here](https://gist.github.com/Motzumoto/2f25e114533a35d86078018fdc2dd283)",
@@ -459,11 +470,15 @@ class Information(commands.Cog, name="info"):
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=2, per=5, type=commands.BucketType.user)
     @commands.command(usage="`tp!profile`")
     @commands.bot_has_permissions(embed_links=True)
     async def profile(self, ctx, user: Union[discord.Member, discord.User] = None):
         """Show your user profile"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         usr = user or ctx.author
 
         cursor.execute(f"SELECT * FROM userEco WHERE userId = {usr.id}")
@@ -513,19 +528,20 @@ class Information(commands.Cog, name="info"):
 
         # **Profile Info**\nBadges: {badges}\n\n
         title = f"{usr.name}#{usr.discriminator}"
-        description = f"{badges}\n\n**<:users:770650885705302036> Overview**\n`User Bio`\n - **{udb[0][2]}**\n\n**💰 Economy Info**\nBalance: **{user_balance}**\nBank: **{user_bank}**\n\n**📜 Misc Info**\nCommands Used: **{usedCommands}**"
-        embed = discord.Embed(
-            title=title,
-            color=EMBED_COLOUR,
-            description=description)
+        description = f"{badges}\n\n**<:users:770650885705302036> Overview**\n`User Bio`\n - **{udb[0][2]}**\n\n**💰 Economy Info**\n`Balance`: **{user_balance}**\n`Bank`: **{user_bank}**\n\n**📜 Misc Info**\n`Commands Used`: **{usedCommands}**"
+        embed = discord.Embed(title=title, color=EMBED_COLOUR, description=description)
         embed.set_thumbnail(url=usr.avatar_url)
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=1, per=15, type=commands.BucketType.user)
-    @commands.command(usage="`tp!bio <bio>`")
+    @commands.cooldown(rate=2, per=15, type=commands.BucketType.user)
+    @commands.command(usage="`tp!bio new_bio`")
     @commands.bot_has_permissions(embed_links=True)
     async def bio(self, ctx, *, bio=None):
         """Set your profile bio"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         if bio is None:
             await ctx.reply("Incorrect usage. Check the usage below:", delete_after=10)
             await ctx.send_help(str(ctx.command))
@@ -533,8 +549,7 @@ class Information(commands.Cog, name="info"):
             return
 
         cursor.execute(f"SELECT * FROM users WHERE userId = {ctx.author.id}")
-        cursor.execute(
-            f'UPDATE users SET bio = "{bio}" WHERE userId = {ctx.author.id}')
+        cursor.execute(f'UPDATE users SET bio = "{bio}" WHERE userId = {ctx.author.id}')
         mydb.commit()
         embed = discord.Embed(
             title="User Bio",
@@ -552,11 +567,14 @@ class Information(commands.Cog, name="info"):
             """,
     )
     async def timestamp(self, ctx, date, time=None):
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         if time is None:
             time = "00:00:00"
 
-        datetime_object = datetime.strptime(
-            f"{date} {time}", "%m/%d/%Y %H:%M:%S")
+        datetime_object = datetime.strptime(f"{date} {time}", "%m/%d/%Y %H:%M:%S")
         uts = str(datetime_object.timestamp())[:-2]
         await ctx.reply(
             embed=discord.Embed(

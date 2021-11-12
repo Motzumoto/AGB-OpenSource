@@ -5,35 +5,37 @@ import io
 import json
 import os
 import subprocess
+import re
 import textwrap
 import traceback
-from contextlib import redirect_stdout
-from typing import Union
-
 import aiohttp
 import discord
 import requests
 import speedtest
+
+from traceback import format_exception
+from contextlib import redirect_stdout
+from typing import Union
+from discord.ext.buttons import Paginator
 from discord.ext import commands
 from discord_argparse import ArgumentConverter, OptionalArgument
-from index import EMBED_COLOUR, cursor, delay, emojis
+from index import (
+    EMBED_COLOUR,
+    cursor_n,
+    delay,
+    emojis,
+    mydb_n,
+    logger,
+)
 from utils import default, http, permissions
-
 from .Utils import *
-
-
-class create_dict(dict):
-    def __init__(self):
-        self = dict()
-
-    def add(self, key, value):
-        self[key] = value
+from Manager.commandManager import commandsEnabled
 
 
 class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     """Commands that arent for you lol"""
 
-    def __init__(self, bot, *args, **kwargs) -> None:
+    def __init__(self, bot: commands.Bot, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.config = default.get("config.json")
@@ -54,30 +56,27 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             "nah": False,
         }
         self.blacklisted = False
-
-        cursor.execute(f"SELECT userId FROM users WHERE blacklisted = 'true'")
-        res = cursor.fetchall()
-        blist = []
-        for row in res:
-            blist.append(int(row[0]))
-        self.blacklist = blist
-        self.blacklist = [0]
+        self.blacklist = self.blacklisted_users()
+        # self.blacklist = [0]
         bot.add_check(self.blacklist_check)
-
     # this is mainly to make sure that the code is loading the json file if
     # new data gets added
 
-    def format_number(self, number):
-        return "{:,}".format(number)
+    def blacklisted_users(self) -> list:
+        cursor_n.execute(
+            f"SELECT \"userID\" FROM public.blacklist WHERE blacklisted = 'true'"
+        )
+
+        return [int(row[0]) for row in cursor_n.fetchall()]
 
     def blacklist_check(self, ctx):
         try:
-            cursor.execute(
-                f"SELECT blacklisted FROM users WHERE userId = {ctx.author.id}"
+            cursor_n.execute(
+                f"SELECT blacklisted FROM public.blacklist WHERE \"userID\" = '{ctx.author.id}'"
             )
         except:
             pass
-        for row in cursor.fetchall():
+        for row in cursor_n.fetchall():
             self.blacklisted = row[0]
         if self.blacklisted == "false":
             return True
@@ -92,12 +91,17 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             result = await process.communicate()
         except NotImplementedError:
             process = subprocess.Popen(
-                command,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
             result = await self.bot.loop.run_in_executor(None, process.communicate)
         return [output.decode() for output in result]
+
+    class Pag(Paginator):
+        async def teardown(self):
+            try:
+                await self.page.clear_reactions()
+            except discord.HTTPException:
+                pass
 
     def cleanup_code(self, content):
         """Automatically removes code blocks from the code."""
@@ -117,7 +121,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        if "N word" in guild.name.lower():
+        if "n word" in guild.name.lower():
             await self.try_to_send_msg_in_a_channel(
                 guild, "im gonna leave cuz of the server name"
             )
@@ -133,9 +137,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def on_member_join(self, member: discord.Member, guild=None):
         me = self.bot.get_user(101118549958877184)
         guild = member.guild
-        embed = discord.Embed(
-            title="User Joined",
-            colour=discord.Colour.green())
+        embed = discord.Embed(title="User Joined", colour=discord.Colour.green())
         embed.add_field(
             name=f"Welcome {member}",
             value=f"Welcome {member.mention} to {guild.name}!\nPlease read <#776514195465568257> to get color roles for yourself and common questions about AGB!",
@@ -151,7 +153,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                 role = discord.utils.get(guild.roles, name="Bots")
                 await member.add_roles(role)
                 await me.send(
-                    f"A bot was just added to anxiety zone... {member.bot.user.name} / {member.bot.user.mention}"
+                    f"A bot was just added to anxiety zone... {member.bot.name} / {member.bot.mention}"
                 )
                 return
             else:
@@ -168,12 +170,8 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def on_member_remove(self, member: discord.Member, guild=None):
         me = self.bot.get_user(101118549958877184)
         guild = member.guild
-        embed.set_thumbnail(url=member.avatar_url)
         if member.guild.id == 755722576445046806:
             if member.bot:
-                await me.send(
-                    f"A bot was just removed from anxiety zone... {member.bot.user.name} / {member.bot.user.mention}"
-                )
                 return
             else:
                 channel = self.bot.get_channel(755722577049026567)
@@ -197,52 +195,66 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                     value=f"We'd love to give a special shoutout to our host: **Ponbus**. Ponbus is a super cheap bot host with exceptional hardware and latency.\nWith unlimited bandwidth, DDoS protection, and insane support, Ponbus is guaranteed to meet your needs!\n- {emojis.ponbus} Interested in Ponbus? Check it out here: [Ponbus](https://billing.ponbus.com/aff.php?aff=15)",
                 )
                 embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/attachments/814231144979365939/878851032464105533/ponbussy.png")
+                    url="https://cdn.discordapp.com/attachments/814231144979365939/878851032464105533/ponbussy.png"
+                )
                 await member.send(embed=embed)
             except discord.Forbidden:
                 pass
 
-    @commands.group(invoke_without_command=True,
-                    usage="tp!blacklist <a:user> <r:user>")
+    @commands.command(
+        name="blacklist",
+        invoke_without_command=True,
+        pass_context=True,
+        usage="tp!blacklist <user:id> (toggle) ",
+    )
     @commands.check(permissions.is_owner)
-    async def blacklist(self, ctx):
-        """Blacklist users from using the bot. Send with no args to see who's blacklisted."""
-        conv = commands.UserConverter()
-        users = await asyncio.gather(
-            *[conv.convert(ctx, str(_id)) for _id in self.blacklist]
-        )
-        names = [user.name for user in users]
-        await ctx.send("\t".join(names) or "No one has been blacklisted")
-
-    @blacklist.command(usage="tp!blacklist a <user>", aliases=["a"])
-    @commands.check(permissions.is_owner)
-    async def add(self, ctx, user: discord.User):
-        """Add a user to blacklist"""
-        if user.id in self.blacklist:
-            await ctx.send("This user has already been blacklisted.")
-            await ctx.message.add_reaction("\u274C")
-            return
-        with open("blacklist.json", "w") as f:
-            self.blacklist.append(user.id)
-            json.dump(self.blacklist, f)
-        await ctx.send(f"{user} has been added to the blacklist.")
-        await ctx.message.add_reaction("\u2705")
-
-    @blacklist.command(usage="tp!blacklist r <user>", aliases=["r"])
-    @commands.check(permissions.is_owner)
-    async def remove(self, ctx, user: discord.User):
-        """Remove a user from blacklist."""
-        if user.id in self.blacklist:
-            self.blacklist.remove(user.id)
-            await ctx.send(f"{user} has been removed from the blacklist.")
-            await ctx.message.add_reaction("\u2705")
-        else:
-            await ctx.send(
-                "You cant remove someone from blacklist if they arent blacklisted."
+    async def blacklist(self, ctx, user: discord.User = None, *, list=None):
+        """Blacklist users from using the bot. Pass no args to see a list of blacklisted users"""
+        if user is None:
+            cursor_n.execute(
+                f"SELECT \"userID\" FROM public.blacklist WHERE blacklisted = 'true'"
             )
-            await ctx.message.add_reaction("\u274C")
-        with open("blacklist.json", "w") as f:
-            json.dump(self.blacklist, f)
+            res = cursor_n.fetchall()
+            blist = []
+            for row in res:
+                blist.append(int(row[0]))
+            conv = commands.UserConverter()
+            users = await asyncio.gather(
+                *[conv.convert(ctx, str(_id)) for _id in blist]
+            )
+            names = [f"`{user}`" for user in users]
+            mydb_n.commit()
+            await ctx.send(" **|** ".join(names) or "No one has been blacklisted")
+        else:
+            cursor_n.execute(f"SELECT * FROM blacklist WHERE \"userID\" = '{user.id}'")
+            rows = cursor_n.rowcount
+            if rows == 0:
+                cursor_n.execute(
+                    f"INSERT INTO blacklist (\"userID\", blacklisted) VALUES ('{user.id}', 'true')"
+                )
+                await ctx.send(f"{user} has been added to the blacklist.")
+                await ctx.message.add_reaction("\u2705")
+                mydb_n.commit()
+            else:
+                cursor_n.execute(
+                    f"SELECT * FROM public.blacklist WHERE \"userID\" = '{user.id}'"
+                )
+                rows = cursor_n.fetchall()
+                if rows[0][1] == "true":
+                    cursor_n.execute(
+                        f"UPDATE public.blacklist SET blacklisted = 'false' WHERE \"userID\" = '{user.id}'"
+                    )
+                    await ctx.send(f"{user} has been removed from the blacklist.")
+                    await ctx.message.add_reaction("\u2705")
+                    mydb_n.commit()
+                else:
+                    cursor_n.execute(
+                        f"UPDATE public.blacklist SET blacklisted = 'true' WHERE \"userID\" = '{user.id}'"
+                    )
+                    await ctx.send(f"{user} has been added to the blacklist.")
+                    await ctx.message.add_reaction("\u2705")
+                    mydb_n.commit()
+            mydb_n.commit()
 
     @commands.group(aliases=["eco"], pass_context=True, hidden=True)
     @commands.check(permissions.is_owner)
@@ -270,8 +282,8 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             user = ctx.author
 
         # Fetch user's banking information
-        cursor.execute("SELECT * FROM userEco WHERE userId = %s", (user.id,))
-        row = cursor.fetchall()
+        cursor_n.execute("SELECT * FROM userEco WHERE userId = %s", (user.id,))
+        row = cursor_n.fetchall()
 
         if account == "bank":
             account_to_change = row[0][2]
@@ -284,20 +296,12 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
         final_amount = account_to_change + amount
         if account == "bank":
-            cursor.execute(
-                f"UPDATE userEco SET bank = %s WHERE userId = %s",
-                (
-                    final_amount,
-                    user.id,
-                ),
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET bank = '{final_amount}' WHERE \"userId\" = '{user.id}'"
             )
         elif account == "wallet" or account == "balance":
-            cursor.execute(
-                f"UPDATE userEco SET balance = %s WHERE userId = %s",
-                (
-                    final_amount,
-                    user.id,
-                ),
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET balance = '{final_amount}' WHERE \"userId\" = '{user.id}'"
             )
         await ctx.reply(
             f"Gave ${amount} to {str(user)}, their {account} is now at ${account_to_change + amount}"
@@ -323,8 +327,10 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             user = ctx.author
 
         # Fetch user's banking information
-        cursor.execute("SELECT * FROM userEco WHERE userId = %s", (user.id,))
-        row = cursor.fetchall()
+        cursor_n.execute(
+            f'SELECT * FROM public."userEco" WHERE "userId" = \'{user.id}\''
+        )
+        row = cursor_n.fetchall()
 
         if account == "bank":
             account_to_change = row[0][2]
@@ -343,16 +349,16 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             return
 
         if account == "bank":
-            cursor.execute(
-                "UPDATE userEco SET bank = %s WHERE userId = %s",
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET bank = '{amount}' WHERE \"userId\" = '{user.id}'",
                 (
                     final_balance,
                     user.id,
                 ),
             )
         elif account == "balance" or account == "wallet":
-            cursor.execute(
-                "UPDATE userEco SET balance = %s WHERE userId = %s",
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET balance = '{amount}' WHERE \"userId\" = '{user.id}'",
                 (
                     final_balance,
                     user.id,
@@ -381,21 +387,13 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             return
 
         if account == "bank":
-            cursor.execute(
-                "UPDATE userEco SET bank = %s WHERE userId = %s",
-                (
-                    amount,
-                    user.id,
-                ),
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET bank = '{amount}' WHERE \"userId\" = '{user.id}'"
             )
             await ctx.reply(f"Set bank to ${amount} for {str(user)}.")
         elif account == "wallet" or account == "balance":
-            cursor.execute(
-                "UPDATE userEco SET balance = %s WHERE userId = %s",
-                (
-                    amount,
-                    user.id,
-                ),
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET balance = '{amount}' WHERE \"userId\" = '{user.id}'"
             )
             await ctx.reply(f"Set wallet to ${amount} for {str(user)}.")
         else:
@@ -439,11 +437,12 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             return
 
         if account == "both" or account == "bank":
-            cursor.execute(
-                "UPDATE userEco SET bank = 0 WHERE userId = %s", (user.id,))
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET bank = '0' WHERE \"userId\" = '{user.id}'"
+            )
         if account == "both" or account == "wallet" or account == "balance":
-            cursor.execute(
-                "UPDATE userEco SET balance = 0 WHERE userId = %s", (user.id,)
+            cursor_n.execute(
+                f"UPDATE public.\"userEco\" SET balance = '0' WHERE \"userId\" = '{user.id}'"
             )
         await ctx.reply(f"Cleared {to_erase} for {str(user)}")
 
@@ -458,13 +457,13 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def set_tax(self, ctx, new_tax: float):
         """Set a tax rate - Must be a decimal, such that `12%` would be `0.12`"""
 
-        cursor.execute(
-            f"UPDATE globalVars SET variableData = %s WHERE variableName = 'taxData'",
-            (new_tax,),
+        cursor_n.execute(
+            f"UPDATE public.\"globalVars\" SET variableData = '{new_tax}' WHERE variableName = 'taxData'"
         )
-        cursor.execute(
-            f"SELECT * FROM globalVars WHERE variableName = 'taxData'")
-        row = cursor.fetchall()
+        cursor_n.execute(
+            f"SELECT * FROM public.\"globalVars\" WHERE variableName = 'taxData'"
+        )
+        row = cursor_n.fetchall()
         await ctx.reply(f"Tax rate changed to {int(row[0][1] * 100)}%.")
 
     @setting.command(aliases=["collector", "bastard"], hidden=True)
@@ -474,52 +473,24 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     ):
         """Sets everyone's least favorite person in the world."""
         if user is not None:
-            cursor.execute(
-                "UPDATE globalVars SET variableData2 = %s WHERE variableName = 'taxData'",
-                (user.id,),
+            cursor_n.execute(
+                f"UPDATE public.\"globalVars\" SET variableData2 = '{user.id}' WHERE variableName = 'taxData'"
             )
         else:
-            cursor.execute(
-                "UPDATE globalVars SET variableData2 = %s WHERE variableName = 'taxData'",
-                (None,),
+            cursor_n.execute(
+                f"UPDATE public.\"globalVars\" SET variableData2 = '{None}' WHERE variableName = 'taxData'"
             )
 
-        cursor.execute(
-            "SELECT * FROM globalVars WHERE variableName = 'taxData'")
-        row = cursor.fetchall()
+        cursor_n.execute(
+            "SELECT * FROM public.\"globalVars\" WHERE variableName = 'taxData'"
+        )
+        row = cursor_n.fetchall()
         if row[0][2] is None:
             await ctx.reply(
                 f"Tax collector cleared. User might still be taxed, but no one will collect it."
             )
         else:
             await ctx.reply(f"Tax collector set to {str(user)} (ID: {row[0][2]})")
-
-    @commands.check(permissions.is_owner)
-    @commands.command()
-    async def apt(self, ctx):
-        """Check autpost"""
-        cursor.execute(
-            f"SELECT DISTINCT hentai_channel FROM guilds WHERE hentai_channel IS NOT NULL"
-        )
-        for row in cursor.fetchall():
-            if row[0] is None:
-                return
-            else:
-                channel = self.bot.get_channel(int(row[0]))
-                if channel is not None:
-                    if not channel.is_nsfw():
-                        return
-                    else:
-                        try:
-                            # print(channel)
-                            print(channel.id)
-                            # mention the guild owner
-                            await channel.send(
-                                "This is an automated message to ensure the quality and performance within AGB, please ignore this message."
-                            )
-                            await asyncio.sleep(2)
-                        except discord.Forbidden:
-                            return
 
     @commands.check(permissions.is_owner)
     @commands.command()
@@ -586,27 +557,18 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             if ret is None:
                 if value:
                     embed.add_field(
-                        name="Result",
-                        value=f"```py\n{value}\n```",
-                        inline=True)
+                        name="Result", value=f"```py\n{value}\n```", inline=True
+                    )
                     # await ctx.send(f'```py\n{value}\n```')
                     await ctx.send(embed=embed)
             else:
                 self._last_result = ret
                 embed.add_field(
-                    name="Result",
-                    value=f"```py\n{value}{ret}\n```",
-                    inline=True)
+                    name="Result", value=f"```py\n{value}{ret}\n```", inline=True
+                )
                 # await ctx.send(f'```py\n{value}{ret}\n```')
                 await ctx.send(embed=embed)
 
-    @commands.check(permissions.is_owner)
-    @commands.command(hidden=True)
-    async def ghost(self, ctx):
-        try:
-            await ctx.message.delete()
-        except:
-            pass
 
     @commands.check(permissions.is_owner)
     @commands.command()
@@ -841,28 +803,10 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             ),
         )
         embed = discord.Embed(
-            title="Cya, lmao.",
-            color=EMBED_COLOUR,
-            description="Rebooting... 👌")
+            title="Cya, lmao.", color=EMBED_COLOUR, description="Rebooting... 👌"
+        )
         await ctx.send(embed=embed)
-        url = "https://panel.ponbus.com/api/client/servers/1acee413/power"
-
-        payload_kill = json.dumps({"signal": "kill"})
-        payload_restart = json.dumps({"signal": "restart"})
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"{self.config.ponbus}",
-        }
-
-        response = requests.request(
-            "POST", url, headers=headers, data=payload_restart)
-        print(response.text)
-
-        response2 = requests.request(
-            "POST", url, headers=headers, data=payload_kill)
-        print(response2.text)
-        # await sys.exit(0)
-
+        await os.system("chmod +x * && ./reboot.sh")
     @commands.command()
     @commands.check(permissions.is_owner)
     async def shutdown(self, ctx):
@@ -878,11 +822,10 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             ),
         )
         embed = discord.Embed(
-            title="Cya, lmao.",
-            color=EMBED_COLOUR,
-            description="Shutting Down...👌")
+            title="Cya, lmao.", color=EMBED_COLOUR, description="Shutting Down...👌"
+        )
         await ctx.send(embed=embed)
-        url = "https://panel.ponbus.com/api/client/servers/1acee413/power"
+        url = ""
 
         payload_kill = json.dumps({"signal": "kill"})
         headers = {
@@ -890,8 +833,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             "Authorization": f"{self.config.ponbus}",
         }
 
-        response2 = requests.request(
-            "POST", url, headers=headers, data=payload_kill)
+        response2 = requests.request("POST", url, headers=headers, data=payload_kill)
         print(response2.text)
 
     @commands.command()
@@ -930,9 +872,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             await ctx.message.delete()
         except discord.Forbidden:
             pass
-        embed2 = discord.Embed(
-            title=f"New message to {user}",
-            description=message)
+        embed2 = discord.Embed(title=f"New message to {user}", description=message)
         embed2.set_footer(
             text=f"tp!dm {user.id} | Powered by ponbus.com",
             icon_url=ctx.author.avatar_url,
@@ -949,22 +889,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             await ctx.send(embed=embed2)
         except discord.Forbidden:
             await ctx.send("This user might be having DMs blocked.", delete_after=delay)
-
-    @commands.command()
-    @commands.check(permissions.is_owner)
-    async def toggle(self, ctx, *, command):
-        command = self.bot.get_command(command)
-
-        if command is None:
-            await ctx.send("I can't find a command with that name!")
-
-        elif ctx.command == command:
-            await ctx.send("You cannot disable this command.")
-
-        else:
-            command.enabled = not command.enabled
-            ternary = "enabled" if command.enabled else "disabled"
-            await ctx.send(f"I have {ternary} {command.qualified_name} for you!")
 
     @commands.group(case_insensitive=True)
     @commands.check(permissions.is_owner)
@@ -1059,7 +983,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         if message.guild is None:
             return
         me = self.bot.get_user(101118549958877184)
-        # hoodie = 871629438952022076
         blacklisted_links = [
             "cehfhc.dateshookp.com",
             "streancommunnity.",
@@ -1098,19 +1021,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                 await message.delete()
             except:
                 pass
-            # if message.guild.id == hoodie:
-            # await message.channel.send(f"Do ***NOT*** click on the link sent
-            # by {message.author} (if the message wasnt already deleted)")
-
-    # @commands.Cog.listener(name='on_message')
-    # async def FuckFear(self, message):
-    #     if message.author.id == 683530527239962627:
-    #         try:
-    #             await message.delete()
-    #         except:
-    #             pass
-    #     else:
-    #         return
 
 
 def setup(bot):

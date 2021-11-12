@@ -1,5 +1,5 @@
-import discord
 from discord.ext import commands
+from index import logger
 
 # A really simple expression evaluator supporting the
 # four basic math functions, parentheses, and variables.
@@ -28,7 +28,7 @@ class Parser:
         return value
 
     def peek(self):
-        return self.string[self.index: self.index + 1]
+        return self.string[self.index : self.index + 1]
 
     def hasNext(self):
         return self.index < len(self.string)
@@ -197,7 +197,7 @@ class math(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.message_cooldown = commands.CooldownMapping.from_cooldown(
-            1.0, 3.0, commands.BucketType.user
+            2, 3.0, commands.BucketType.user
         )
 
     @commands.Cog.listener()
@@ -207,16 +207,21 @@ class math(commands.Cog):
             bucket = self.message_cooldown.get_bucket(message)
             retry_after = bucket.update_rate_limit()
             if retry_after:
+                logger.info(f"ratelimit - math")
                 return
             else:
                 try:
                     # print("try")
-                    await message.reply(Parser.evaluate(message.content))
+                    if message.content[0].isdigit():
+                        logger.info(f"success - math")
+                        await message.reply(Parser.evaluate(message.content))
                     # print("huh")
+                    else:
+                        logger.info(f"else - math")
+                        await message.reply("Please don't talk in here lol.")
+                        pass
                 except Exception as e:
-                    # print("fail")
-                    # if message.author.id == 146151306216734720:
-                    #    await message.reply(e)
+                    await message.reply(e)
                     pass
 
 

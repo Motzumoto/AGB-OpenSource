@@ -14,15 +14,17 @@ from index import (
     Vote,
     Website,
     config,
-    delay,
     embed_space,
     emojis,
     suggestion_no,
     suggestion_yes,
+    logger,
 )
 from utils import default, permissions
-
+from utils.default import pagify
 from .Utils import error_embed, success_embed
+
+from Manager.commandManager import commandsEnabled
 
 
 class DiscordCmds(commands.Cog, name="discord"):
@@ -33,21 +35,69 @@ class DiscordCmds(commands.Cog, name="discord"):
         self.config = default.get("config.json")
         self.bot.sniped_messages = {}
         self.bot.edit_sniped_messages = {}
-        self.halloween_re = re.compile(
-            r"h(a|4)(l|1)(l|1)(o|0)w(e|3)(e|3)n", re.I)
+        self.halloween_re = re.compile(r"h(a|4)(l|1)(l|1)(o|0)w(e|3)(e|3)n", re.I)
+        # self.october_re = re.compile(r"o(c|4)(t|7)(o|0)(b|2)(e|3)(r|1)", re.I)
+        self.spooky_re = re.compile(r"(s|5)(p|7)(o|0)(o|0)(k|9)(y|1)", re.I)
+        self.message_cooldown = commands.CooldownMapping.from_cooldown(
+            1.0, 3.0, commands.BucketType.user
+        )
 
     @commands.Cog.listener(name="on_message")
-    async def halloween(self, message):
+    async def spooky(self, message):
+        BotList_Servers = [
+            336642139381301249,
+            716445624517656727,
+            523523486719803403,
+            658262945234681856,
+            608711879858192479,
+            446425626988249089,
+            387812458661937152,
+            414429834689773578,
+            645281161949741064,
+            527862771014959134,
+            733135938347073576,
+            766993740463603712,
+            724571620676599838,
+            568567800910839811,
+            641574644578648068,
+            532372609476591626,
+            374071874222686211,
+            789934742128558080,
+            694140006138118144,
+            743348125191897098,
+            110373943822540800,
+            491039338659053568,
+            891226286347923506,
+        ]
+        bucket = self.message_cooldown.get_bucket(message)
+        retry_after = bucket.update_rate_limit()
         if datetime.today().month == 10:  # and datetime.today().day == 31:
             if self.halloween_re.search(message.content.lower()):
-                try:
-                    await message.add_reaction("🎃")
-                except discord.Forbidden as e:
+                if retry_after:
                     return
+                if message.guild.id in BotList_Servers:
+                    return
+                else:
+                    try:
+                        await message.add_reaction("🎃")
+                        await asyncio.sleep(1)
+                    except:
+                        pass
+            if self.spooky_re.search(message.content.lower()):
+                if retry_after:
+                    return
+                if message.guild.id in BotList_Servers:
+                    return
+                else:
+                    try:
+                        await message.add_reaction("👻")
+                        await asyncio.sleep(1)
+                    except:
+                        pass
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        if "n word lol" in message.content.lower():
+        if "n word" in message.content.lower():
             return
         if message.author.bot:
             return
@@ -85,6 +135,10 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.cooldown(1, 5, commands.BucketType.channel)
     async def snipe(self, ctx):
         """Snipe recently deleted messages to see what someone said."""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         try:
             (
                 contents,
@@ -105,8 +159,8 @@ class DiscordCmds(commands.Cog, name="discord"):
                 timestamp=time,
             )
             embed.set_author(
-                name=f"{author.name}#{author.discriminator}",
-                icon_url=author.avatar_url)
+                name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url
+            )
             embed.add_field(
                 name="Attachments",
                 value=files[:-1] if len(attachments) != 0 else "None",
@@ -122,6 +176,10 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def editsnipe(self, ctx):
         """Snipe edited messages to see what the message said before."""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         try:
             (
                 before_content,
@@ -137,8 +195,8 @@ class DiscordCmds(commands.Cog, name="discord"):
                 color=EMBED_COLOUR,
             )
             embed.set_author(
-                name=f"{author.name}#{author.discriminator}",
-                icon_url=author.avatar_url)
+                name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url
+            )
             embed.set_footer(text=f"Edited in #{channel_name}")
             embed.add_field(
                 name="‎‎‎‎‎‎",
@@ -150,7 +208,34 @@ class DiscordCmds(commands.Cog, name="discord"):
         except:
             await ctx.send("Nothing has been recently edited.")
 
-    # thanks again nirlep for this
+    @commands.command(usage="`tp!listemoji`")
+    @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
+    @permissions.has_permissions(manage_roles=True)
+    async def listemoji(self, ctx, ids: bool = True):
+        """Lists all available emojis in a server, perfect for an emoji channel"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
+        try:
+            await ctx.message.delete()
+        except:
+            pass
+        description = f"Emojis for {ctx.guild.name}"
+        if not ids:
+            text = f"{description}\n\n" + "\n".join(
+                [f"{emoji} `:{emoji.name}:`" for emoji in ctx.guild.emojis]
+            )
+        else:
+            text = f"{description}\n\n" + "\n".join(
+                [
+                    f"{emoji} `:{emoji.name}:` `<{'a' if emoji.animated else ''}:{emoji.name}:{emoji.id}>`"
+                    for emoji in ctx.guild.emojis
+                ]
+            )
+        for page in pagify(text):
+            await ctx.send(page)
 
     #    @commands.Cog.listener(name='on_message')
     #    @commands.guild_only()
@@ -185,13 +270,17 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.bot_has_permissions(embed_links=True)
     async def avatar(self, ctx, *, user: Union[discord.User, discord.Member] = None):
         """Get someones avatar"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         user = user or ctx.author
-        au = "av" + (".gif" if str(user.avatar_url).split("?")
-                     [0].endswith(".gif") else ".png")
+        au = "av" + (
+            ".gif" if str(user.avatar_url).split("?")[0].endswith(".gif") else ".png"
+        )
         embed = discord.Embed(
-            title="User Icon",
-            colour=EMBED_COLOUR,
-            description=f"{user}'s avatar is:")
+            title="User Icon", colour=EMBED_COLOUR, description=f"{user}'s avatar is:"
+        )
         embed.set_image(url=user.avatar_url_as(size=1024))
         # await user.avatar_url.save(au)
         # await ctx.reply(file=discord.File(open(au, "rb"), au))
@@ -205,11 +294,13 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.guild_only()
     async def roles(self, ctx):
         """Get all roles in current server"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
 
         allroles = ""
 
-        for num, role in enumerate(
-                sorted(ctx.guild.roles, reverse=True), start=1):
+        for num, role in enumerate(sorted(ctx.guild.roles, reverse=True), start=1):
             allroles += f"[{str(num).zfill(2)}] {role.id}\t{role.name}\t[ Users: {len(role.members)} ]\r\n"
 
         data = BytesIO(allroles.encode("utf-8"))
@@ -224,6 +315,10 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.guild_only()
     async def joinedat(self, ctx, *, user: discord.Member = None):
         """Check when a user joined the current server."""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         user = user or ctx.author
         embed = discord.Embed(
             title=f"{self.bot.user.name}",
@@ -238,37 +333,41 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.command(usage="`tp!mods`")
     @commands.guild_only()
     async def mods(self, ctx):
-        """Check which mods are online on current guild"""
-        message = ""
-        all_status = {
-            "online": {"users": [], "emoji": "🟢"},
-            "idle": {"users": [], "emoji": "🟡"},
-            "dnd": {"users": [], "emoji": "🔴"},
-            "offline": {"users": [], "emoji": "⚫"},
-        }
+        """Check which mods are in current guild"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
 
-        for user in ctx.guild.members:
-            user_perm = ctx.channel.permissions_for(user)
-            if user_perm.kick_members or user_perm.ban_members:
-                if not user.bot:
-                    all_status[str(user.status)]["users"].append(f"**{user}**")
-
-        for g in all_status:
-            if all_status[g]["users"]:
-                message += (
-                    f"{all_status[g]['emoji']} {', '.join(all_status[g]['users'])}\n"
-                )
-
-        await ctx.send(f"Mods in **{ctx.guild.name}**\n{message}")
+        mods = []
+        for member in ctx.guild.members:
+            if member.bot:
+                continue
+            if (
+                member.guild_permissions.manage_guild
+                or member.guild_permissions.administrator
+                or member.guild_permissions.ban_members
+                or member.guild_permissions.kick_members
+            ):
+                mods.append(member)
+        if mods:
+            mod_list = ""
+            for num, mod in enumerate(mods, start=1):
+                mod_list += f"[{num}] {mod.name}#{mod.discriminator} [{mod.id}]\n"
+            data = BytesIO(mod_list.encode("utf-8"))
+            await ctx.reply(f"{default.pycode(mod_list)}")
+        else:
+            await ctx.reply("There are no mods online.")
 
     @commands.command(usage="`tp!firstmessage`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=3, type=commands.BucketType.user)
-    async def firstmessage(
-        self, ctx: commands.Context, channel: discord.TextChannel = None
-    ):
+    @commands.cooldown(rate=2, per=3, type=commands.BucketType.user)
+    async def firstmessage(self, ctx, channel: discord.TextChannel = None):
         """Provide a link to the first message in current or provided channel."""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         if channel is None:
             channel = ctx.channel
         try:
@@ -276,16 +375,16 @@ class DiscordCmds(commands.Cog, name="discord"):
                 await channel.history(limit=1, oldest_first=True).flatten()
             )[0]
         except (discord.Forbidden, discord.HTTPException):
-            print(
-                f"{default.date()} | Unable to read message history for {channel.id}")
+            logger.info(f"Unable to read message history for {channel.id}")
             await ctx.reply("Unable to read message history for that channel")
             return
 
         em = discord.Embed(
-            description=f"[First Message in {channel.mention}]({message.jump_url})")
+            description=f"[First Message in {channel.mention}]({message.jump_url})"
+        )
         em.set_author(
-            name=message.author.display_name,
-            icon_url=message.author.avatar_url)
+            name=message.author.display_name, icon_url=message.author.avatar_url
+        )
 
         await ctx.reply(embed=em)
 
@@ -295,6 +394,9 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.guild_only()
     async def server(self, ctx):
         """Check info about current server"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
 
         embed = discord.Embed(
             title=f"{self.bot.user.name}",
@@ -311,50 +413,40 @@ class DiscordCmds(commands.Cog, name="discord"):
 
         embed.add_field(name="Server Name", value=ctx.guild.name, inline=True)
         embed.add_field(name="Server ID", value=ctx.guild.id, inline=True)
-        embed.add_field(name="Bots", value=len(
-            [bot for bot in ctx.guild.members if bot.bot]))
         embed.add_field(
-            name="Text channels",
-            value=len(
-                ctx.guild.text_channels),
-            inline=True)
+            name="Bots", value=len([bot for bot in ctx.guild.members if bot.bot])
+        )
         embed.add_field(
-            name="Voice channels",
-            value=len(
-                ctx.guild.voice_channels),
-            inline=True)
+            name="Text channels", value=len(ctx.guild.text_channels), inline=True
+        )
         embed.add_field(
-            name="Server on shard",
-            value=ctx.guild.shard_id,
-            inline=True)
-        embed.add_field(
-            name="Members",
-            value=ctx.guild.member_count,
-            inline=True)
+            name="Voice channels", value=len(ctx.guild.voice_channels), inline=True
+        )
+        embed.add_field(name="Server on shard", value=ctx.guild.shard_id, inline=True)
+        embed.add_field(name="Members", value=ctx.guild.member_count, inline=True)
         if len(ctx.guild.roles) == 69:
             embed.add_field(
-                name="Roles",
-                value=(f"{len(ctx.guild.roles)} Nice"),
-                inline=True)
+                name="Roles", value=(f"{len(ctx.guild.roles)} Nice"), inline=True
+            )
         else:
             embed.add_field(
                 name="Roles", value=(f"{len(ctx.guild.roles)}"), inline=True
             )
+        embed.add_field(name="Emoji Count", value=len(ctx.guild.emojis), inline=True)
         embed.add_field(
-            name="Emoji Limit",
-            value=f"{ctx.guild.emoji_limit} Emojis",
-            inline=True)
+            name="Emoji Limit", value=f"{ctx.guild.emoji_limit} Emojis", inline=True
+        )
         embed.add_field(
-            name="Filesize Limit", value=f"{ctx.guild.filesize_limit} Bytes"
+            name="Filesize Limit",
+            value=f"{str(default.bytesto(ctx.guild.filesize_limit, 'm'))} mb",
         )
         embed.add_field(
             name="Bitrate Limit",
             value=f"{str(ctx.guild.bitrate_limit / 1000).split('.', 1)[0]} Kbps",
         )
         embed.add_field(
-            name="Security Level",
-            value=ctx.guild.verification_level,
-            inline=True)
+            name="Security Level", value=ctx.guild.verification_level, inline=True
+        )
         embed.add_field(
             name="Owner/ID",
             value=f"**Name**:{ctx.guild.owner} | **ID**:{ctx.guild.owner.id}",
@@ -378,6 +470,10 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.guild_only()
     async def channelstats(self, ctx):
         """Gets stats for the current channel you're in."""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         channel = ctx.channel
 
         embed = discord.Embed(
@@ -385,52 +481,38 @@ class DiscordCmds(commands.Cog, name="discord"):
             description=f"{'Category: {}'.format(channel.category.name) if channel.category else 'This channel is not in a category'}",
             color=EMBED_COLOUR,
         )
-        embed.add_field(
-            name="Channel Guild",
-            value=ctx.guild.name,
-            inline=False)
-        embed.add_field(name="Channel Id", value=channel.id, inline=False)
+        embed.add_field(name="Channel Guild", value=ctx.guild.name)
+        embed.add_field(name="Channel Id", value=channel.id)
         embed.add_field(
             name="Channel Topic",
             value=f"{channel.topic if channel.topic else 'No topic.'}",
-            inline=False,
         )
+        embed.add_field(name="Channel Position", value=channel.position)
         embed.add_field(
-            name="Channel Position",
-            value=channel.position,
-            inline=False)
-        embed.add_field(
-            name="Channel Slowmode Delay",
-            value=channel.slowmode_delay,
-            inline=False)
-        embed.add_field(
-            name="Channel is nsfw?",
-            value=channel.is_nsfw(),
-            inline=False)
-        embed.add_field(
-            name="Channel is news?",
-            value=channel.is_news(),
-            inline=False)
-        embed.add_field(
-            name="Channel Creation Time",
-            value=channel.created_at,
-            inline=False)
-        embed.add_field(
-            name="Channel Permissions Synced",
-            value=channel.permissions_synced,
-            inline=False,
+            name="Amount of pinned messages?", value=(len(await channel.pins()))
         )
-        embed.add_field(name="Channel Hash", value=hash(channel), inline=False)
+        embed.add_field(name="Channel Slowmode Delay", value=channel.slowmode_delay)
+        embed.add_field(name="Channel is nsfw?", value=channel.is_nsfw())
+        embed.add_field(name="Channel is news?", value=channel.is_news())
+        embed.add_field(name="Channel Creation Time", value=channel.created_at)
+        embed.add_field(
+            name="Channel Permissions Synced", value=channel.permissions_synced
+        )
+        embed.add_field(name="Channel Hash", value=hash(channel))
 
         await ctx.send(embed=embed)
 
     @commands.command(
-        aliases=["feedback", "suggestion"], usage="`tp!suggest <suggestion>`"
+        aliases=["feedback", "suggestion"], usage="`tp!suggest suggestion`"
     )
     @commands.bot_has_permissions(embed_links=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def suggest(self, ctx, *, suggestion: str):
         """Suggest things this bot should have or not have."""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         thanks = discord.Embed(
             title=f"Thank you for contributing to the community {ctx.author.name}.",
             colour=EMBED_COLOUR,
@@ -441,22 +523,24 @@ class DiscordCmds(commands.Cog, name="discord"):
             description=suggestion,
             colour=EMBED_COLOUR,
         )
-        embed.set_footer(
-            text=f"ID: {ctx.author.id}",
-            icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f"ID: {ctx.author.id}", icon_url=ctx.author.avatar_url)
         message = await suggestion_channel.send(embed=embed)
         await ctx.reply(embed=thanks)
         await message.add_reaction(suggestion_no)
         await message.add_reaction(suggestion_yes)
 
     @commands.command(
-        aliases=["reportbug", "sendbug", "bugreport"], usage="`tp!bug <bug>`"
+        aliases=["reportbug", "sendbug", "bugreport"], usage="`tp!bug bug`"
     )
     @commands.bot_has_permissions(embed_links=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def bug(self, ctx, *, bug: str):
         """Report bugs that you run into
         If you can, paste the error code that might have been sent."""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         thanks = discord.Embed(
             title=f"Thank you for contributing to the community {ctx.author.name}.",
             colour=EMBED_COLOUR,
@@ -470,8 +554,8 @@ class DiscordCmds(commands.Cog, name="discord"):
             colour=EMBED_COLOUR,
         )
         embed.set_footer(
-            text=f"Bug reported by: {ctx.author.id}",
-            icon_url=ctx.author.avatar_url)
+            text=f"Bug reported by: {ctx.author.id}", icon_url=ctx.author.avatar_url
+        )
         message = await bug_channel.send(embed=embed)
         await ctx.reply(embed=thanks)
 
@@ -480,6 +564,10 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.bot_has_permissions(embed_links=True)
     async def colors(self, ctx):
         """Tells you all the colors this bot can make"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         with open("colors.json", "r") as f:
             data = json.load(f)
         colors = "\n".join(data.keys())
@@ -502,17 +590,18 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.command(
-        aliases=["colorme", "colourme", "color"], usage="`tp!colorme <color>`"
+        aliases=["colorme", "colourme", "color"], usage="`tp!colorme color`"
     )
     async def give_color(self, ctx, *, role: Creamy = None):
         """Allows users to give themselves a color role. do `tp!colors` to see what you can add to yourself.
         If there arent any colors, do `tp!rainbow` to create the roles"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         with open("colors.json", "r") as f:
             data = json.load(f)
-            color_roles = [
-                discord.utils.get(
-                    ctx.guild.roles,
-                    name=x) for x in data]
+            color_roles = [discord.utils.get(ctx.guild.roles, name=x) for x in data]
             if role is None:
                 for x in color_roles:
                     if x in ctx.author.roles:
@@ -536,6 +625,10 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def server_avatar(self, ctx):
         """Get the current server icon"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         if not ctx.guild.icon:
             return await ctx.reply("This server does not have a icon...")
         embed = discord.Embed(
@@ -544,8 +637,9 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             description=f"{ctx.guild.name}'s icon is:",
         )
         embed.set_image(url=ctx.guild.icon_url_as(size=1024))
-        au = "av" + (".gif" if str(ctx.guild.icon_url).split("?")
-                     [0].endswith(".gif") else ".png")
+        au = "av" + (
+            ".gif" if str(ctx.guild.icon_url).split("?")[0].endswith(".gif") else ".png"
+        )
         # await ctx.guild.icon_url.save(au)
         # await ctx.reply(file=discord.File(open(au, "rb"), au))
         await ctx.send(embed=embed)
@@ -557,6 +651,10 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def banner(self, ctx):
         """Get the current banner image"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         if not ctx.guild.banner:
             return await ctx.reply("This server does not have a banner...")
         await ctx.reply(
@@ -566,10 +664,12 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.bot_has_permissions(embed_links=True)
     @commands.command(help="Check if a user has voted or not!")
-    async def checkvote(
-        self, ctx: commands.Context, user: Union[discord.Member, discord.User] = None
-    ):
+    async def checkvote(self, ctx, user: Union[discord.Member, discord.User] = None):
         """Check if you or someone else has voted for AGB in the last 12 hours"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         user = user or ctx.author
         async with aiohttp.ClientSession() as s:
             async with s.get(
@@ -592,14 +692,18 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 return await ctx.reply(embed=embed)
 
     @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(usage="`tp!roleinfo <role>`")
+    @commands.command(usage="`tp!roleinfo role`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Get information about a role"""
-        perms = "\n".join(
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
+        perms = " **|** ".join(
             [
-                f"- {p}".replace("_", " ")
+                f"`{p.capitalize()}`".replace("_", " ")
                 for p, value in role.permissions
                 if value is True
             ]
@@ -611,31 +715,35 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         embed.add_field(
             name="Created", value=role.created_at.strftime("%d %b %Y %H:%M")
         )
-        embed.add_field(name="Color", value=str(role.colour))
-        embed.add_field(name="Members", value=f"{len(role.members)}")
-        embed.add_field(name="Mentionable", value=role.mentionable)
-        embed.add_field(name="Hoist", value=role.hoist)
-        embed.add_field(name="Position", value=role.position)
-        embed.add_field(name="Managed", value=role.managed)
+        embed.add_field(name="Color", value=str(role.colour), inline=True)
+        embed.add_field(name="Members", value=f"{len(role.members)}", inline=True)
+        embed.add_field(name="Mentionable", value=role.mentionable, inline=True)
+        embed.add_field(name="Hoist", value=role.hoist, inline=True)
+        embed.add_field(name="Position", value=role.position, inline=True)
+        embed.add_field(name="Managed", value=role.managed, inline=True)
         if int(role.permissions.value) == 0:
             embed.add_field(
-                name="Permissions",
-                value="No permissions granted.")
+                name="Permissions", value="No permissions granted.", inline=True
+            )
         else:
-            embed.add_field(name="Permissions", value=perms, inline=True)
-        embed.add_field(name="Mention", value=f"{role.mention}")
+            embed.add_field(name="Permissions", value=f"{perms}", inline=True)
+        embed.add_field(name="Mention", value=f"{role.mention}", inline=True)
         embed.add_field(
             name="Created", value=role.created_at.strftime("%d %b %Y %H:%M")
         )
         await ctx.send(embed=embed)
 
     @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(alias=["ms"], usage="`tp!massrole <role>`", hidden=True)
+    @commands.command(alias=["ms"], usage="`tp!massrole role`", hidden=True)
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     @permissions.has_permissions(manage_roles=True)
     async def massrole(self, ctx, *, role: discord.Role):
         """Mass give a role to all users in the server (Ignores bots)"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         added = 0
         if role.is_default():
             return await ctx.reply(f"Cant give a default role to users! {role.mention}")
@@ -655,14 +763,16 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             )
 
     @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(alias=["msr"],
-                      usage="`tp!massrole_remove <role>`",
-                      hidden=True)
+    @commands.command(alias=["msr"], usage="`tp!massrole_remove role`", hidden=True)
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     @permissions.has_permissions(manage_roles=True)
     async def massrole_remove(self, ctx, *, role: discord.Role):
         """Mass removes a role from everyone in the server (Doesn't ignore bots)"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         removed = 0
         if role.is_default():
             return await ctx.reply(
@@ -688,6 +798,10 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def user(self, ctx, user: Union[discord.Member, discord.User] = None):
         """Get user information"""
+        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
         usr = user or ctx.author
         avatarUrl = str(usr.avatar_url)
 
@@ -760,7 +874,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             pass
         embed.add_field(
             name="Nickname",
-            value=user.nick if hasattr(user, "nick") else "None",
+            value=user.nick if hasattr(user, "nick") else "`None`",
             inline=True,
         )
         embed.add_field(
@@ -779,18 +893,54 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             # .join(
             # x.mention for x in user.roles[1:][::-1]) if user.roles else
             # "None",
-            role_list = [
-                r.mention for r in usr.roles if r != ctx.guild.default_role]
+            role_list = [r.mention for r in usr.roles if r != ctx.guild.default_role]
             if len(role_list):
-                embed.add_field(
-                    name="Roles",
-                    value=f", ".join(role_list),
-                    inline=False)
+                embed.add_field(name="Roles", value=f", ".join(role_list), inline=False)
             else:
                 embed.add_field(name="Roles", value=f"None", inline=False)
         await ctx.reply(
             content=f"Basic info about **`{user.id} / {user.name}`**", embed=embed
         )
+
+    #        embed.add_field(name="Status", value=user.status, inline=True)
+    #        embed.add_field(name="Activity", value=user.activity)
+    #        if isinstance(user.activity, discord.Spotify):
+    #            embed.add_field(name="Listening To", value=user.activity.title)
+
+    #######Baby Shaking Zone Media Only Channel#########
+
+    @commands.Cog.listener(name="on_message")
+    async def onlymedia(self, message):
+        if (
+            message.channel.id in [755722577279713281, 780157565010313258]
+            and not message.attachments
+        ):
+            await message.delete()
+
+    ####anxiety zone prevent other people from talking in announcements####
+    @commands.Cog.listener(name="on_message")
+    async def OwnerOwnly(self, message):
+        if message.author.bot:
+            return
+        whitelist = [
+            599063034329038889,
+            101118549958877184,
+            417052810161684511,
+            393996898945728523,
+            454421372911878145,
+            542572136112324629,
+            146151306216734720,
+            343048549744902144,
+            683530527239962627,
+            828858385113939969,
+            678395576525652001,
+        ]
+        if message.channel.id == 755722577049026562:
+            if message.author.id not in whitelist:
+                await message.delete()
+
+
+########################################################################
 
 
 def setup(bot):

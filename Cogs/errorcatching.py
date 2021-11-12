@@ -1,12 +1,11 @@
 import json
 import os
-
 import discord
 import psutil
+
 from discord.ext import commands
 from discord.ext.commands import errors
-from index import Vote, config, delay
-from utils import default
+from index import Vote, mydb_n, cursor_n
 from utils.checks import NotVoted
 
 
@@ -21,15 +20,29 @@ class Error(commands.Cog):
             1.0, 3.0, commands.BucketType.user
         )
 
+        self.errors = (
+            commands.NoPrivateMessage,
+            commands.MissingPermissions,
+            commands.BadArgument,
+            commands.CommandInvokeError,
+            commands.NSFWChannelRequired,
+            commands.ChannelNotReadable,
+            commands.MaxConcurrencyReached,
+            commands.BotMissingPermissions,
+            commands.NotOwner,
+            commands.CommandOnCooldown,
+            commands.TooManyArguments,
+            commands.MessageNotFound,
+            commands.UserInputError,
+            discord.Forbidden,
+            discord.HTTPException,
+            errors.DisabledCommand,
+        )
+
     async def create_embed(self, ctx, error):
         embed = discord.Embed(title="Error", colour=discord.Colour.red())
         embed.add_field(name="Message", value=ctx.message.content)
         embed.add_field(name="Author", value=ctx.message.author.mention)
-        try:
-            embed.add_field(name="Channel", value=ctx.message.channel.mention)
-            embed.add_field(name="Guild", value=ctx.message.guild.name)
-        except:
-            pass
         embed.add_field(name="Error", value=error)
         embed.set_thumbnail(url=ctx.message.author.avatar_url)
         embed.set_footer(
@@ -38,8 +51,8 @@ class Error(commands.Cog):
             )
         )
         embed.set_author(
-            name=ctx.message.author.name,
-            icon_url=ctx.message.author.avatar_url)
+            name=ctx.message.author.name, icon_url=ctx.message.author.avatar_url
+        )
         embed.set_footer(
             text="{} | {}".format(
                 ctx.message.created_at, self.process.memory_info().rss
@@ -79,104 +92,108 @@ class Error(commands.Cog):
             embed = discord.Embed(
                 title="Hey now...",
                 color=discord.Colour.red(),
-                description=f"This command `({ctx.command})` is for voters only!\n Vote **[here]({Vote})**",
+                description=f"This command `({ctx.command})` is for voters only!\nVote **[here]({Vote})**",
             )
-            embed.set_thumbnail(
-                url=self.bot.user.avatar_url_as(
-                    static_format="png"))
+            embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
             if retry_after:
                 return
             else:
                 await ctx.send(embed=embed)
                 ctx.command.reset_cooldown(ctx)
 
-        elif isinstance(error, commands.NoPrivateMessage):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.MissingPermissions):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.BadArgument):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.CommandInvokeError):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.NSFWChannelRequired):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.ChannelNotReadable):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, discord.Forbidden):
+        elif isinstance(error, self.errors):
             await self.create_embed(ctx, error)
 
         elif isinstance(error, commands.CheckAnyFailure):
             pass
 
-        elif isinstance(error, commands.MaxConcurrencyReached):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.BotMissingPermissions):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, errors.DisabledCommand):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.NotOwner):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.CommandOnCooldown):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.TooManyArguments):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.MessageNotFound):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, commands.UserInputError):
-            await self.create_embed(ctx, error)
-
         elif isinstance(error, commands.CheckFailure):
-            embed = discord.Embed(title="Error", colour=discord.Colour.red())
-            embed.add_field(name="Message", value=ctx.message.content)
-            embed.add_field(name="Author", value=ctx.message.author.mention)
-            embed.add_field(name="Channel", value=ctx.message.channel.mention)
-            embed.add_field(name="Guild", value=ctx.message.guild.name)
-            embed.add_field(
-                name="Error",
-                value="You don't have permission to run this command.")
-            embed.set_thumbnail(url=ctx.message.author.avatar_url)
-            embed.set_footer(
-                text="{} | {}".format(
-                    ctx.message.created_at, self.process.memory_info().rss
-                )
+            me1 = self.bot.get_user(101118549958877184)
+            me2 = self.bot.get_user(683530527239962627)
+            cursor_n.execute(
+                f"SELECT * FROM public.blacklist WHERE \"userID\" = '{ctx.message.author.id}'"
             )
-            embed.set_author(
-                name=ctx.message.author.name,
-                icon_url=ctx.message.author.avatar_url)
-            embed.set_footer(
-                text="{} | {}".format(
-                    ctx.message.created_at, self.process.memory_info().rss
+            rows = cursor_n.fetchall()
+            if rows[0][1] == "true":
+                embed = discord.Embed(title="Error", colour=discord.Colour.red())
+                embed.add_field(name="Message", value=ctx.message.content)
+                embed.add_field(name="Author", value=ctx.message.author.mention)
+                embed.add_field(name="Channel", value=ctx.message.channel.mention)
+                embed.add_field(name="Guild", value=ctx.message.guild.name)
+                embed.add_field(
+                    name="Error",
+                    value=f"You've been blacklisted from using this bot\nTo see why and or get the blacklist removed, send us an email - `contact@agb-dev.xyz` or contact the owners directly - {me1}, {me2}",
                 )
-            )
-            bucket = self.message_cooldown.get_bucket(ctx.message)
-            retry_after = bucket.update_rate_limit()
-            if retry_after:
-                return
-            else:
-                try:
-                    await ctx.send(embed=embed, delete_after=15)
-                    await ctx.message.add_reaction("\u274C")
-                except discord.Forbidden:
-                    await ctx.send(
-                        f"You don't have permission to run this command.\n***Enable Embed permissions please.***",
-                        delete_after=15,
+                embed.set_thumbnail(url=ctx.message.author.avatar_url)
+                embed.set_footer(
+                    text="{} | {}".format(
+                        ctx.message.created_at, self.process.memory_info().rss
                     )
-                    await ctx.message.add_reaction("\u274C")
-                    ctx.command.reset_cooldown(ctx)
+                )
+                embed.set_author(
+                    name=ctx.message.author.name, icon_url=ctx.message.author.avatar_url
+                )
+                embed.set_footer(
+                    text="{} | {}".format(
+                        ctx.message.created_at, self.process.memory_info().rss
+                    )
+                )
+                bucket = self.message_cooldown.get_bucket(ctx.message)
+                retry_after = bucket.update_rate_limit()
+                if retry_after:
                     return
+                else:
+                    try:
+                        await ctx.send(embed=embed, delete_after=15)
+                        await ctx.message.add_reaction("\u274C")
+                    except discord.Forbidden:
+                        await ctx.send(
+                            f"You don't have permission to run this command.\n***Enable Embed permissions please.***",
+                            delete_after=15,
+                        )
+                        await ctx.message.add_reaction("\u274C")
+                        ctx.command.reset_cooldown(ctx)
+                        return
+            else:
+                embed = discord.Embed(title="Error", colour=discord.Colour.red())
+                embed.add_field(name="Message", value=ctx.message.content)
+                embed.add_field(name="Author", value=ctx.message.author.mention)
+                embed.add_field(name="Channel", value=ctx.message.channel.mention)
+                embed.add_field(name="Guild", value=ctx.message.guild.name)
+                embed.add_field(
+                    name="Error", value="You don't have permission to run this command."
+                )
+                embed.set_thumbnail(url=ctx.message.author.avatar_url)
+                embed.set_footer(
+                    text="{} | {}".format(
+                        ctx.message.created_at, self.process.memory_info().rss
+                    )
+                )
+                embed.set_author(
+                    name=ctx.message.author.name, icon_url=ctx.message.author.avatar_url
+                )
+                embed.set_footer(
+                    text="{} | {}".format(
+                        ctx.message.created_at, self.process.memory_info().rss
+                    )
+                )
+                bucket = self.message_cooldown.get_bucket(ctx.message)
+                retry_after = bucket.update_rate_limit()
+                if retry_after:
+                    return
+                else:
+                    try:
+                        await ctx.send(embed=embed, delete_after=15)
+                        await ctx.message.add_reaction("\u274C")
+                    except discord.Forbidden:
+                        await ctx.send(
+                            f"You don't have permission to run this command.\n***Enable Embed permissions please.***",
+                            delete_after=15,
+                        )
+                        await ctx.message.add_reaction("\u274C")
+                        ctx.command.reset_cooldown(ctx)
+                        return
+            mydb_n.commit()
 
 
 def setup(bot):

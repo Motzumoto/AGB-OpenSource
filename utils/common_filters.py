@@ -32,8 +32,7 @@ SMART_QUOTE_REPLACEMENT_DICT = {
     "\u201D": '"',  # Right double quote
 }
 
-SMART_QUOTE_REPLACE_RE = re.compile(
-    "|".join(SMART_QUOTE_REPLACEMENT_DICT.keys()))
+SMART_QUOTE_REPLACE_RE = re.compile("|".join(SMART_QUOTE_REPLACEMENT_DICT.keys()))
 
 SPOILER_CONTENT_RE = re.compile(
     r"(?s)(?<!\\)(?P<OPEN>\|{2})(?P<SPOILERED>.*?)(?<!\\)(?P<CLOSE>\|{2})"
@@ -139,8 +138,7 @@ def escape_spoilers(content: str) -> str:
     str
         The escaped string.
     """
-    return SPOILER_CONTENT_RE.sub(
-        r"\\\g<OPEN>\g<SPOILERED>\\\g<CLOSE>", content)
+    return SPOILER_CONTENT_RE.sub(r"\\\g<OPEN>\g<SPOILERED>\\\g<CLOSE>", content)
 
 
 def escape_spoilers_and_mass_mentions(content: str) -> str:

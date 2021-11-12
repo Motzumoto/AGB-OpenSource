@@ -1,7 +1,7 @@
 import aiohttp
 import discordlists
 from discord.ext import commands, tasks
-from index import EMBED_COLOUR, Invite, Server, Vote, config, cursor, mydb
+from index import logger
 from utils import default
 from datetime import datetime
 
@@ -29,7 +29,7 @@ class Tasks(commands.Cog, name="task"):
     async def post_fear(self):
         headers = {"Content-Type": "application/json"}
         data = {
-            "pass": "NotForYou",
+            "pass": "Motz$Fear11",
             "user": "motz",
             "bot_users": len(self.bot.users),
             "bot_servers": len(self.bot.guilds),
@@ -42,7 +42,7 @@ class Tasks(commands.Cog, name="task"):
                     # print(f"{await r.json()}")
                     pass
                 elif r.status == 400:
-                    print(f"{await r.json()}")
+                    logger.error(f"{await r.json()}")
                     # pass
                 elif r.status == 201:
                     # Successful Post

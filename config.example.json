@@ -1,8 +1,7 @@
 {
     "token": "Your bots token here",
     "owners": [
-        101118549958877184,
-        683530527239962627
+        101118549958877184
     ],
     "prefix": [
         "Your own prefix"
