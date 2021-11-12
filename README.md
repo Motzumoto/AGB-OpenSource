@@ -19,7 +19,7 @@
 
 <p align=center>
 	<a href="https://agb-dev.xyz/">
-		<img src="https://img.shields.io/website?url=https%3A%2F%2Fhttps://agb-dev.xyz/%2F" alt="website">
+		<img src="https://img.shields.io/website?url=https%3A%2F%2Fhttps://agb-dev.xyz%2F" alt="website">
 	</a>
 	<a href="https://agb-dev.xyz/">
 		<img src="https://img.shields.io/uptimerobot/status/m788775593-2373a7498dbc0c5fe78901f1?label=bot%20status" alt="bot status">
