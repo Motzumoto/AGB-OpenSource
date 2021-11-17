@@ -240,7 +240,6 @@ class events(commands.Cog):
             f"tp!help | {len(self.bot.commands)} commands!",
             "tp!help | tp!support ",
         ]
-        # Goodbye Cookie 2012 - 06/24/2021
         if omegalul == "watching":
             await self.bot.change_presence(
                 activity=discord.Activity(
