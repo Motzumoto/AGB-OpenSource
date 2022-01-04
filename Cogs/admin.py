@@ -1,35 +1,45 @@
+### IMPORTANT ANNOUNCEMENT ###
+#
+# All additions to AGB will now cease.
+# AGB's management will be limited to the following:
+# - Optimization
+# - Bug Fixes
+# - Basic Maintenance
+#
+# DO NOT ADD ANY NEW FEATURES TO AGB
+# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
+#
+### IMPORTANT ANNOUNCEMENT ###
+
 import asyncio
 import concurrent
 import importlib
 import io
 import json
 import os
-import subprocess
 import re
+import subprocess
 import textwrap
 import traceback
-import aiohttp
-import discord
-import requests
-import speedtest
-
-from traceback import format_exception
 from contextlib import redirect_stdout
 from typing import Union
-from discord.ext.buttons import Paginator
+
+import aiohttp
+import discord
+
+# Importing the decorator that makes slash commands.
+from httpx import delete
+from psycopg import cursor
+import requests
+import speedtest
 from discord.ext import commands
-from discord_argparse import ArgumentConverter, OptionalArgument
-from index import (
-    EMBED_COLOUR,
-    cursor_n,
-    delay,
-    emojis,
-    mydb_n,
-    logger,
-)
+from discord.ext.buttons import Paginator
+from index import EMBED_COLOUR, cursor_n, delay, emojis, logger, mydb_n
+from Manager.logger import formatColor
+from Manager.commandManager import cmd
 from utils import default, http, permissions
+
 from .Utils import *
-from Manager.commandManager import commandsEnabled
 
 
 class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
@@ -57,8 +67,12 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         }
         self.blacklisted = False
         self.blacklist = self.blacklisted_users()
-        # self.blacklist = [0]
         bot.add_check(self.blacklist_check)
+        self.nword_re = re.compile(
+            r"(n|m|и|й)(i|1|l|!|ᴉ|¡)(g|ƃ|6|б)(g|ƃ|6|б)(e|3|з|u)(r|Я)", re.I
+        )
+        self.afks = {}
+
     # this is mainly to make sure that the code is loading the json file if
     # new data gets added
 
@@ -147,13 +161,13 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             value=member.created_at.strftime("%a, %#d %B %Y, %I:%M %p UTC"),
             inline=False,
         )
-        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_thumbnail(url=member.avatar)
         if member.guild.id == 755722576445046806:
             if member.bot:
                 role = discord.utils.get(guild.roles, name="Bots")
                 await member.add_roles(role)
                 await me.send(
-                    f"A bot was just added to anxiety zone... {member.bot.name} / {member.bot.mention}"
+                    f"A bot was just added to Lunar Development... {member.bot.name} / {member.bot.mention}"
                 )
                 return
             else:
@@ -168,7 +182,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member, guild=None):
-        me = self.bot.get_user(101118549958877184)
         guild = member.guild
         if member.guild.id == 755722576445046806:
             if member.bot:
@@ -179,27 +192,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                     f"{member.name} left. Guild member count: {guild.member_count}",
                     delete_after=5,
                 )
-
-    @commands.Cog.listener(name="on_member_join")
-    async def anxiety_host(self, member: discord.Member, guild=None):
-        guild = member.guild
-        if member.guild.id == 755722576445046806:
-            try:
-                embed = discord.Embed(
-                    title="Welcome - AGB",
-                    colour=discord.Colour.green(),
-                    description=f"Hey, {member}! Thank you for joining our server!",
-                )
-                embed.add_field(
-                    name="Special Thanks",
-                    value=f"We'd love to give a special shoutout to our host: **Ponbus**. Ponbus is a super cheap bot host with exceptional hardware and latency.\nWith unlimited bandwidth, DDoS protection, and insane support, Ponbus is guaranteed to meet your needs!\n- {emojis.ponbus} Interested in Ponbus? Check it out here: [Ponbus](https://billing.ponbus.com/aff.php?aff=15)",
-                )
-                embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/attachments/814231144979365939/878851032464105533/ponbussy.png"
-                )
-                await member.send(embed=embed)
-            except discord.Forbidden:
-                pass
 
     @commands.command(
         name="blacklist",
@@ -569,7 +561,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                 # await ctx.send(f'```py\n{value}{ret}\n```')
                 await ctx.send(embed=embed)
 
-
     @commands.check(permissions.is_owner)
     @commands.command()
     async def test(self, ctx):
@@ -807,6 +798,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         )
         await ctx.send(embed=embed)
         await os.system("chmod +x * && ./reboot.sh")
+
     @commands.command()
     @commands.check(permissions.is_owner)
     async def shutdown(self, ctx):
@@ -874,15 +866,15 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             pass
         embed2 = discord.Embed(title=f"New message to {user}", description=message)
         embed2.set_footer(
-            text=f"tp!dm {user.id} | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"tp!dm {user.id} | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         embed = discord.Embed(
             title=f"New message From {ctx.author.name}", description=message
         )
         embed.set_footer(
-            text=f"To contact me, just DM the bot | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"To contact me, just DM the bot | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         try:
             await user.send(embed=embed)
@@ -938,7 +930,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @change.command(name="avatar")
     @commands.check(permissions.is_owner)
-    async def change_avatar(self, ctx, url: str = None):
+    async def change_avatar_url(self, ctx, url: str = None):
         """Change avatar."""
         try:
             await ctx.message.delete()

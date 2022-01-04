@@ -1,12 +1,25 @@
-import random
-import discord
-import asyncio
+### IMPORTANT ANNOUNCEMENT ###
+#
+# All additions to AGB will now cease.
+# AGB's management will be limited to the following:
+# - Optimization
+# - Bug Fixes
+# - Basic Maintenance
+#
+# DO NOT ADD ANY NEW FEATURES TO AGB
+# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
+#
+### IMPORTANT ANNOUNCEMENT ###
 
+import asyncio
+import random
 from datetime import datetime
+
+import discord
 from discord.ext import commands, tasks
-from index import cursor_n, mydb_n, logger
+from index import cursor_n, logger, mydb_n
 from utils import default
-from Manager.commandManager import commandsEnabled
+from Manager.logger import formatColor
 
 
 class events(commands.Cog):
@@ -22,6 +35,121 @@ class events(commands.Cog):
 
     def cog_unload(self):
         self.presence_loop.stop()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+
+        # self.bot.pool = await aiomysql.connect(
+        #     host = self.db_config.host,
+        #     user = self.db_config.user,
+        #     password = self.db_config.password,
+        #     db = self.db_config.database,
+        #     port = int(self.db_config.port),
+        #     autocommit = True,
+        #     loop = self.loop,
+        # )
+        discord_version = discord.__version__
+        logger.info(f"Logged in as: {formatColor(str(self.bot.user), 'bold_red')}")
+        logger.info(f"Client ID: {formatColor(str(self.bot.user.id), 'bold_red')}")
+        logger.info(
+            f"Client Server Count:{formatColor(str(len(self.bot.guilds)), 'bold_red')}"
+        )
+        logger.info(
+            f"Client User Count: {formatColor(str(len(self.bot.users)), 'bold_red')}"
+        )
+        if len(self.bot.shards) > 1:
+            logger.info(
+                f"{formatColor(str(self.bot.user), 'bold_red')} is using {formatColor(str(len(self.bot.shards)), 'green')} shards."
+            )
+        else:
+            logger.info(
+                f"{formatColor(str(self.bot.user), 'bold_red')} is using {formatColor(str(len(self.bot.shards)), 'green')} shard."
+            )
+        logger.info(
+            f"Discord Python Version: {formatColor(f'{discord_version}', 'green')}"
+        )
+        try:
+            self.bot.load_extension("Cogs.music")
+        except:
+            pass
+        try:
+            self.bot.load_extension("jishaku")
+            logger.info(f"Loaded JSK.")
+        except:
+            pass
+        for guild in self.bot.guilds:
+
+            try:
+                cursor_n.execute(
+                    f"SELECT * FROM public.commands WHERE guild = '{guild.id}'"
+                )
+            except:
+                pass
+            cmd_rows = cursor_n.rowcount
+            if cmd_rows == 0:
+                cursor_n.execute(
+                    f"INSERT INTO public.commands (guild) VALUES ('{guild.id}')"
+                )
+                mydb_n.commit()
+                logger.info(
+                    f"Added to commands table: {formatColor(f'{guild.id}', 'green')}"
+                )
+
+    @tasks.loop(count=None, seconds=random.randint(25, 60))
+    async def presence_loop(self):
+        await self.bot.wait_until_ready()
+        if datetime.today().month == 10 and datetime.today().day == 3:
+            await self.bot.change_presence(
+                activity=discord.Game(name="Happy birthday Motz!")
+            )
+            return
+        statuses = [
+            f"tp!help | {len(self.bot.guilds)} Servers",
+            f"tp!help | {len(self.bot.commands)} commands!",
+            "tp!help | tp!support",
+            "mc.agb-dev.xyz | 1.17.1 | Java",
+            "You can toggle commands now! | tp!toggle command",
+            "Mc Server: mc.agb-dev.xyz | 1.17.1 | Java",
+            "ElysianVRC is cool: https://discord.gg/yCfKu7D3GD",
+            "*badoop* hey look, i joined your vc",
+            "*gets the rare discord ringtone*, im better than all of you",
+            "today's weather is looking pretty weather-like",
+            "ikea is cool",
+            "i upgraded from windows 10 to doors",
+            "gamers take showers? i don't think so!",
+            "lets watch anime together, that would be cute",
+            "tp!help | your mom lol.",
+            "who invented grass, it’s tasty",
+            "i mistook salt for sugar, and put it in my coffee",
+            "The dog goes meow, the motz goes THERES AN ERROR",
+            "this status is so poggers",
+            "ITS SENTIENT",
+            "i drink rainwater from the walmart parking lot",
+            "im a good bot, give me attention (please?)",
+            "meow, im a bot? i think not! meow",
+            "lets hold hands before marriage",
+            "vote for me on top.gg, i love the attention",
+            "im feeling a bit like a plastic bag",
+            "we have our own mc server | mc.agb-dev.xyz (1.17.1; Java)",
+            "if ur too tall, just be shorter",
+            "dont be broke, just have money :)",
+            "go, commit a sin",
+            "go, commit a crime",
+            "im committing crimes rn (and code)",
+            "stupid idiot. (get roasted)",
+            "i am a bot, and i am a bot",
+            "I miss you cookie.",
+            "Yo mamma (Laugh at this)",
+            "We're really trying to be funny",
+            "im so sad",
+            "Dm me the word tomato",
+        ]
+        # Goodbye Cookie 2012 - 06/24/2021
+        await self.bot.change_presence(
+            activity=discord.Activity(
+                type=discord.ActivityType.playing, name=random.choice(statuses)
+            )
+        )
 
     @commands.Cog.listener(name="on_message")
     async def add_server_to_db(self, ctx):
@@ -40,41 +168,7 @@ class events(commands.Cog):
             logger.info(f"New guild detected: {ctx.guild.id} | Added to database!")
         else:
             return
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        # self.bot.pool = await aiomysql.connect(
-        #     host = self.db_config.host,
-        #     user = self.db_config.user,
-        #     password = self.db_config.password,
-        #     db = self.db_config.database,
-        #     port = int(self.db_config.port),
-        #     autocommit = True,
-        #     loop = self.loop,
-        # )
-
-        logger.info(f"Logged in as: {self.bot.user}")
-        logger.info(f"Client: {self.bot.user}")
-        logger.info(f"Client ID: {self.bot.user.id}")
-        logger.info(f"Client Server Count: {len(self.bot.guilds)}")
-        logger.info(f"Client User Count: {len(self.bot.users)}")
-        if len(self.bot.shards) > 1:
-            logger.info(f"{self.bot.user} is using {len(self.bot.shards)} shards.")
-        else:
-            logger.info(f"{self.bot.user} is using {len(self.bot.shards)} shard.")
-        logger.info(f"Discord Python Version: {discord.__version__}")
-        try:
-            self.bot.load_extension("Cogs.music")
-        except:
-            pass
-        try:
-            self.bot.load_extension("jishaku")
-            logger.info(f"Loaded JSK.")
-        except:
-            pass
-
-    @commands.Cog.listener()
-    async def on_message(self, ctx):
+        # chunk guilds
         if ctx.guild is None:
             return
         if ctx.guild.chunked:
@@ -84,8 +178,26 @@ class events(commands.Cog):
         except:
             pass
 
+    ### DO NOT PUT THIS IN MERGED EVENT, IT WILL ONLY WORK IN ITS OWN SEPERATE EVENT. **I DO NOT KNOW WHY :D**
+    ### DO NOT PUT THIS IN MERGED EVENT, IT WILL ONLY WORK IN ITS OWN SEPERATE EVENT. **I DO NOT KNOW WHY :D**
+    ### XOXOXO, KISSES ~ FIFI
     @commands.Cog.listener(name="on_command")
-    async def blacklist_check(self, ctx):
+    async def command_usage_updater(self, ctx):
+        try:
+            cursor_n.execute(
+                f"SELECT * FROM public.users WHERE \"userId\" = '{ctx.author.id}'"
+            )
+            row = cursor_n.fetchall()
+
+            cursor_n.execute(
+                f"UPDATE public.users SET \"usedCmds\" = '{row[0][3] + 1}' WHERE \"userId\" = '{ctx.author.id}'"
+            )
+            # logger.info(f"Updated userCmds for {ctx.author.id} -> {row[0][3]}")
+        except:
+            pass
+
+    @commands.Cog.listener(name="on_command")
+    async def user_check(self, ctx):
         # cursor_n.execute(f"SELECT blacklisted FROM blacklist WHERE userID = {ctx.author.id}")
         # res = cursor_n.fetchall()
         # for x in res():
@@ -110,87 +222,7 @@ class events(commands.Cog):
             mydb_n.commit()
 
     @commands.Cog.listener(name="on_command")
-    async def eco_and_badges_and_users_and_and_blacklist_check_sql(self, ctx):
-        if ctx.author.bot:
-            return
-        else:
-            pass
-        # if ctx.guild.chunked:
-        #     return
-        if ctx.author.id in self.config.owners:
-            logger.info(
-                f"[DEV] {ctx.author.name} used command {ctx.message.clean_content}"
-            )
-            return
-        else:
-            logger.info(f"{ctx.author.id} used command {ctx.message.clean_content}")
-
-        row = cursor_n.fetchall()
-        cursor_n.execute(
-            f'UPDATE public.users SET "usedCmds" = {row[0][1] + 1} WHERE "userId" = \'{ctx.author.id}\''
-        )
-        print(row[0][1])
-        mydb_n.commit()
-        try:
-            cursor_n.execute(
-                f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
-            )
-        except:
-            pass
-        eco_rows = cursor_n.rowcount
-        if eco_rows == 0:
-            cursor_n.execute(
-                f"INSERT INTO public.\"userEco\" (\"userId\", balance, bank) VALUES ('{ctx.author.id}', '1000', '500')"
-            )
-            mydb_n.commit()
-            logger.debug(
-                f"No economy entry detected for: {ctx.author.id} / {ctx.author} | Added to database!"
-            )
-
-        try:
-            cursor_n.execute(
-                f"SELECT * FROM public.badges WHERE userId = '{ctx.author.id}'"
-            )
-        except:
-            pass
-        badges_rows = cursor_n.rowcount
-        if badges_rows == 0:
-            cursor_n.execute(
-                f"INSERT INTO public.badges (userId) VALUES ('{ctx.author.id}')"
-            )
-            mydb_n.commit()
-
-        try:
-            cursor_n.execute(
-                f"SELECT * FROM public.users WHERE \"userId\" = '{ctx.author.id}'"
-            )
-        except:
-            pass
-        automod_rows = cursor_n.rowcount
-        if automod_rows == 0:
-            cursor_n.execute(
-                f"INSERT INTO public.users (\"userId\") VALUES ('{ctx.author.id}')"
-            )
-            mydb_n.commit()
-
-        try:
-            cursor_n.execute(
-                f"SELECT * FROM public.users WHERE \"userId\" = '{ctx.author.id}'"
-            )
-        except:
-            pass
-        automod_rows = cursor_n.rowcount
-        if automod_rows == 0:
-            cursor_n.execute(
-                f"INSERT INTO public.users (\"userId\") VALUES ('{ctx.author.id}')"
-            )
-            mydb_n.commit()
-        else:
-            cursor_n.execute(
-                f"SELECT * FROM public.users WHERE \"userId\" = '{ctx.author.id}'"
-            )
-
-        # blacklist check
+    async def blacklist_check(self, ctx):
         try:
             cursor_n.execute(
                 f"SELECT * FROM public.blacklist WHERE \"userID\" = '{ctx.author.id}'"
@@ -207,63 +239,53 @@ class events(commands.Cog):
                 f"No blacklist entry detected for: {ctx.author.id} / {ctx.author} | Added to database!"
             )
 
-    # @commands.Cog.listener(name="on_message")
-    # async def automod_sql(self, ctx):
-    #     if ctx.author.bot:
-    #         return
-    #     else:
-    #         pass
-    #     try:
-    #         cursor_n.execute(
-    #             f"SELECT * FROM automod WHERE guildId = {ctx.guild.id}")
-    #     except:
-    #         pass
-    #     automod_rows = cursor_n.rowcount
-    #     if automod_rows == 0:
-    #         cursor_n.execute(
-    #             f"INSERT INTO automod (guildId) VALUES ({ctx.guild.id})")
-    #         mydb_n.commit()
-    #     else:
-    #         return
+    @commands.Cog.listener(name="on_command")
+    async def badge(self, ctx):
+        try:
+            cursor_n.execute(
+                f"SELECT * FROM public.badges WHERE userId = '{ctx.author.id}'"
+            )
+        except:
+            pass
+        badges_rows = cursor_n.rowcount
+        if badges_rows == 0:
+            cursor_n.execute(
+                f"INSERT INTO public.badges (userId) VALUES ('{ctx.author.id}')"
+            )
+            mydb_n.commit()
 
-    @tasks.loop(count=None, seconds=30)
-    async def presence_loop(self):
-        await self.bot.wait_until_ready()
-        if datetime.today().month == 10 and datetime.today().day == 3:
-            await self.bot.change_presence(
-                activity=discord.Game(name="Happy birthday Motz!")
+    @commands.Cog.listener(name="on_command")
+    async def eco(self, ctx):
+        try:
+            cursor_n.execute(
+                f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            )
+        except:
+            pass
+        eco_rows = cursor_n.rowcount
+        if eco_rows == 0:
+            cursor_n.execute(
+                f"INSERT INTO public.\"userEco\" (\"userId\", balance, bank) VALUES ('{ctx.author.id}', '1000', '500')"
+            )
+            mydb_n.commit()
+            logger.debug(
+                f"No economy entry detected for: {ctx.author.id} / {ctx.author} | Added to database!"
+            )
+
+    @commands.Cog.listener(name="on_command")
+    async def logger_shit(self, ctx):
+        if ctx.author.bot:
+            return
+        else:
+            pass
+        if ctx.author.id in self.config.owners:
+            logger.info(
+                f"{formatColor('[DEV]', 'bold_red')} {formatColor(ctx.author.name, 'red')} used command {formatColor(ctx.message.clean_content, 'grey')}"
             )
             return
-        omegalul = random.choice(["watching", "playing", "listening", "competing"])
-        funny_statuses = [
-            f"tp!help | {len(self.bot.guilds)} Servers",
-            f"tp!help | {len(self.bot.commands)} commands!",
-            "tp!help | tp!support ",
-        ]
-        if omegalul == "watching":
-            await self.bot.change_presence(
-                activity=discord.Activity(
-                    type=discord.ActivityType.watching,
-                    name=random.choice(funny_statuses),
-                )
-            )
-        if omegalul == "playing":
-            await self.bot.change_presence(
-                activity=discord.Game(name=random.choice(funny_statuses))
-            )
-        if omegalul == "listening":
-            await self.bot.change_presence(
-                activity=discord.Activity(
-                    type=discord.ActivityType.listening,
-                    name=random.choice(funny_statuses),
-                )
-            )
-        if omegalul == "competing":
-            await self.bot.change_presence(
-                activity=discord.Activity(
-                    type=discord.ActivityType.competing,
-                    name=random.choice(funny_statuses),
-                )
+        else:
+            logger.info(
+                f"{formatColor(ctx.author.id, 'grey')} used command {formatColor(ctx.message.clean_content, 'grey')}"
             )
 
     @commands.Cog.listener()
@@ -282,7 +304,7 @@ class events(commands.Cog):
                 name=f"This is a false error. Completely ignore this", value="NaN"
             )
             return
-        embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+        embed.set_thumbnail(url=self.bot.user.avatar)
         channel = self.bot.get_channel(769080397669072939)
         await channel.send(embed=embed)
         # Remove server from database
@@ -297,19 +319,14 @@ class events(commands.Cog):
             logger.warning(f"Removed from: {guild.id} | Deleting database entry!")
 
     @commands.Cog.listener(name="on_guild_join")
-    async def commandToggle(self, guild):
-        commandsEnabled[str(guild.id)] = {}
-        for cmd in self.bot.commands:
-            commandsEnabled[str(guild.id)][cmd.name] = True
-
-    @commands.Cog.listener(name="on_guild_join")
     async def MessageSentOnGuildJoin(self, guild):
-
+        if not guild.chunked:
+            await guild.chunk()
         nick = f"[tp!] {self.bot.user.name}"
         try:
             await guild.me.edit(nick=nick)
-        except discord.Forbidden:
-            return logger.info(f"Unable to change nickname in {guild.id}")
+        except discord.errors.Forbidden:
+            return logger.error(f"Unable to change nickname in {guild.id}")
         else:
             logger.info(f"Changed nickname to {nick} in {guild.id}")
         embed = discord.Embed(
@@ -320,7 +337,7 @@ class events(commands.Cog):
             name="Here's the servers' info.",
             value=f"Server name: `{guild.name}`\n ID `{guild.id}`\n Member Count: `{guild.member_count}`.",
         )
-        embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+        embed.set_thumbnail(url=self.bot.user.avatar)
         channel = self.bot.get_channel(769075552736641115)
         await channel.send(embed=embed)
         # Add server to database
@@ -336,29 +353,19 @@ class events(commands.Cog):
         else:
             logger.info(f"New guild joined: {guild.id} | But it was already in the DB")
 
-    @commands.Cog.listener(name="on_ready")
-    async def toggle_command_guild_stuff(self):
-        await self.bot.wait_until_ready()
-        for guild in self.bot.guilds:
-            try:
-                commandsEnabled[str(guild.id)] = {}
-                for cmd in self.bot.commands:
-                    commandsEnabled[str(guild.id)][cmd.name] = True
-            except:
-                pass
+        try:
+            cursor_n.execute(
+                f"SELECT * FROM public.commands WHERE guild = '{guild.id}'"
+            )
+        except:
+            pass
+        cmd_rows = cursor_n.rowcount
+        if cmd_rows == 0:
+            cursor_n.execute(
+                f"INSERT INTO public.commands (guild) VALUES ('{guild.id}')"
+            )
+            mydb_n.commit()
 
-
-# from index import cursor_n, mydb_n
-# for guild in self.guilds:
-#     cursor_n.execute(f"SELECT * FROM public.guilds WHERE guildId = '{guild.id}'")
-#     row_count = cursor_n.rowcount
-#     if row_count == 0:
-#         cursor_n.execute(
-#             f"INSERT INTO public.guilds (guildId) VALUES ('{guild.id}')"
-#         )
-#         mydb_n.commit()
-#         print(f"{guild.id} | Added to database!")
-# testing, ignore this
 
 
 def setup(bot):

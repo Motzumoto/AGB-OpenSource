@@ -1,6 +1,20 @@
+### IMPORTANT ANNOUNCEMENT ###
+#
+# All additions to AGB will now cease.
+# AGB's management will be limited to the following:
+# - Optimization
+# - Bug Fixes
+# - Basic Maintenance
+#
+# DO NOT ADD ANY NEW FEATURES TO AGB
+# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
+#
+### IMPORTANT ANNOUNCEMENT ###
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import check
+
 from utils import default
 
 owners = default.config()["owners"]

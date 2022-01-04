@@ -1,3 +1,16 @@
+### IMPORTANT ANNOUNCEMENT ###
+#
+# All additions to AGB will now cease.
+# AGB's management will be limited to the following:
+# - Optimization
+# - Bug Fixes
+# - Basic Maintenance
+#
+# DO NOT ADD ANY NEW FEATURES TO AGB
+# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
+#
+### IMPORTANT ANNOUNCEMENT ###
+
 import asyncio
 import datetime
 import itertools
@@ -78,6 +91,12 @@ def get(file):
 def traceback_maker(err, advance: bool = True):
     _traceback = "".join(traceback.format_tb(err.__traceback__))
     error = ("```py\n{1}{0}: {2}\n```").format(type(err).__name__, _traceback, err)
+    return error if advance else f"{type(err).__name__}: {err}"
+
+
+def code_traceback(err, advance: bool = True):
+    _traceback = "".join(traceback.format_tb(err.__traceback__))
+    error = ("{1}{0}: {2}").format(type(err).__name__, _traceback, err)
     return error if advance else f"{type(err).__name__}: {err}"
 
 

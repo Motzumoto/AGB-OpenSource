@@ -1,3 +1,16 @@
+### IMPORTANT ANNOUNCEMENT ###
+#
+# All additions to AGB will now cease.
+# AGB's management will be limited to the following:
+# - Optimization
+# - Bug Fixes
+# - Basic Maintenance
+#
+# DO NOT ADD ANY NEW FEATURES TO AGB
+# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
+#
+### IMPORTANT ANNOUNCEMENT ###
+
 import random
 
 import aiohttp
@@ -5,10 +18,9 @@ import discord
 import nekos
 from discord.ext import commands
 from index import EMBED_COLOUR, config, cursor_n, mydb_n
+from Manager.commandManager import cmd
 from utils import permissions
 from utils.checks import *
-
-from Manager.commandManager import commandsEnabled
 
 
 class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
@@ -44,7 +56,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         embed = discord.Embed(
             title=f"Error Caught!", color=discord.Colour.red(), description=f"{error}"
         )
-        embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+        embed.set_thumbnail(url=self.bot.user.avatar)
         await ctx.send(embed=embed)
 
     async def get_hentai_img(self):
@@ -54,7 +66,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             other_stuff = ["bondage", "hentai", "thighs"]
             async with aiohttp.ClientSession() as s:
                 async with s.get(
-                    f"https://shiro.gg/api/images/nsfw/{random.choice(other_stuff)}"
+                    f"https://api.dbot.dev/images/nsfw/{random.choice(other_stuff)}"
                 ) as r:
                     j = await r.json()
                     url = j["url"]
@@ -62,14 +74,15 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
 
     @commands.command(aliases=["post", "ap"], usage="`tp!ap #channel`")
     @voter_only()
-    @commands.cooldown(rate=2, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @permissions.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(
         embed_links=True, manage_channels=True, manage_webhooks=True
     )
     async def autopost(self, ctx, *, channel: discord.TextChannel):
         """Mention a channel to autopost hentai to. example: `tp!autopost #auto-nsfw`"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -111,7 +124,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 color=discord.Colour.red(),
                 description=f"You need to vote to run this command! You can vote **[here]({config.Vote})**.",
             )
-            embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+            embed.set_thumbnail(url=self.bot.user.avatar)
             await ctx.send(embed=embed)
             return
 
@@ -121,7 +134,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 color=discord.Colour.red(),
                 description="Please send the channel you want me to autopost to.\nExample: `tp!autopost #auto-nsfw`",
             )
-            embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+            embed.set_thumbnail(url=self.bot.user.avatar)
             await ctx.send(embed=embed)
             return
         elif isinstance(error, commands.ChannelNotFound):
@@ -130,7 +143,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 color=discord.Colour.red(),
                 description="Hey I couldn't find that channel! Please make sure you mentioned the channel.\nExample: `tp!autopost #auto-nsfw`",
             )
-            embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+            embed.set_thumbnail(url=self.bot.user.avatar)
             await ctx.send(embed=embed)
             return
         elif isinstance(error, commands.TooManyArguments):
@@ -139,23 +152,23 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 color=discord.Colour.red(),
                 description="Hey don't do that! You sent too many channels for me to post to. I can only post to one channel per server, don't try to break me.",
             )
-            embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
+            embed.set_thumbnail(url=self.bot.user.avatar)
             await ctx.send(embed=embed)
             return
         elif isinstance(error, commands.BotMissingPermissions):
             await self.create_embed(ctx, error)
             return
-        elif isinstance(error, discord.Forbidden):
+        elif isinstance(error, discord.errors.Forbidden):
             await self.create_embed(ctx, error)
             return
 
     @commands.command(aliases=["apr"])
-    @voter_only()
-    @commands.cooldown(rate=2, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @permissions.has_permissions(manage_channels=True)
     async def autopost_remove(self, ctx):
         """Remove the auto hentai posting channel."""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -180,13 +193,14 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 )
                 mydb_n.commit()
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def classic(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -199,18 +213,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("classic"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def trap(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -223,18 +238,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("trap"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def boobs(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -247,18 +263,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("boobs"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def pussy(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -271,18 +288,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("pussy"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def hentai(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -295,18 +313,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=(await self.get_hentai_img()))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(aliases=["catgirl"])
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def neko(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -319,18 +338,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("neko"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(aliases=["les", "female"])
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def lesbian(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -343,18 +363,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("les"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def tits(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -367,18 +388,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("tits"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def wallpaper(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -391,18 +413,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("wallpaper"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def anal(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -415,18 +438,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("anal"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def feet(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -439,18 +463,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("feet"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def hololewd(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -463,19 +488,20 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("hololewd"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     @commands.guild_only()
     async def spank(self, ctx, *, user: discord.Member):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -486,8 +512,8 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             )
             embed.set_image(url=nekos.img("spank"))
             embed.set_footer(
-                text=f"agb-dev.xyz | Powered by ponbus.com",
-                icon_url=ctx.author.avatar_url,
+                text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+                icon_url=ctx.author.avatar,
             )
             await ctx.reply(embed=embed)
         else:
@@ -496,18 +522,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             )
             embed.set_image(url=nekos.img("spank"))
             embed.set_footer(
-                text=f"agb-dev.xyz | Powered by ponbus.com",
-                icon_url=ctx.author.avatar_url,
+                text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+                icon_url=ctx.author.avatar,
             )
             await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def lewdkemo(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -520,18 +547,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("lewdkemo"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def pwg(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -544,16 +572,17 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("pwankg"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(hidden=True)
     @commands.check(permissions.is_owner)
     async def nsfwneko(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -566,18 +595,19 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("nsfw_neko_gif"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def blowjob(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -590,23 +620,24 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         )
         embed.set_image(url=nekos.img("blowjob"))
         embed.set_footer(
-            text=f"agb-dev.xyz | Powered by ponbus.com",
-            icon_url=ctx.author.avatar_url,
+            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            icon_url=ctx.author.avatar,
         )
         await ctx.reply(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
     @voter_only()
+    @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
     async def thighs(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
         async with aiohttp.ClientSession() as data:
-            async with data.get("https://shiro.gg/api/images/nsfw/thighs") as r:
+            async with data.get("https://api.dbot.dev/images/nsfw/thighs") as r:
                 data = await r.json()
                 embed = discord.Embed(
                     title="Enjoy",
@@ -617,8 +648,8 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 )
                 embed.set_image(url=data["url"])
                 embed.set_footer(
-                    text=f"agb-dev.xyz | Powered by ponbus.com",
-                    icon_url=ctx.author.avatar_url,
+                    text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+                    icon_url=ctx.author.avatar,
                 )
                 await ctx.reply(embed=embed)
 

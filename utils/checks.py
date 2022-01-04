@@ -1,6 +1,21 @@
+### IMPORTANT ANNOUNCEMENT ###
+#
+# All additions to AGB will now cease.
+# AGB's management will be limited to the following:
+# - Optimization
+# - Bug Fixes
+# - Basic Maintenance
+#
+# DO NOT ADD ANY NEW FEATURES TO AGB
+# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
+#
+### IMPORTANT ANNOUNCEMENT ###
+
 import aiohttp
+import discord
 from discord.ext import commands
 from index import TOP_GG_TOKEN
+
 from utils import default
 
 owners = default.get("config.json").owners
@@ -36,6 +51,30 @@ async def check_guild_permissions(ctx, perms, *, check=all):
     return check(
         getattr(resolved, name, None) == value for name, value in perms.items()
     )
+
+
+async def send_embed(ctx, embed):
+    """
+    Function that handles the sending of embeds
+    -> Takes context and embed to send
+    - tries to send embed in channel
+    - tries to send normal message when that fails
+    - tries to send embed private with information abot missing permissions
+    If this all fails: https://youtu.be/dQw4w9WgXcQ
+    """
+    try:
+        await ctx.send(embed=embed)
+    except discord.errors.Forbidden:
+        try:
+            await ctx.send(
+                "Hey, seems like I can't send embeds. Please check my permissions :)"
+            )
+        except discord.errors.Forbidden:
+            await ctx.author.send(
+                f"Hey, seems like I can't send any message in {ctx.channel.name} on {ctx.guild.name}\n"
+                f"May you inform the server team about this issue? :slight_smile: ",
+                embed=embed,
+            )
 
 
 def has_guild_permissions(*, check=all, **perms):

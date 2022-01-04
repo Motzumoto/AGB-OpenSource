@@ -1,3 +1,16 @@
+### IMPORTANT ANNOUNCEMENT ###
+#
+# All additions to AGB will now cease.
+# AGB's management will be limited to the following:
+# - Optimization
+# - Bug Fixes
+# - Basic Maintenance
+#
+# DO NOT ADD ANY NEW FEATURES TO AGB
+# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
+#
+### IMPORTANT ANNOUNCEMENT ###
+
 import asyncio
 import datetime
 import functools
@@ -19,12 +32,11 @@ import matplotlib.pyplot as plt
 import nekos
 from discord.ext import commands
 from index import EMBED_COLOUR, Website, config, logger
+from Manager.commandManager import cmd
 from utils import default, http, permissions
-from utils.checks import voter_only
 from utils.common_filters import filter_mass_mentions
 from utils.default import type_message
 
-from Manager.commandManager import commandsEnabled
 
 from .Utils import *
 
@@ -79,8 +91,8 @@ class Fun(commands.Cog, name="fun"):
             username=self.config.rUser,
         )
 
-        self.alex_api = alexflipnote.Client(self.config.flipnote)
-        self.bot.alex_api = self.alex_api
+        # self.alex_api = alexflipnote.Client(self.config.flipnote)
+        # self.bot.alex_api = self.alex_api
 
         self.ballresponse = [
             "It is certain.",
@@ -103,6 +115,20 @@ class Fun(commands.Cog, name="fun"):
             "My sources say no.",
             "Outlook not so good.",
             "Very doubtful.",
+            "Up to you, but I guess.",
+            "No.",
+            "Absolutely not.",
+            "Nahh.",
+            "Nope.",
+            "No way.",
+            "Not a chance.",
+            "Not in a million years.",
+            "Probably",
+            "Maybe",
+            "Maybe not",
+            "Not sure",
+            "Ask again later",
+            "¯\_(ツ)_/¯",
         ]
 
     def cog_unload(self):
@@ -286,7 +312,6 @@ class Fun(commands.Cog, name="fun"):
 
     @commands.guild_only()
     @commands.command(usage="`tp!chatchart #channel`")
-    @voter_only()
     @commands.cooldown(1, 300, commands.BucketType.guild)
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
@@ -297,7 +322,8 @@ class Fun(commands.Cog, name="fun"):
         Generates a pie chart, representing the last 10000 messages in the specified channel.
         This command has a server wide cooldown of 300 seconds.
         """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -357,7 +383,6 @@ class Fun(commands.Cog, name="fun"):
     @commands.command(usage="`tp!serverchart`", aliases=["guildchart"])
     @commands.cooldown(1, 2000, commands.BucketType.guild)
     @commands.max_concurrency(1, commands.BucketType.guild)
-    @voter_only()
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def serverchart(self, ctx, messages: int = 1000):
         """
@@ -367,7 +392,8 @@ class Fun(commands.Cog, name="fun"):
         And proceed to build a chart out of that.
         This command has a global serverwide cooldown of 2000 seconds.
         """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -465,9 +491,10 @@ class Fun(commands.Cog, name="fun"):
     #     await ctx.send(embed=embed)
 
     @commands.command(usage="`tp!bonk`")
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def bonk(self, ctx, user: Union[discord.Member, discord.User] = None):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -475,7 +502,7 @@ class Fun(commands.Cog, name="fun"):
 
         try:
             await ctx.message.delete()
-        except discord.Forbidden:
+        except discord.errors.Forbidden:
             pass
         if user != ctx.author:
             async with aiohttp.ClientSession() as session:
@@ -496,10 +523,11 @@ class Fun(commands.Cog, name="fun"):
 
     @commands.command(usage="`tp!enlarge emoji`")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def enlarge(self, ctx, emoji):
         """Post a large .png of an emoji"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -580,11 +608,12 @@ class Fun(commands.Cog, name="fun"):
             return io.BytesIO(img)
 
     @commands.command(usage="`tp!ascii Optional:font text`")
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def ascii(self, ctx, *, text: str = None):
         """Beautify some text
         You can find a fonts list here: http://artii.herokuapp.com/fonts_list"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -617,9 +646,10 @@ class Fun(commands.Cog, name="fun"):
         await ctx.send("```ascii\n{}```".format(response))
 
     @commands.command(aliases=["topics", "revive"], usage="`tp!topics`")
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def chatrevive(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -658,9 +688,9 @@ class Fun(commands.Cog, name="fun"):
             "What is the most disgusting habit some people have? ",
             "What is the silliest fear you have? ",
             "Who has the smallest pp in this server?",
-            "Who is the funniest person you’ve met? ",
+            "Who is the funniest person you've met? ",
             "What weird or useless talent do you have? ",
-            "What’s the most underrated (or overrated) TV show? ",
+            "What's the most underrated (or overrated) TV show? ",
         ]
         say = random.choice(responces)
         embed = discord.Embed(
@@ -669,7 +699,7 @@ class Fun(commands.Cog, name="fun"):
             url=f"{Website}",
             timestamp=ctx.message.created_at,
         )
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.command(
         aliases=[
@@ -684,9 +714,10 @@ class Fun(commands.Cog, name="fun"):
         ],
         usage="`tp!coin`",
     )
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def coinflip(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -700,278 +731,14 @@ class Fun(commands.Cog, name="fun"):
             randomcoin = random.choice(sides)
             await ctx.reply(f"The coin landed on {randomcoin}!")
 
-    @commands.command(usage="`tp!supreme text`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def supreme(self, ctx, *, text: str):
-        """
-        Make mockups of the shittiest clothing brand of all time.
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if len(text) > 25:
-            return await ctx.send(
-                "The file you tried to render was over 25 characters! Please try again!"
-            )
-        embed = discord.Embed(
-            colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-        ).set_image(url="attachment://supreme.png")
-        image = discord.File(
-            await (await self.alex_api.supreme(text=text)).read(), "supreme.png"
-        )
-        await ctx.send(embed=embed, file=image)
-
-    @commands.command(usage="`tp!facts text`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def facts(self, ctx, *, text: str):
-        """
-        And that's a fact.
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if len(text) > 40:
-            return await ctx.send(
-                "The file you tried to render was over 40 characters! Please try again!"
-            )
-        embed = discord.Embed(
-            colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-        ).set_image(url="attachment://fact.png")
-        image = discord.File(
-            await (await self.alex_api.facts(text=text)).read(), "fact.png"
-        )
-        await ctx.send(embed=embed, file=image)
-
-    @commands.command(usage="`tp!scroll text`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def scroll(self, ctx, *, text: str):
-        """
-        The scroll of truth!
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if len(text) > 40:
-            return await ctx.send(
-                "The file you tried to render was over 40 characters! Please try again!"
-            )
-        embed = discord.Embed(
-            colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-        ).set_image(url="attachment://scroll.png")
-        image = discord.File(
-            await (await self.alex_api.scroll(text=text)).read(), "scroll.png"
-        )
-        await ctx.send(embed=embed, file=image)
-
-    @commands.command(usage="`tp!calling text`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def calling(self, ctx, *, text: str):
-        """
-        Tom calling whatever.
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if len(text) > 70:
-            return await ctx.send(
-                "The file you tried to render was over 70 characters! Please try again!"
-            )
-        embed = discord.Embed(
-            colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-        ).set_image(url="attachment://call.png")
-        image = discord.File(
-            await (await self.alex_api.calling(text=text)).read(), "call.png"
-        )
-        await ctx.send(embed=embed, file=image)
-
-    @commands.command(usage="`tp!salty @user`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def salty(self, ctx, user: discord.Member = None):
-        """
-        Comparable to the amount of salt on the Atlantic Ocean
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if not user:
-            user = ctx.author
-
-        embed = discord.Embed(colour=EMBED_COLOUR, title=f"{':salt:'*7}").set_image(
-            url="attachment://salty.png"
-        )
-        embed.set_footer(
-            text=f"{ctx.author.name} > {user.name} | Powered by ponbus.com"
-        )
-        image = discord.File(
-            await (await self.alex_api.salty(image=user.avatar_url)).read(), "salty.png"
-        )
-        await ctx.send(embed=embed, file=image)
-
-    @commands.command(usage="`tp!shame @user`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def shame(self, ctx, user: discord.Member = None):
-        """
-        The dock of shame.
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if not user:
-            user = ctx.author
-
-        embed = discord.Embed(colour=EMBED_COLOUR, title=f"Dock of shame.").set_image(
-            url="attachment://shame.png"
-        )
-        embed.set_footer(
-            text=f"{ctx.author.name} > {user.name} | Powered by ponbus.com"
-        )
-        image = discord.File(
-            await (await self.alex_api.shame(image=user.avatar_url)).read(), "shame.png"
-        )
-        await ctx.send(embed=embed, file=image)
-
-    @commands.command(usage="`tp!captcha text`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def captcha(self, ctx, *, text: str):
-        """
-        Funny captcha image hahaha
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if len(text) > 25:
-            return await ctx.send(
-                "The file you tried to render was over 25 characters! Please try again!"
-            )
-        embed = discord.Embed(
-            colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-        ).set_image(url="attachment://captcha.png")
-        image = discord.File(
-            await (await self.alex_api.captcha(text=text)).read(), "captcha.png"
-        )
-        await ctx.send(embed=embed, file=image)
-
-    @commands.command(usage="`tp!hex hex_code`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def hex(self, ctx, hex: str):
-        """
-        Get color information from hex string.
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        try:
-            if len(hex) == 6:
-                colorinf = await self.alex_api.colour(colour=hex)
-                embed = discord.Embed(colour=EMBED_COLOUR, title=f"{colorinf.name}")
-                embed.set_image(url=colorinf.image)
-                embed.set_footer(
-                    text=f"Rendered by {ctx.author} | Powered by ponbus.com"
-                )
-                await ctx.send(embed=embed)
-            else:
-                await ctx.send(
-                    "A hex color code without transparency is composed of 6 characters, no more, no less."
-                )
-        except:
-            await ctx.send(
-                f"Failed to obtain color information. Maybe {hex} isn't a valid code."
-            )
-
-    @commands.command(usage="`tp!hub text1 text2`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def hub(self, ctx, text1, text2):
-        """
-        Hehe.
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if len(text1) > 10 or len(text2) > 10:
-            return await ctx.send(
-                "One or both words for the file you tried to render were over 10 characters! Please try again."
-            )
-        embed = discord.Embed(
-            colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-        ).set_image(url="attachment://hub.png")
-        image = discord.File(
-            await (await self.alex_api.pornhub(text=text1, text2=text2)).read(),
-            "hub.png",
-        )
-        await ctx.send(embed=embed, file=image)
-
-    @commands.command(usage="`tp!achievement text`", aliases=["ach"])
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def achievement(self, ctx, *, text: str):
-        """
-        Le minecraft achievement has arrived.
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if len(text) > 30:
-            return await ctx.send(
-                "The file you tried to render was over 30 characters! Please try again!"
-            )
-        embed = discord.Embed(
-            colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-        ).set_image(url="attachment://achievment.png")
-        image = discord.File(
-            await (await self.alex_api.achievement(text=text, icon=46)).read(),
-            "achievment.png",
-        )
-        await ctx.send(embed=embed, file=image)
-
-    @commands.command(usage="`tp!challenge text`", aliases=["ch"])
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def challenge(self, ctx, *, text: str):
-        """
-        Le minecraft challenge has arrived.
-        """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if len(text) > 40:
-            return await ctx.send(
-                "The file you tried to render was over 40 characters! Please try again!"
-            )
-        embed = discord.Embed(
-            colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-        ).set_image(url="attachment://challenge.png")
-        image = discord.File(
-            await (await self.alex_api.challenge(text=text, icon=46)).read(),
-            "challenge.png",
-        )
-        await ctx.send(embed=embed, file=image)
 
     @commands.command(usage="`tp!pp @user`")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def pp(self, ctx, *, user: discord.Member = None):
         """See how much someone is packing :flushed:"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -987,7 +754,7 @@ class Fun(commands.Cog, name="fun"):
             url=f"{Website}",
         )
         embed.add_field(name=f"{user.name}'s pp size", value=value)
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.command(usage="`tp!beemovie`", aliases=["bm"], hidden=True)
     @commands.check(permissions.is_owner)
@@ -996,7 +763,8 @@ class Fun(commands.Cog, name="fun"):
         Sends the entire beemovie script.
         Has an 83 minute cooldown for a reason
         """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1016,7 +784,8 @@ class Fun(commands.Cog, name="fun"):
     @commands.command(aliases=["tic", "tictac", "tictactoe"], usage="`tp!ttt`")
     async def ttt(self, ctx, move=""):
         """Tic Tac Toe"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1262,11 +1031,11 @@ class Fun(commands.Cog, name="fun"):
         " (o^▽^o)",
         " (≧◡≦)",
         ' ☆⌒ヽ(\\*"､^\\*)chu',
-        " ( ˘⌣˘)♡(˘⌣˘ )",
+        " ( ˘⌣˘)♡(˘⌣˘)",
         " xD",
     ]
     KAOMOJI_EMBARRASSED = [
-        " (⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)..",
+        " (/ />/ ▽ /</ /)..",
         " (\\*^.^\\*)..,",
         "..,",
         ",,,",
@@ -1281,7 +1050,8 @@ class Fun(commands.Cog, name="fun"):
     @commands.command(aliases=["owo"], usage="`tp!uwu Optional:text`")
     async def uwu(self, ctx, *, text: str = None):
         """Uwuize the replied to message, previous message, or your own text."""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1291,7 +1061,11 @@ class Fun(commands.Cog, name="fun"):
                     text = (
                         await ctx.fetch_message(ctx.message.reference.message_id)
                     ).content
-                except (discord.Forbidden, discord.NotFound, discord.HTTPException):
+                except (
+                    discord.errors.Forbidden,
+                    discord.NotFound,
+                    discord.HTTPException,
+                ):
                     pass
             if not text:
                 text = (await ctx.channel.history(limit=2).flatten())[
@@ -1414,10 +1188,11 @@ class Fun(commands.Cog, name="fun"):
 
         return uwu
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(hidden=True)
     async def troll(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1441,11 +1216,12 @@ class Fun(commands.Cog, name="fun"):
 """
         )
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(hidden=True)
     @commands.bot_has_permissions(embed_links=True)
     async def virgin(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1455,7 +1231,7 @@ class Fun(commands.Cog, name="fun"):
         )
 
     # @commands.command(usage="`tp!remind <time>`")
-    # @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     # async def remind(self, ctx, time: str, *, reminder: str = None):
     #     """ Set a reminder for yourself.
     #     If you want to provide multiple times, encase in quotes, such as:
@@ -1480,8 +1256,8 @@ class Fun(commands.Cog, name="fun"):
     #         title=f'You will be reminded in {str(secs_as_timedelta)}',
     #         url=f"{Website}",
     #         description=reminder
-    #     )
-    #     await ctx.reply(embed=embed)
+    # )
+    #     await ctx.send(embed=embed)
     #     await asyncio.sleep(secs)
 
     #     if reminder is not None:
@@ -1490,10 +1266,10 @@ class Fun(commands.Cog, name="fun"):
     #     remind_message = discord.Embed(
     #         colour=ctx.author.color,
     #         title=f'Reminder{remind_str}!'
-    #     )
+    # )
     #     try:
     #         await ctx.author.send(embed=remind_message)
-    #     except discord.Forbidden:
+    #     except discord.errors.Forbidden:
     #         await ctx.reply(f'{ctx.author.mention}', embed=remind_message)
 
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -1508,7 +1284,8 @@ class Fun(commands.Cog, name="fun"):
         • = *
         = = ==
         """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1556,7 +1333,7 @@ class Fun(commands.Cog, name="fun"):
             #    Add the fields
             for n, v, i in fields:
                 e.add_field(name=n, value=v, inline=i)
-            e.set_footer(text=mem, icon_url=mem.avatar_url)
+            e.set_footer(text=mem, icon_url=mem.avatar)
             #    Send embed
             await ctx.reply(embed=e)
         # If the problem is unsolvable
@@ -1569,7 +1346,7 @@ class Fun(commands.Cog, name="fun"):
 
     @commands.command(usage="`tp!covid`")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def covid(self, ctx, country_code="Global"):
         """Covid stats. Provide a country via it's ISO code.
         Common codes:
@@ -1579,13 +1356,14 @@ class Fun(commands.Cog, name="fun"):
                 FR: France,
                 DE: Germany
         https://countrycode.org/"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
         embed = discord.Embed(
             title="Covid statistics",
-            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
             colour=EMBED_COLOUR,
             url=f"{Website}",
         )
@@ -1613,7 +1391,7 @@ class Fun(commands.Cog, name="fun"):
         embed.set_footer(
             text="Heads up! - Individual countries may not report the same information in the same way."
         )
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
     # @commands.cooldown(3, 8, commands.BucketType.user)
     # @commands.command(usage="`tp!chat <msg>`")
@@ -1625,7 +1403,7 @@ class Fun(commands.Cog, name="fun"):
     #             ctx.command.reset_cooldown(ctx)
     #             return await ctx.reply(
     #                 f"Hello! In order to chat with me use: `{ctx.prefix}chat <message>`"
-    #             )
+    # )
 
     #         async with aiohttp.ClientSession() as s:
     #             async with s.get(f"{BASE_URL}&uid={ctx.author.id}&msg={message}") as r:
@@ -1647,7 +1425,7 @@ class Fun(commands.Cog, name="fun"):
 
     @commands.command(usage="`tp!mock @user`")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def mock(
         self,
         ctx,
@@ -1662,7 +1440,8 @@ class Fun(commands.Cog, name="fun"):
         is `msg` is a member it will look through the past 10 messages in
         the `channel` and put them all together
         """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1700,11 +1479,11 @@ class Fun(commands.Cog, name="fun"):
             description=result, timestamp=ctx.message.created_at, url=f"{Website}"
         )
         embed.colour = getattr(author, "colour", discord.Colour.default())
-        embed.set_author(name=author.display_name, icon_url=author.avatar_url)
+        embed.set_author(name=author.display_name, icon_url=author.avatar)
         embed.set_thumbnail(url="https://i.imgur.com/upItEiG.jpg")
         embed.set_footer(
             text=f"{ctx.message.author.display_name} mocked {author.display_name}",
-            icon_url=ctx.message.author.avatar_url,
+            icon_url=ctx.message.author.avatar,
         )
         if hasattr(msg, "attachments") and search_msg.attachments != []:
             embed.set_image(url=search_msg.attachments[0].url)
@@ -1714,15 +1493,16 @@ class Fun(commands.Cog, name="fun"):
             else:
                 await ctx.reply(result)
         else:
-            await ctx.reply(embed=embed)
+            await ctx.send(embed=embed)
             if author != ctx.message.author:
                 await ctx.send(f"- {author.mention}")
 
-    @commands.command(aliases=["8ball"], usage="`tp!8ball question`")
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.command(aliases=["8ball", "predict", "8"], usage="`tp!8ball question`")
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def eightball(self, ctx, *, question: commands.clean_content):
         """Ask 8ball"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1750,13 +1530,14 @@ class Fun(commands.Cog, name="fun"):
             bio.seek(0)
             await ctx.reply(content=content, file=discord.File(bio, filename=filename))
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(aliases=["hit", "punch", "yeet"], usage="`tp!slap @user`")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def slap(self, ctx, *, user: discord.Member):
         """Slap people"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1764,33 +1545,34 @@ class Fun(commands.Cog, name="fun"):
         if user == ctx.author:
             embed = discord.Embed(
                 title=f"{ctx.author.name} hits themselves lol...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("slap"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
                 title=f"{ctx.author.name} hits {user.name}...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("slap"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(usage="`tp!poke @user`")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def poke(self, ctx, *, user: discord.Member):
         """Poke people"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1798,31 +1580,32 @@ class Fun(commands.Cog, name="fun"):
         if user == ctx.author:
             embed = discord.Embed(
                 title=f"{ctx.author.name} pokes themselves, why...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("poke"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
                 title=f"{ctx.author.name} pokes {user.name}...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("poke"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(usage="`tp!bred`", hidden=True)
     @commands.bot_has_permissions(embed_links=True)
     async def pot(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1831,15 +1614,16 @@ class Fun(commands.Cog, name="fun"):
             name="How'd you find this lol",
             value=f"[Don't click me :flushed:](https://www.youtube.com/watch?v=MwMuEBhgNNE&ab_channel=ShelseaO%27Hanlon)",
         )
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(aliases=["cuddle", "love", "hold"], usage="`tp!hug @user`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def hug(self, ctx, *, user: discord.Member):
         """Hug people"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1847,33 +1631,34 @@ class Fun(commands.Cog, name="fun"):
         if user == ctx.author:
             embed = discord.Embed(
                 title=f"{ctx.author.name} hugs themselves, how sad...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("hug"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
                 title=f"{ctx.author.name} hugs {user.name}...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("hug"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(usage="`tp!kiss @user`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def kiss(self, ctx, *, user: discord.Member):
         """Kiss people"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1887,57 +1672,59 @@ class Fun(commands.Cog, name="fun"):
             ]
             embed = discord.Embed(
                 title=f"{ctx.author.name} kisses themselves, {random.choice(weird)}",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("kiss"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
         else:
             cute = ["awww", "adorable", "cute"]
             embed = discord.Embed(
                 title=f"{ctx.author.name} kisses {user.name}... {random.choice(cute)}",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("kiss"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(usage="`tp!smug`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def smug(self, ctx, *, user: discord.Member = None):
         """Look smug"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
         user = user or ctx.author
         embed = discord.Embed(
             title=f"{ctx.author} is smug...",
-            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
             url=f"{Website}",
             colour=EMBED_COLOUR,
             timestamp=ctx.message.created_at,
         )
 
         embed.set_image(url=nekos.img("smug"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-        await ctx.reply(embed=embed)
+        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+        await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(usage="`tp!pat @user`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def pat(self, ctx, *, user: discord.Member):
         """Pat people"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1945,33 +1732,34 @@ class Fun(commands.Cog, name="fun"):
         if user == ctx.author:
             embed = discord.Embed(
                 title=f"{ctx.author.name} pats themselves, kinda sad tbh...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("pat"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
                 title=f"{ctx.author.name} patted {user.name}...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("pat"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(usage="`tp!tickle @user`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def tickle(self, ctx, *, user: discord.Member):
         """Tickle people"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -1979,33 +1767,34 @@ class Fun(commands.Cog, name="fun"):
         if user == ctx.author:
             embed = discord.Embed(
                 title=f"{ctx.author.name} tickles themselves, gross...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("tickle"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
                 title=f"{ctx.author.name} tickled {user.name}...",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
             )
             embed.set_image(url=nekos.img("tickle"))
-            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(usage="`tp!kill @user`", aliases=["jump", "murder", "slay"])
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def kill(self, ctx, *, user: discord.Member):
         """Kill someone"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2032,29 +1821,30 @@ class Fun(commands.Cog, name="fun"):
         if user == ctx.author:
             embed = discord.Embed(
                 title=f"Okay you've killed yourself {ctx.author.name}, I hope this was worth it! Now tag someone else to kill them!",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
+                icon_url=ctx.author.avatar,
             )
-            await ctx.reply(embed=embed)
+            await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
                 title=f"{random.choice(kill_msg)}",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
+                icon_url=ctx.author.avatar,
             )
-            await ctx.reply(embed=embed)
+            await ctx.send(embed=embed)
 
     @commands.guild_only()
     @commands.command(usage="`tp!meme`")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def meme(self, ctx, content=None):
         """sends you the dankest of the dank memes from reddit"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2087,25 +1877,26 @@ class Fun(commands.Cog, name="fun"):
                 url=url,
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
             )
             embed.set_image(url=url)
-            embed.set_footer(text=f"{ctx.author}", icon_url=ctx.author.avatar_url)
+            embed.set_footer(text=f"{ctx.author}", icon_url=ctx.author.avatar)
             await ctx.reply(content="Alright, have this meme.", embed=embed)
 
     @commands.guild_only()
-    @commands.command(usage="`tp!okbr`")
+    @commands.command(usage="`tp!shitpost`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def okbr(self, ctx, content=None):
-        """Okay buddy."""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    async def shitpost(self, ctx, content=None):
+        """Smear shit all over the chat."""
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
         async with ctx.channel.typing():
-            subs = ["okaybuddyretard"]
+            subs = ["okaybuddyretard", "gayspiderbrothel", "shitposting"]
             subreddit = await self.reddit.subreddit(random.choice(subs))
             all_subs = []
             top = subreddit.hot(limit=50)
@@ -2129,20 +1920,18 @@ class Fun(commands.Cog, name="fun"):
                 url=url,
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
             )
             embed.set_image(url=url)
-            embed.set_footer(text=f"{ctx.author}", icon_url=ctx.author.avatar_url)
-            await ctx.reply(
-                content="HAHA OH MY GOD THAT IS SO FUNNY!!!! <:stfupls:880141007029669979>",
-                embed=embed,
-            )
+            embed.set_footer(text=f"{ctx.author}", icon_url=ctx.author.avatar)
+            await ctx.reply(content="Alright, have this shitpost.", embed=embed)
 
     @commands.cooldown(1, 15, commands.BucketType.user)
     @commands.command(usage="`tp!hack @user`")
     async def hack(self, ctx, user: discord.Member = None):
         """Hack a user, totally real and legit"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2228,8 +2017,12 @@ class Fun(commands.Cog, name="fun"):
                 "No friends gang",
                 "Gaymers Together",
                 "FuckShit",
-                "Anxiety Zone",
-                "Cawk",
+                "Lunar Development",
+                "Join this server if ur gay",
+                "Egirls palace",
+                "single people only",
+                "Join if ur gay",
+                "gacha heat 🥵🥵",
             ]
 
             Most_Used_Discord_Server = f"{random.choice(Discord_Servers)}"
@@ -2304,12 +2097,13 @@ class Fun(commands.Cog, name="fun"):
                     f"{user.name} has successfully been hacked. <a:EpicTik:816846395302477824>\n\n**{user.name}**'s Data:\nDiscord Email: `{email_address}`\nDiscord Password: `{password}`\nMost used Discord Server: `{Most_Used_Discord_Server}`\nIP Address: `{ip_address}`\nLatest DM: `{latest_DM}`"
                 )
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(aliases=["doggo", "pupper", "puppy"], usage="`tp!dog`")
     @commands.bot_has_permissions(embed_links=True)
     async def dog(self, ctx):
         """Puppers"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2333,24 +2127,24 @@ class Fun(commands.Cog, name="fun"):
                 )
                 embed.set_image(url=data[0]["url"])
                 embed.set_footer(
-                    text=f"agb-dev.xyz | Powered by ponbus.com",
-                    icon_url=ctx.author.avatar_url,
+                    text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+                    icon_url=ctx.author.avatar,
                 )
-                await ctx.reply(embed=embed)
+                await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.command(aliases=["meow", "catto", "kitty"], usage="`tp!cat`")
     @commands.bot_has_permissions(embed_links=True)
     async def cat(self, ctx):
         """Kitties!!"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
         async with aiohttp.ClientSession() as data:
             async with data.get("https://api.thecatapi.com/v1/images/search") as r:
                 data = await r.json()
-                breeds = data[0]["breeds"]
                 embed = discord.Embed(
                     title="Enjoy this cat <3",
                     url="https://agb-dev.xyz/dashboard",
@@ -2359,38 +2153,40 @@ class Fun(commands.Cog, name="fun"):
                 )
                 embed.set_image(url=data[0]["url"])
                 embed.set_footer(
-                    text=f"agb-dev.xyz | Powered by ponbus.com",
-                    icon_url=ctx.author.avatar_url,
+                    text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+                    icon_url=ctx.author.avatar,
                 )
-                await ctx.reply(embed=embed)
+                await ctx.send(embed=embed)
 
     @commands.command(usage="`tp!birb`")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def birb(self, ctx):
         """Its really just geese"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
         embed = discord.Embed(
             title="H o n k",
             colour=EMBED_COLOUR,
-            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
             timestamp=ctx.message.created_at,
             url=f"{Website}",
         )
 
         embed.set_image(url=nekos.img("goose"))
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar_url)
-        await ctx.reply(embed=embed)
+        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+        await ctx.send(embed=embed)
 
-    @commands.command()
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.command(usage="`tp!pressf user or thing")
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     @commands.bot_has_permissions(add_reactions=True)
     async def pressf(self, ctx, *, user: discord.User = None):
         """Pay respects by pressing F"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2432,7 +2228,7 @@ class Fun(commands.Cog, name="fun"):
         del self.channels[str(ctx.channel.id)]
 
     @commands.Cog.listener(name="on_reaction_add")
-    async def FtoPayRespects(self, reaction, user):
+    async def PressF(self, reaction, user):
         if str(reaction.message.channel.id) not in self.channels:
             return
         if (
@@ -2452,10 +2248,11 @@ class Fun(commands.Cog, name="fun"):
                 )
 
     @commands.command(usage="`tp!lenny`")
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def lenny(self, ctx):
         """( ͡° ͜ʖ ͡°)"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2463,10 +2260,11 @@ class Fun(commands.Cog, name="fun"):
 
     @commands.command(usage="`tp!urban search`")
     @commands.is_nsfw()
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def urban(self, ctx, *, search: commands.clean_content):
         """Find the 'best' definition to your words"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2480,13 +2278,10 @@ class Fun(commands.Cog, name="fun"):
                 return await ctx.reply(
                     "Urban API returned invalid data... might be down atm."
                 )
-
             if not url:
                 return await ctx.reply("I think the API broke...")
-
             if not len(url["list"]):
                 return await ctx.reply("Couldn't find your search in the dictionary...")
-
             result = sorted(
                 url["list"], reverse=True, key=lambda g: int(g["thumbs_up"])
             )[0]
@@ -2496,127 +2291,16 @@ class Fun(commands.Cog, name="fun"):
                 definition = definition[:1000]
                 definition = definition.rsplit(" ", 1)[0]
                 definition += "..."
-
             await ctx.reply(
                 f"📚 Definitions for **{result['word']}**```fix\n{definition}```"
             )
 
-    @commands.command(hidden=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def coom(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        await ctx.reply("https://www.youtube.com/watch?v=yvWUDNsZXwA")
-
-    @commands.command(hidden=True)
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
-    async def furry(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        message = await ctx.send(":3")
-        await asyncio.sleep(0.5)
-        await message.edit(content=";3")
-        await asyncio.sleep(0.5)
-        await message.edit(content=":)")
-
-    @commands.command(hidden=True)
-    @commands.cooldown(1, 2, type=commands.BucketType.user)
-    async def chad(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        await ctx.send(
-            """
-⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠛⠛⠛⠋⠉⠈⠉⠉⠉⠉⠛⠻⢿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⡿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⢿⣿⣿⣿⣿
-⣿⣿⣿⣿⡏⣀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠙⢿⣿⣿
-⣿⣿⣿⢏⣴⣿⣷⠀⠀⠀⠀⠀⢾⣿⣿⣿⣿⣿⣿⡆⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿
-⣿⣿⣟⣾⣿⡟⠁⠀⠀⠀⠀⠀⢀⣾⣿⣿⣿⣿⣿⣷⢢⠀⠀⠀⠀⠀⠀⠀⢸⣿
-⣿⣿⣿⣿⣟⠀⡴⠄⠀⠀⠀⠀⠀⠀⠙⠻⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⣿
-⣿⣿⣿⠟⠻⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠶⢴⣿⣿⣿⣿⣿⣧⠀⠀⠀⠀⠀⠀⣿
-⣿⣁⡀⠀⠀⢰⢠⣦⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⣿⣿⣿⣿⣿⡄⠀⣴⣶⣿⡄⣿
-⣿⡋⠀⠀⠀⠎⢸⣿⡆⠀⠀⠀⠀⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⠗⢘⣿⣟⠛⠿⣼
-⣿⣿⠋⢀⡌⢰⣿⡿⢿⡀⠀⠀⠀⠀⠀⠙⠿⣿⣿⣿⣿⣿⡇⠀⢸⣿⣿⣧⢀⣼
-⣿⣿⣷⢻⠄⠘⠛⠋⠛⠃⠀⠀⠀⠀⠀⢿⣧⠈⠉⠙⠛⠋⠀⠀⠀⣿⣿⣿⣿⣿
-⣿⣿⣧⠀⠈⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠟⠀⠀⠀⠀⢀⢃⠀⠀⢸⣿⣿⣿⣿
-⣿⣿⡿⠀⠴⢗⣠⣤⣴⡶⠶⠖⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡸⠀⣿⣿⣿⣿
-⣿⣿⣿⡀⢠⣾⣿⠏⠀⠠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠉⠀⣿⣿⣿⣿
-⣿⣿⣿⣧⠈⢹⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿⣿⣿
-⣿⣿⣿⣿⡄⠈⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣦⣄⣀⣀⣀⣀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀⠙⣿⣿⡟⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀⠁⠀⠀⠹⣿⠃⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⢐⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⠿⠛⠉⠉⠁⠀⢻⣿⡇⠀⠀⠀⠀⠀⠀⢀⠈⣿⣿⡿⠉⠛⠛⠛⠉⠉
-⣿⡿⠋⠁⠀⠀⢀⣀⣠⡴⣸⣿⣇⡄⠀⠀⠀⠀⢀⡿⠄⠙⠛⠀⣀⣠⣤⣤⠄
-                    """
-        )
-
-    @commands.command(usage="`tp!sussy`", hidden=True)
-    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    async def sussy(self, ctx):
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        if random.randint(1, 2) == 1:
-            await ctx.send(
-                """
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣤⣤⣤⣤⣤⣶⣦⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⡿⠛⠉⠙⠛⠛⠛⠛⠻⢿⣿⣷⣤⡀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⠋⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⠈⢻⣿⣿⡄⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⣸⣿⡏⠀⠀⠀⣠⣶⣾⣿⣿⣿⠿⠿⠿⢿⣿⣿⣿⣄⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⣿⣿⠁⠀⠀⢰⣿⣿⣯⠁⠀⠀⠀⠀⠀⠀⠀⠈⠙⢿⣷⡄⠀
-⠀⠀⣀⣤⣴⣶⣶⣿⡟⠀⠀⠀⢸⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣷⠀
-⠀⢰⣿⡟⠋⠉⣹⣿⡇⠀⠀⠀⠘⣿⣿⣿⣿⣷⣦⣤⣤⣤⣶⣶⣶⣶⣿⣿⣿⠀
-⠀⢸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⠀
-⠀⣸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠉⠻⠿⣿⣿⣿⣿⡿⠿⠿⠛⢻⣿⡇⠀⠀
-⠀⣿⣿⠁⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣧⠀⠀
-⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀
-⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀
-⠀⢿⣿⡆⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⡇⠀⠀
-⠀⠸⣿⣧⡀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⠃⠀⠀
-⠀⠀⠛⢿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠀⣰⣿⣿⣷⣶⣶⣶⣶⠶⠀⢠⣿⣿⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⣽⣿⡏⠁⠀⠀⢸⣿⡇⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⢹⣿⡆⠀⠀⠀⣸⣿⠇⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⢿⣿⣦⣄⣀⣠⣴⣿⣿⠁⠀⠈⠻⣿⣿⣿⣿⡿⠏⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠈⠛⠻⠿⠿⠿⠿⠋⠁⠀
-                           """
-            )
-        else:
-            await ctx.send(
-                """
-⠀       ⠀⠀⠀⣠⠤⠖⠚⠛⠉⠛⠒⠒⠦⢤
-⠀⠀⠀⠀⣠⠞⠁⠀⠀⠠⠒⠂⠀⠀⠀⠀⠀⠉⠳⡄
-⠀⠀⠀⢸⠇⠀⠀⠀⢀⡄⠤⢤⣤⣤⡀⢀⣀⣀⣀⣹⡄
-⠀⠀⠀⠘⢧⠀⠀⠀⠀⣙⣒⠚⠛⠋⠁⡈⠓⠴⢿⡿⠁
-⠀⠀⠀⠀⠀⠙⠒⠤⢀⠛⠻⠿⠿⣖⣒⣁⠤⠒⠋
-⠀⠀⠀⠀⠀⢀⣀⣀⠼⠀⠈⣻⠋⠉⠁ A M O G U S
-⠀⠀⠀⡴⠚⠉⠀⠀⠀⠀⠀⠈⠀⠐⢦
-⠀⠀⣸⠃⠀⡴⠋⠉⠀⢄⣀⠤⢴⠄⠀⡇
-⠀⢀⡏⠀⠀⠹⠶⢀⡔⠉⠀⠀⣼⠀⠀⡇
-⠀⣼⠁⠀⠙⠦⣄⡀⣀⡤⠶⣉⣁⣀⠘
-⢀⡟⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⣽
-⢸⠇⠀⠀⠀⢀⡤⠦⢤⡄⠀⠀⡟
-⢸⠀⠀⠀⠀⡾⠀⠀⠀⡿⠀⠀⣇⣀⣀
-⢸⠀⠀⠈⠉⠓⢦⡀⢰⣇⡀⠀⠉⠀⠀⣉⠇
-⠈⠓⠒⠒⠀⠐⠚⠃⠀⠈⠉⠉⠉⠉⠉⠁
-"""
-            )
-
     @commands.command(usage="`tp!reverse text`")
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def reverse(self, ctx, *, text: str):
         """Reverses Shit"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2624,13 +2308,14 @@ class Fun(commands.Cog, name="fun"):
         await ctx.reply(f"🔁 {t_rev}")
 
     @commands.command(usage="`tp!password optional:bytes`")
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def password(self, ctx, nbytes: int = 40):
         """Generates a random password string for you
         This returns a random URL-safe text string, containing nbytes random bytes.
         The text is Base64 encoded, so on average each byte results in approximately 1.3 characters.
         """
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2645,21 +2330,23 @@ class Fun(commands.Cog, name="fun"):
         )
 
     @commands.command(usage="`tp!rate thing`")
-    @commands.cooldown(rate=2, per=2, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def rate(self, ctx, *, thing: commands.clean_content):
         """Rates what you want"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
         rate_amount = random.uniform(0.0, 100.0)
         await ctx.reply(f"I'd rate `{thing}` a **{round(rate_amount, 4)} / 100**")
 
-    @commands.cooldown(rate=2, per=2.5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2.5, type=commands.BucketType.user)
     @commands.command(aliases=["howhot", "hot"], usage="`tp!howhot @user`")
     async def hotcalc(self, ctx, *, user: discord.Member = None):
         """Returns a random percent for how hot is a discord user"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2681,11 +2368,12 @@ class Fun(commands.Cog, name="fun"):
 
         await ctx.reply(f"**{user.name}** is **{hot:.2f}%** hot {emoji}")
 
-    @commands.cooldown(rate=2, per=2.5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2.5, type=commands.BucketType.user)
     @commands.command(aliases=["gay", "homo", "gayrate"], usage="`tp!howgay @user`")
     async def howgay(self, ctx, *, user: discord.Member = None):
         """Tells you how gay a user is lol."""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2714,11 +2402,12 @@ class Fun(commands.Cog, name="fun"):
 
         await ctx.reply(f"**{user.name}** is **{gay:.2f}%** gay {emoji}")
 
-    @commands.cooldown(rate=2, per=2.5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2.5, type=commands.BucketType.user)
     @commands.command(aliases=["howsimp", "areyouasimp"], usage="`tp!simp @user`")
     async def simp(self, ctx, *, user: discord.Member = None):
         """Tells you if a user is a simp lol."""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2745,11 +2434,12 @@ class Fun(commands.Cog, name="fun"):
 
         await ctx.reply(f"**{user.name}** is **{simp:.2f}%** simp {emoji}")
 
-    @commands.cooldown(rate=2, per=2.5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=2.5, type=commands.BucketType.user)
     @commands.command(aliases=["howhorny", "hornyrate"], usage="`tp!horny @user`")
     async def horny(self, ctx, *, user: discord.Member = None):
         """Tells you how horny someone is :flushed:"""
-        if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
@@ -2783,3 +2473,280 @@ class Fun(commands.Cog, name="fun"):
 
 def setup(bot):
     bot.add_cog(Fun(bot))
+
+    # @commands.command(usage="`tp!supreme text`")
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def supreme(self, ctx, *, text: str):
+    #     """
+    #     Make mockups of the shittiest clothing brand of all time.
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if len(text) > 25:
+    #         return await ctx.send(
+    #             "The file you tried to render was over 25 characters! Please try again!"
+    # )
+    #     embed = discord.Embed(
+    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
+    # ).set_image(url="attachment://supreme.png")
+    #     image = discord.File(
+    #         await (await self.alex_api.supreme(text=text)).read(), "supreme.png"
+    # )
+    #     await ctx.send(embed=embed, file=image)
+
+    # @commands.command(usage="`tp!facts text`")
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def facts(self, ctx, *, text: str):
+    #     """
+    #     And that's a fact.
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if len(text) > 40:
+    #         return await ctx.send(
+    #             "The file you tried to render was over 40 characters! Please try again!"
+    # )
+    #     embed = discord.Embed(
+    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
+    # ).set_image(url="attachment://fact.png")
+    #     image = discord.File(
+    #         await (await self.alex_api.facts(text=text)).read(), "fact.png"
+    # )
+    #     await ctx.send(embed=embed, file=image)
+
+    # @commands.command(usage="`tp!scroll text`")
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def scroll(self, ctx, *, text: str):
+    #     """
+    #     The scroll of truth!
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if len(text) > 40:
+    #         return await ctx.send(
+    #             "The file you tried to render was over 40 characters! Please try again!"
+    # )
+    #     embed = discord.Embed(
+    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
+    # ).set_image(url="attachment://scroll.png")
+    #     image = discord.File(
+    #         await (await self.alex_api.scroll(text=text)).read(), "scroll.png"
+    # )
+    #     await ctx.send(embed=embed, file=image)
+
+    # @commands.command(usage="`tp!calling text`")
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def calling(self, ctx, *, text: str):
+    #     """
+    #     Tom calling whatever.
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if len(text) > 70:
+    #         return await ctx.send(
+    #             "The file you tried to render was over 70 characters! Please try again!"
+    # )
+    #     embed = discord.Embed(
+    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
+    # ).set_image(url="attachment://call.png")
+    #     image = discord.File(
+    #         await (await self.alex_api.calling(text=text)).read(), "call.png"
+    # )
+    #     await ctx.send(embed=embed, file=image)
+
+    # @commands.command(usage="`tp!salty @user`")
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def salty(self, ctx, user: discord.Member = None):
+    #     """
+    #     Comparable to the amount of salt on the Atlantic Ocean
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if not user:
+    #         user = ctx.author
+
+    #     embed = discord.Embed(colour=EMBED_COLOUR, title=f"{':salt:'*7}").set_image(
+    #         url="attachment://salty.png"
+    # )
+    #     embed.set_footer(
+    #         text=f"{ctx.author.name} > {user.name} | mc.agb-dev.xyz, 1.17.1, Java"
+    # )
+    #     image = discord.File(
+    #         await (await self.alex_api.salty(image=user.avatar)).read(), "salty.png"
+    # )
+    #     await ctx.send(embed=embed, file=image)
+
+    # @commands.command(usage="`tp!shame @user`")
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def shame(self, ctx, user: discord.Member = None):
+    #     """
+    #     The dock of shame.
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if not user:
+    #         user = ctx.author
+
+    #     embed = discord.Embed(colour=EMBED_COLOUR, title=f"Dock of shame.").set_image(
+    #         url="attachment://shame.png"
+    # )
+    #     embed.set_footer(
+    #         text=f"{ctx.author.name} > {user.name} | mc.agb-dev.xyz, 1.17.1, Java"
+    # )
+    #     image = discord.File(
+    #         await (await self.alex_api.shame(image=user.avatar)).read(), "shame.png"
+    # )
+    #     await ctx.send(embed=embed, file=image)
+
+    # @commands.command(usage="`tp!captcha text`")
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def captcha(self, ctx, *, text: str):
+    #     """
+    #     Funny captcha image hahaha
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if len(text) > 25:
+    #         return await ctx.send(
+    #             "The file you tried to render was over 25 characters! Please try again!"
+    # )
+    #     embed = discord.Embed(
+    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
+    # ).set_image(url="attachment://captcha.png")
+    #     image = discord.File(
+    #         await (await self.alex_api.captcha(text=text)).read(), "captcha.png"
+    # )
+    #     await ctx.send(embed=embed, file=image)
+
+    # @commands.command(usage="`tp!hex hex_code`")
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def hex(self, ctx, hex: str):
+    #     """
+    #     Get color information from hex string.
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     try:
+    #         if len(hex) == 6:
+    #             colorinf = await self.alex_api.colour(colour=hex)
+    #             embed = discord.Embed(colour=EMBED_COLOUR, title=f"{colorinf.name}")
+    #             embed.set_image(url=colorinf.image)
+    #             embed.set_footer(
+    #                 text=f"Rendered by {ctx.author} | mc.agb-dev.xyz, 1.17.1, Java"
+    # )
+    #             await ctx.send(embed=embed)
+    #         else:
+    #             await ctx.send(
+    #                 "A hex color code without transparency is composed of 6 characters, no more, no less."
+    # )
+    #     except:
+    #         await ctx.send(
+    #             f"Failed to obtain color information. Maybe {hex} isn't a valid code."
+    # )
+
+    # @commands.command(usage="`tp!hub text1 text2`")
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def hub(self, ctx, text1, text2):
+    #     """
+    #     Hehe.
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if len(text1) > 10 or len(text2) > 10:
+    #         return await ctx.send(
+    #             "One or both words for the file you tried to render were over 10 characters! Please try again."
+    # )
+    #     embed = discord.Embed(
+    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
+    # ).set_image(url="attachment://hub.png")
+    #     image = discord.File(
+    #         await (await self.alex_api.pornhub(text=text1, text2=text2)).read(),
+    #         "hub.png",
+    # )
+    #     await ctx.send(embed=embed, file=image)
+
+    # @commands.command(usage="`tp!achievement text`", aliases=["ach"])
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def achievement(self, ctx, *, text: str):
+    #     """
+    #     Le minecraft achievement has arrived.
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if len(text) > 30:
+    #         return await ctx.send(
+    #             "The file you tried to render was over 30 characters! Please try again!"
+    # )
+    #     embed = discord.Embed(
+    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
+    # ).set_image(url="attachment://achievment.png")
+    #     image = discord.File(
+    #         await (await self.alex_api.achievement(text=text, icon=46)).read(),
+    #         "achievment.png",
+    # )
+    #     await ctx.send(embed=embed, file=image)
+
+    # @commands.command(usage="`tp!challenge text`", aliases=["ch"])
+    # @commands.bot_has_permissions(embed_links=True)
+    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
+    # async def challenge(self, ctx, *, text: str):
+    #     """
+    #     Le minecraft challenge has arrived.
+    #     """
+    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+    #     if cmdEnabled:
+    #         await ctx.send(":x: This command has been disabled!")
+    #         return
+
+    #     if len(text) > 40:
+    #         return await ctx.send(
+    #             "The file you tried to render was over 40 characters! Please try again!"
+    # )
+    #     embed = discord.Embed(
+    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
+    # ).set_image(url="attachment://challenge.png")
+    #     image = discord.File(
+    #         await (await self.alex_api.challenge(text=text, icon=46)).read(),
+    #         "challenge.png",
+    # )
+    #     await ctx.send(embed=embed, file=image)

@@ -1,7 +1,20 @@
-import asyncio
-import aiohttp
+### IMPORTANT ANNOUNCEMENT ###
+#
+# All additions to AGB will now cease.
+# AGB's management will be limited to the following:
+# - Optimization
+# - Bug Fixes
+# - Basic Maintenance
+#
+# DO NOT ADD ANY NEW FEATURES TO AGB
+# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
+#
+### IMPORTANT ANNOUNCEMENT ###
 
+import asyncio
 from functools import wraps
+
+import aiohttp
 
 
 def cache(maxsize=128):

@@ -1,13 +1,16 @@
-import random
-import aiohttp
 import asyncio
+from cmath import log
+from logging import LogRecord
+import random
+from typing import Union
+
+import aiohttp
 import discord
 import nekos
-
-from typing import Union
 from discord.ext import commands, tasks
-from index import EMBED_COLOUR, config, cursor_n, mydb_n, logger
+from index import EMBED_COLOUR, config, cursor_n, logger, mydb_n
 from utils import default
+from Manager.logger import formatColor
 
 BotList_Servers = [
     336642139381301249,
@@ -57,32 +60,62 @@ class autoposting(commands.Cog, name="ap"):
             "random_hentai_gif",
         ]
 
+    def cog_unload(self):
+        self.autoh.stop()
+
     async def get_hentai_img(self):
+        await self.bot.wait_until_ready()
         if random.randint(1, 2) == 1:
-            url = nekos.img(random.choice(self.modules))
+            try:
+                url = nekos.img(random.choice(self.modules))
+            except Exception as e:
+                logger.error(
+                    f"Autoposting: nekos.life error | {formatColor('red', 'Error')} {e}"
+                )
+                return
         else:
             other_stuff = ["bondage", "hentai", "thighs"]
             async with aiohttp.ClientSession() as s:
-                async with s.get(
-                    f"https://shiro.gg/api/images/nsfw/{random.choice(other_stuff)}"
-                ) as r:
-                    j = await r.json()
-                    url = j["url"]
+                try:
+                    async with s.get(
+                        f"https://api.dbot.dev/images/nsfw/{random.choice(other_stuff)}"
+                    ) as r:
+                        j = await r.json()
+                        url = j["url"]
+                except Exception as e:
+                    logger.info(
+                        f"Autoposting: dbot.dev error | {formatColor(e), 'red'}"
+                    )
+                    return
         return url
 
     async def send_from_webhook(self, webhook: discord.Webhook, embed: discord.Embed):
-        await webhook.send(embed=embed, avatar_url=self.bot.user.avatar_url)
+        try:
+            await webhook.send(embed=embed, avatar_url=self.bot.user.avatar)
+        except Exception as e:
+            logger.error(f"Autoposting: webhook error | {formatColor(e), 'red'}")
+            return
 
     @tasks.loop(count=None, minutes=2)
     async def autoh(self):
         await self.bot.wait_until_ready()
         posts = 0
         logger.info("Starting autoposting")
-        me = self.bot.get_user(101118549958877184)
-        embed = discord.Embed(
-            title="Enjoy your poggers porn lmao",
-            description=f"Posting can be slow, please take into consideration how many servers this bot is in and how many are using auto posting. Please be patient. If I completely stop posting, please rerun the command or join the support server.\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Hosting]({config.host})",
-            colour=EMBED_COLOUR,
+        me = await self.bot.fetch_user(101118549958877184)
+        if random.randint(1, 10) == 3:
+            embed = discord.Embed(
+                title="Enjoy your poggers porn lmao",
+                description=f"Posting can be slow, please take into consideration how many servers this bot is in and how many are using auto posting. Please be patient. If I completely stop posting, please rerun the command or join the support server.\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
+                colour=EMBED_COLOUR,
+            )
+        else:
+            embed = discord.Embed(
+                title="Enjoy your poggers porn lmao",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
+                colour=EMBED_COLOUR,
+            )
+        embed.set_footer(
+            text="agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java", icon_url=me.avatar
         )
 
         cursor_n.execute(
@@ -90,23 +123,20 @@ class autoposting(commands.Cog, name="ap"):
         )
         try:
             embed.set_image(url=(await self.get_hentai_img()))
-        except nekos.errors.NothingFound:
-            logger.error(f"AutoPosting - No image found.\nTrying again...")
+        except Exception as e:
+            logger.error(f"AutoPosting Error | {formatColor('red', 'Error')} {e}")
             try:
                 embed.set_image(url=(await self.get_hentai_img()))
-            except:
-                logger.error(
-                    f"I still could not get an image to post with... so we're just not gonna do anything lmao"
-                )
-                await me.send("Attempt 2 at finding an image for autoposting failed.")
+            except Exception as e:
+                logger.error(f"AutoPosting Error | {formatColor(e), 'red'}")
                 pass
         except Exception as e:
-            logger.info(f"Autoposting error |", e)
+            logger.error(f"Autoposting error | {formatColor(e), 'red'}")
             return
         else:
             for row in cursor_n.fetchall():
                 if row[0] is None:
-                    return
+                    continue
                 else:
                     channel = self.bot.get_channel(int(row[0]))
                     if channel is None:
@@ -114,65 +144,70 @@ class autoposting(commands.Cog, name="ap"):
                             await channel.guild.chunk()
                         except:
                             pass
-                        pass
+                        continue
                     if channel is not None:
                         if not channel.guild.chunked:
                             await channel.guild.chunk()
                             logger.info(
-                                f"Chunked {channel.guild.name} from autoposting."
+                                f"Chunked {formatColor(channel.guild.name, 'grey')} | {formatColor(channel.guild.member_count, 'yellow')} from autoposting."
                             )
                         if channel.guild.id == BotList_Servers:
                             continue
-                        if not channel.is_nsfw():
-                            # Remove hentai channel from db
-                            cursor_n.execute(
-                                f"UPDATE public.guilds SET hentai_channel = NULL WHERE guildId = '{channel.guild.id}'"
-                            )
-                            mydb_n.commit()
-                            logger.info(
-                                f"{channel.guild.id} is no longer NSFW, so I have removed the channel from the database."
-                            )
                         else:
-                            try:
-                                webhooks = await channel.webhooks()
-                                webhook = discord.utils.get(
-                                    webhooks, name="AGB Autoposting", user=self.bot.user
+                            if not channel.is_nsfw():
+                                # Remove hentai channel from db
+                                cursor_n.execute(
+                                    f"UPDATE public.guilds SET hentai_channel = NULL WHERE guildId = '{channel.guild.id}'"
                                 )
-                                if webhook is None:
-                                    webhook = await channel.create_webhook(
-                                        name="AGB Autoposting"
-                                    )
-                            except discord.Forbidden:
-                                webhook = None
-                            except Exception as e:
-                                logger.info(
-                                    f"Wasn't able to get webhook because of error: {e}"
+                                mydb_n.commit()
+                                logger.warning(
+                                    f"{channel.guild.id} is no longer NSFW, so I have removed the channel from the database."
                                 )
-                                webhook = None
-                            final_messagable: Union[
-                                discord.Webhook, discord.TextChannel
-                            ] = (channel if webhook is None else webhook)
-                            posts += 1
-                            try:
-                                if isinstance(final_messagable, discord.TextChannel):
-                                    await final_messagable.send(embed=embed)
-                                    await asyncio.sleep(0.05)
-                                else:
-                                    await self.send_from_webhook(
-                                        final_messagable, embed
+                            else:
+                                try:
+                                    webhooks = await channel.webhooks()
+                                    webhook = discord.utils.get(
+                                        webhooks,
+                                        name="AGB Autoposting",
+                                        user=self.bot.user,
                                     )
-                                    await asyncio.sleep(0.05)
-                            except Exception as e:
-                                logger.info(f"""Autoposting Error: {e}""")
-                                pass
-        logger.info(f"Autoposting - Posted Batch: {posts}")
-        # cursor_n.execute(
-        #     f"UPDATE guilds SET hentai_channel = NULL WHERE guildId = {channel.guild.id}"
-        # )
-        # mydb_n.commit()
-
-    def cog_unload(self):
-        self.autoh.stop()
+                                    if webhook is None:
+                                        # check all the channels webhooks for AGB Autoposting
+                                        for w in webhooks:
+                                            if w.name == "AGB Autoposting":
+                                                # check if there are more than one webhooks
+                                                await w.delete()
+                                        webhook = await channel.create_webhook(
+                                            name="AGB Autoposting"
+                                        )
+                                except discord.errors.Forbidden:
+                                    webhook = None
+                                except Exception as e:
+                                    webhook = None
+                                final_messagable: Union[
+                                    discord.Webhook, discord.TextChannel
+                                ] = (channel if webhook is None else webhook)
+                                posts += 1
+                                try:
+                                    if isinstance(
+                                        final_messagable, discord.TextChannel
+                                    ):
+                                        await final_messagable.send(embed=embed)
+                                        await asyncio.sleep(0.05)
+                                    else:
+                                        await self.send_from_webhook(
+                                            final_messagable, embed
+                                        )
+                                        await asyncio.sleep(0.05)
+                                except Exception as e:
+                                    ## error is more likely to be a 404, check the logs regardless
+                                    logger.error(
+                                        f"""Autoposting error caused from {channel.guild.id} / {channel.guild.name} / {channel.id} | {e}\n{e.__traceback__}"""
+                                    )
+                                    pass
+            logger.info(
+                f"Autoposting - Posted Batch: {formatColor(str(posts), 'green')}"
+            )
 
 
 def setup(bot):
