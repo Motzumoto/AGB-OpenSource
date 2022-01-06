@@ -18,9 +18,6 @@
 </p>
 
 <p align=center>
-	<a href="https://agb-dev.xyz/">
-		<img src="https://img.shields.io/website?url=https%3A%2F%2Fhttps://agb-dev.xyz%2F" alt="website">
-	</a>
 	</a>	
 	<a href="https://wakatime.com/badge/github/Motzumoto/agb-final">
 		<img src="https://wakatime.com/badge/github/Motzumoto/agb-final.svg" alt="wakatime">
