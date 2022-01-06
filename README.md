@@ -9,7 +9,7 @@
 	<a href="https://dsc.gg/agb">
     	<img src="https://img.shields.io/badge/Version:-4.0.6%20%E2%86%92-gray.svg?colorA=655BE1&colorB=4F44D6&style=for-the-badge"/>
      </a>
-	<a href="https://discordpy.readthedocs.io/en/stable/">
+	<a href="https://discordpy.readthedocs.io/en/master/">
       	<img src="https://img.shields.io/badge/Library:-Discord.py%20%E2%86%92-gray.svg?colorA=655BE1&colorB=4F44D6&style=for-the-badge"/>
     </a>
 	<a href="https://dsc.gg/anxiety">
