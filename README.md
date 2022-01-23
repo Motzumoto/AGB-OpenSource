@@ -9,7 +9,7 @@
 	<a href="https://dsc.gg/agb">
     	<img src="https://img.shields.io/badge/Version:-4.0.6%20%E2%86%92-gray.svg?colorA=655BE1&colorB=4F44D6&style=for-the-badge"/>
      </a>
-	<a href="https://discordpy.readthedocs.io/en/stable/">
+	<a href="https://discordpy.readthedocs.io/en/master/">
       	<img src="https://img.shields.io/badge/Library:-Discord.py%20%E2%86%92-gray.svg?colorA=655BE1&colorB=4F44D6&style=for-the-badge"/>
     </a>
 	<a href="https://dsc.gg/anxiety">
@@ -18,14 +18,6 @@
 </p>
 
 <p align=center>
-	<a href="https://agb-dev.xyz/">
-		<img src="https://img.shields.io/website?url=https%3A%2F%2Fhttps://agb-dev.xyz%2F" alt="website">
-	</a>
-	<a href="https://agb-dev.xyz/">
-		<img src="https://img.shields.io/uptimerobot/status/m788775593-2373a7498dbc0c5fe78901f1?label=bot%20status" alt="bot status">
-	</a>
-	<a href="https://agb-dev.xyz/">
-		<img src="https://img.shields.io/uptimerobot/ratio/7/m788775593-2373a7498dbc0c5fe78901f1?label=uptime%20ratio" alt="bot uptime ratio">
 	</a>	
 	<a href="https://wakatime.com/badge/github/Motzumoto/agb-final">
 		<img src="https://wakatime.com/badge/github/Motzumoto/agb-final.svg" alt="wakatime">
