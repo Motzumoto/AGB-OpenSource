@@ -1,16 +1,4 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
+import nekos
 import asyncio
 import concurrent
 import importlib
@@ -26,15 +14,14 @@ from typing import Union
 
 import aiohttp
 import discord
+from datetime import datetime
 
-# Importing the decorator that makes slash commands.
-from httpx import delete
 from psycopg import cursor
 import requests
 import speedtest
 from discord.ext import commands
 from discord.ext.buttons import Paginator
-from index import EMBED_COLOUR, cursor_n, delay, emojis, logger, mydb_n
+from index import EMBED_COLOUR, cursor_n, delay, logger, mydb_n
 from Manager.logger import formatColor
 from Manager.commandManager import cmd
 from utils import default, http, permissions
@@ -65,20 +52,48 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             "naw": False,
             "nah": False,
         }
+        self.modules = [
+            "nsfw_neko_gif",
+            "anal",
+            "les",
+            "hentai",
+            "bj",
+            "cum_jpg",
+            "tits",
+            "pussy_jpg",
+            "pwankg",
+            "classic",
+            "spank",
+            "boobs",
+            "random_hentai_gif",
+        ]
         self.blacklisted = False
         self.blacklist = self.blacklisted_users()
         bot.add_check(self.blacklist_check)
         self.nword_re = re.compile(
-            r"(n|m|и|й)(i|1|l|!|ᴉ|¡)(g|ƃ|6|б)(g|ƃ|6|б)(e|3|з|u)(r|Я)", re.I
+            r"\b(n|m|и|й)(i|1|l|!|ᴉ|¡)(g|ƃ|6|б)(g|ƃ|6|б)(e|3|з|u)(r|Я)\b", re.I
         )
         self.afks = {}
 
     # this is mainly to make sure that the code is loading the json file if
     # new data gets added
 
+    async def get_hentai_img(self):
+        if random.randint(1, 2) == 1:
+            url = nekos.img(random.choice(self.modules))
+        else:
+            other_stuff = ["bondage", "hentai", "thighs"]
+            async with aiohttp.ClientSession() as s:
+                async with s.get(
+                    f"https://api.dbot.dev/images/nsfw/{random.choice(other_stuff)}"
+                ) as r:
+                    j = await r.json()
+                    url = j["url"]
+        return url
+
     def blacklisted_users(self) -> list:
         cursor_n.execute(
-            f"SELECT \"userID\" FROM public.blacklist WHERE blacklisted = 'true'"
+            f"SELECT userid FROM public.blacklist WHERE blacklisted = 'true'"
         )
 
         return [int(row[0]) for row in cursor_n.fetchall()]
@@ -86,13 +101,15 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     def blacklist_check(self, ctx):
         try:
             cursor_n.execute(
-                f"SELECT blacklisted FROM public.blacklist WHERE \"userID\" = '{ctx.author.id}'"
+                f"SELECT blacklisted FROM public.blacklist WHERE userid = '{ctx.author.id}'"
             )
         except:
             pass
         for row in cursor_n.fetchall():
             self.blacklisted = row[0]
         if self.blacklisted == "false":
+            return True
+        elif self.blacklisted == None:
             return True
         else:
             return False
@@ -182,6 +199,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member, guild=None):
+        me = self.bot.get_user(101118549958877184)
         guild = member.guild
         if member.guild.id == 755722576445046806:
             if member.bot:
@@ -192,61 +210,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                     f"{member.name} left. Guild member count: {guild.member_count}",
                     delete_after=5,
                 )
-
-    @commands.command(
-        name="blacklist",
-        invoke_without_command=True,
-        pass_context=True,
-        usage="tp!blacklist <user:id> (toggle) ",
-    )
-    @commands.check(permissions.is_owner)
-    async def blacklist(self, ctx, user: discord.User = None, *, list=None):
-        """Blacklist users from using the bot. Pass no args to see a list of blacklisted users"""
-        if user is None:
-            cursor_n.execute(
-                f"SELECT \"userID\" FROM public.blacklist WHERE blacklisted = 'true'"
-            )
-            res = cursor_n.fetchall()
-            blist = []
-            for row in res:
-                blist.append(int(row[0]))
-            conv = commands.UserConverter()
-            users = await asyncio.gather(
-                *[conv.convert(ctx, str(_id)) for _id in blist]
-            )
-            names = [f"`{user}`" for user in users]
-            mydb_n.commit()
-            await ctx.send(" **|** ".join(names) or "No one has been blacklisted")
-        else:
-            cursor_n.execute(f"SELECT * FROM blacklist WHERE \"userID\" = '{user.id}'")
-            rows = cursor_n.rowcount
-            if rows == 0:
-                cursor_n.execute(
-                    f"INSERT INTO blacklist (\"userID\", blacklisted) VALUES ('{user.id}', 'true')"
-                )
-                await ctx.send(f"{user} has been added to the blacklist.")
-                await ctx.message.add_reaction("\u2705")
-                mydb_n.commit()
-            else:
-                cursor_n.execute(
-                    f"SELECT * FROM public.blacklist WHERE \"userID\" = '{user.id}'"
-                )
-                rows = cursor_n.fetchall()
-                if rows[0][1] == "true":
-                    cursor_n.execute(
-                        f"UPDATE public.blacklist SET blacklisted = 'false' WHERE \"userID\" = '{user.id}'"
-                    )
-                    await ctx.send(f"{user} has been removed from the blacklist.")
-                    await ctx.message.add_reaction("\u2705")
-                    mydb_n.commit()
-                else:
-                    cursor_n.execute(
-                        f"UPDATE public.blacklist SET blacklisted = 'true' WHERE \"userID\" = '{user.id}'"
-                    )
-                    await ctx.send(f"{user} has been added to the blacklist.")
-                    await ctx.message.add_reaction("\u2705")
-                    mydb_n.commit()
-            mydb_n.commit()
 
     @commands.group(aliases=["eco"], pass_context=True, hidden=True)
     @commands.check(permissions.is_owner)
@@ -274,7 +237,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             user = ctx.author
 
         # Fetch user's banking information
-        cursor_n.execute("SELECT * FROM userEco WHERE userId = %s", (user.id,))
+        cursor_n.execute("SELECT * FROM userEco WHERE userid = %s", (user.id,))
         row = cursor_n.fetchall()
 
         if account == "bank":
@@ -289,11 +252,11 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         final_amount = account_to_change + amount
         if account == "bank":
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET bank = '{final_amount}' WHERE \"userId\" = '{user.id}'"
+                f"UPDATE public.usereco SET bank = '{final_amount}' WHERE userid = '{user.id}'"
             )
         elif account == "wallet" or account == "balance":
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{final_amount}' WHERE \"userId\" = '{user.id}'"
+                f"UPDATE public.usereco SET balance = '{final_amount}' WHERE userid = '{user.id}'"
             )
         await ctx.reply(
             f"Gave ${amount} to {str(user)}, their {account} is now at ${account_to_change + amount}"
@@ -319,9 +282,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             user = ctx.author
 
         # Fetch user's banking information
-        cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{user.id}\''
-        )
+        cursor_n.execute(f"SELECT * FROM public.usereco WHERE \"userid\" = '{user.id}'")
         row = cursor_n.fetchall()
 
         if account == "bank":
@@ -342,7 +303,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
         if account == "bank":
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET bank = '{amount}' WHERE \"userId\" = '{user.id}'",
+                f"UPDATE public.usereco SET bank = '{amount}' WHERE userid = '{user.id}'",
                 (
                     final_balance,
                     user.id,
@@ -350,7 +311,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             )
         elif account == "balance" or account == "wallet":
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{amount}' WHERE \"userId\" = '{user.id}'",
+                f"UPDATE public.usereco SET balance = '{amount}' WHERE userid = '{user.id}'",
                 (
                     final_balance,
                     user.id,
@@ -380,12 +341,12 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
         if account == "bank":
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET bank = '{amount}' WHERE \"userId\" = '{user.id}'"
+                f"UPDATE public.usereco SET bank = '{amount}' WHERE userid = '{user.id}'"
             )
             await ctx.reply(f"Set bank to ${amount} for {str(user)}.")
         elif account == "wallet" or account == "balance":
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{amount}' WHERE \"userId\" = '{user.id}'"
+                f"UPDATE public.usereco SET balance = '{amount}' WHERE userid = '{user.id}'"
             )
             await ctx.reply(f"Set wallet to ${amount} for {str(user)}.")
         else:
@@ -430,11 +391,11 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
         if account == "both" or account == "bank":
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET bank = '0' WHERE \"userId\" = '{user.id}'"
+                f"UPDATE public.usereco SET bank = '0' WHERE userid = '{user.id}'"
             )
         if account == "both" or account == "wallet" or account == "balance":
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '0' WHERE \"userId\" = '{user.id}'"
+                f"UPDATE public.usereco SET balance = '0' WHERE userid = '{user.id}'"
             )
         await ctx.reply(f"Cleared {to_erase} for {str(user)}")
 
@@ -450,10 +411,10 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Set a tax rate - Must be a decimal, such that `12%` would be `0.12`"""
 
         cursor_n.execute(
-            f"UPDATE public.\"globalVars\" SET variableData = '{new_tax}' WHERE variableName = 'taxData'"
+            f"UPDATE public.globalvars SET variableData = '{new_tax}' WHERE variableName = 'taxData'"
         )
         cursor_n.execute(
-            f"SELECT * FROM public.\"globalVars\" WHERE variableName = 'taxData'"
+            f"SELECT * FROM public.globalvars WHERE variableName = 'taxData'"
         )
         row = cursor_n.fetchall()
         await ctx.reply(f"Tax rate changed to {int(row[0][1] * 100)}%.")
@@ -466,15 +427,15 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Sets everyone's least favorite person in the world."""
         if user is not None:
             cursor_n.execute(
-                f"UPDATE public.\"globalVars\" SET variableData2 = '{user.id}' WHERE variableName = 'taxData'"
+                f"UPDATE public.globalvars SET variableData2 = '{user.id}' WHERE variableName = 'taxData'"
             )
         else:
             cursor_n.execute(
-                f"UPDATE public.\"globalVars\" SET variableData2 = '{None}' WHERE variableName = 'taxData'"
+                f"UPDATE public.globalvars SET variableData2 = '{None}' WHERE variableName = 'taxData'"
             )
 
         cursor_n.execute(
-            "SELECT * FROM public.\"globalVars\" WHERE variableName = 'taxData'"
+            "SELECT * FROM public.globalvars WHERE variableName = 'taxData'"
         )
         row = cursor_n.fetchall()
         if row[0][2] is None:
@@ -562,10 +523,12 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                 await ctx.send(embed=embed)
 
     @commands.check(permissions.is_owner)
-    @commands.command()
-    async def test(self, ctx):
-        await ctx.send("BIG BALLS")
-        raise KeyError
+    @commands.command(hidden=True)
+    async def ghost(self, ctx):
+        try:
+            await ctx.message.delete()
+        except discord.NotFound:
+            pass
 
     @commands.command()
     async def owner(self, ctx):
@@ -573,7 +536,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         async with ctx.channel.typing():
             try:
                 await ctx.message.delete()
-            except:
+            except discord.NotFound:
                 pass
             if ctx.author.id in self.config.owners:
                 return await ctx.send(
@@ -641,52 +604,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                 f"Reloaded extension **{name}.py** {ctx.author.mention}",
                 delete_after=delay,
             )
-
-    @commands.command(aliases=["speedtest"])
-    @commands.check(permissions.is_owner)
-    async def netspeed(self, ctx):
-        """Test your servers internet speed.
-        Note that this is the internet speed of the server your bot is running on,
-        not your internet speed.
-        """
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        loop = asyncio.get_event_loop()
-        s = speedtest.Speedtest(secure=True)
-        the_embed = await ctx.send(embed=self.generate_embed(0, s.results.dict()))
-        await loop.run_in_executor(executor, s.get_servers)
-        await loop.run_in_executor(executor, s.get_best_server)
-        await the_embed.edit(embed=self.generate_embed(1, s.results.dict()))
-        await loop.run_in_executor(executor, s.download)
-        await the_embed.edit(embed=self.generate_embed(2, s.results.dict()))
-        await loop.run_in_executor(executor, s.upload)
-        await the_embed.edit(embed=self.generate_embed(3, s.results.dict()))
-
-    @staticmethod
-    def generate_embed(step: int, results_dict):
-        """Generate the embed."""
-        measuring = ":mag: Measuring..."
-        waiting = ":hourglass: Waiting..."
-
-        color = 0xFF0000
-        title = "Measuring internet speed..."
-        message_ping = measuring
-        message_down = waiting
-        message_up = waiting
-        if step > 0:
-            message_ping = f"**{results_dict['ping']}** ms"
-            message_down = measuring
-        if step > 1:
-            message_down = f"**{results_dict['download'] / 1_000_000:.2f}** mbps"
-            message_up = measuring
-        if step > 2:
-            message_up = f"**{results_dict['upload'] / 1_000_000:.2f}** mbps"
-            title = "NetSpeed Results"
-            color = discord.Color.green()
-        embed = discord.Embed(title=title, color=color)
-        embed.add_field(name="Ping", value=message_ping)
-        embed.add_field(name="Download", value=message_down)
-        embed.add_field(name="Upload", value=message_up)
-        return embed
 
     @commands.command()
     @commands.check(permissions.is_owner)
@@ -785,7 +702,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Reboot the bot"""
         try:
             await ctx.message.delete()
-        except:
+        except discord.NotFound:
             pass
         await self.bot.change_presence(
             status=discord.Status.idle,
@@ -805,7 +722,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """completely shut the bot down"""
         try:
             await ctx.message.delete()
-        except:
+        except discord.NotFound:
             pass
         await self.bot.change_presence(
             status=discord.Status.dnd,
@@ -817,7 +734,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             title="Cya, lmao.", color=EMBED_COLOUR, description="Shutting Down...👌"
         )
         await ctx.send(embed=embed)
-        url = ""
+        url = "https://panel.ponbus.com/api/client/servers/1acee413/power"
 
         payload_kill = json.dumps({"signal": "kill"})
         headers = {
@@ -866,14 +783,14 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             pass
         embed2 = discord.Embed(title=f"New message to {user}", description=message)
         embed2.set_footer(
-            text=f"tp!dm {user.id} | mc.agb-dev.xyz, 1.17.1, Java",
+            text=f"tp!dm {user.id}",
             icon_url=ctx.author.avatar,
         )
         embed = discord.Embed(
             title=f"New message From {ctx.author.name}", description=message
         )
         embed.set_footer(
-            text=f"To contact me, just DM the bot | mc.agb-dev.xyz, 1.17.1, Java",
+            text=f"To contact me, just DM the bot",
             icon_url=ctx.author.avatar,
         )
         try:
@@ -898,7 +815,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Change username."""
         try:
             await ctx.message.delete()
-        except:
+        except discord.NotFound:
             pass
         try:
             await self.bot.user.edit(username=name)
@@ -915,7 +832,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Change nickname."""
         try:
             await ctx.message.delete()
-        except:
+        except discord.NotFound:
             pass
         try:
             await ctx.guild.me.edit(nick=name)
@@ -934,7 +851,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Change avatar."""
         try:
             await ctx.message.delete()
-        except:
+        except discord.NotFound:
             pass
         if url is None and len(ctx.message.attachments) == 1:
             url = ctx.message.attachments[0].url
@@ -966,7 +883,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def ownersay(self, ctx, *, message):
         try:
             await ctx.message.delete()
-        except:
+        except discord.NotFound:
             pass
         await ctx.send(message)
 

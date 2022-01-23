@@ -1,19 +1,6 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
+from matplotlib.pyplot import title
 import discord
 from discord.ext import commands
-from discord.ext.commands import check
 
 from utils import default
 
@@ -47,12 +34,40 @@ def has_permissions(*, check=all, **perms):
 
 async def check_priv(ctx, member):
     """Custom (weird) way to check permissions when handling moderation commands"""
+    embed = discord.Embed(
+        title="Permission Denied", color=0xFF0000, description="no lol are u dumb"
+    )
+    embed2 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"u really must be stupid to try to {ctx.command.name} urself",
+    )
+    embed3 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"ur a bit of an ass arent u, im not gonna let u {ctx.command.name} my owner",
+    )
+    embed4 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"u cant {ctx.command.name} the owner, dumbass",
+    )
+    embed5 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"u cant {ctx.command.name} someone who has the same perms as u",
+    )
+    embed6 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"u really thought u could {ctx.command.name} someone higher than u? pathetic",
+    )
     try:
         # Self checks
-        if member == ctx.author:
-            return await ctx.send(f"You can't {ctx.command.name} yourself")
         if member.id == ctx.bot.user.id:
-            return await ctx.send("no lol")
+            return await ctx.send(embed=embed)
+        if member == ctx.author:
+            return await ctx.send(embed=embed2)
 
         # Check if user bypasses
         if ctx.author.id == ctx.guild.owner.id:
@@ -61,19 +76,15 @@ async def check_priv(ctx, member):
         # Now permission check
         if member.id in owners:
             if ctx.author.id not in owners:
-                return await ctx.send(f"not gunna {ctx.command.name} my owner lol")
+                return await ctx.send(embed=embed3)
             else:
                 pass
         if member.id == ctx.guild.owner.id:
-            return await ctx.send(f"You can't {ctx.command.name} the owner, lol")
+            return await ctx.send(embed=embed4)
         if ctx.author.top_role == member.top_role:
-            return await ctx.send(
-                f"You can't {ctx.command.name} someone who has the same permissions as you..."
-            )
+            return await ctx.send(embed=embed5)
         if ctx.author.top_role < member.top_role:
-            return await ctx.send(
-                f"Nope, you can't {ctx.command.name} someone higher than yourself."
-            )
+            return await ctx.send(embed=embed6)
     except Exception:
         pass
 

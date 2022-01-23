@@ -1,12 +1,9 @@
 import asyncio
-from cmath import log
-from logging import LogRecord
 import random
 from typing import Union
 
 import aiohttp
 import discord
-import nekos
 from discord.ext import commands, tasks
 from index import EMBED_COLOUR, config, cursor_n, logger, mydb_n
 from utils import default
@@ -64,29 +61,14 @@ class autoposting(commands.Cog, name="ap"):
         self.autoh.stop()
 
     async def get_hentai_img(self):
-        await self.bot.wait_until_ready()
-        if random.randint(1, 2) == 1:
-            try:
-                url = nekos.img(random.choice(self.modules))
-            except Exception as e:
-                logger.error(
-                    f"Autoposting: nekos.life error | {formatColor('red', 'Error')} {e}"
-                )
-                return
-        else:
-            other_stuff = ["bondage", "hentai", "thighs"]
-            async with aiohttp.ClientSession() as s:
-                try:
-                    async with s.get(
-                        f"https://api.dbot.dev/images/nsfw/{random.choice(other_stuff)}"
-                    ) as r:
-                        j = await r.json()
-                        url = j["url"]
-                except Exception as e:
-                    logger.info(
-                        f"Autoposting: dbot.dev error | {formatColor(e), 'red'}"
-                    )
-                    return
+        other_stuff = ["jpg", "gif", "yuri"]
+        async with aiohttp.ClientSession() as s:
+            async with s.get(
+                f"https://lunardev.group/api/{random.choice(other_stuff)}"
+            ) as r:
+                j = await r.json()
+                url = j["url"]
+
         return url
 
     async def send_from_webhook(self, webhook: discord.Webhook, embed: discord.Embed):
@@ -96,7 +78,7 @@ class autoposting(commands.Cog, name="ap"):
             logger.error(f"Autoposting: webhook error | {formatColor(e), 'red'}")
             return
 
-    @tasks.loop(count=None, minutes=2)
+    @tasks.loop(count=None, minutes=1)
     async def autoh(self):
         await self.bot.wait_until_ready()
         posts = 0
@@ -114,12 +96,10 @@ class autoposting(commands.Cog, name="ap"):
                 description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
                 colour=EMBED_COLOUR,
             )
-        embed.set_footer(
-            text="agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java", icon_url=me.avatar
-        )
+        embed.set_footer(text="lunardev.group", icon_url=me.avatar)
 
         cursor_n.execute(
-            'SELECT DISTINCT "hentai_channel" FROM public.guilds WHERE "hentai_channel" IS NOT NULL'
+            'SELECT DISTINCT "hentaichannel" FROM public.guilds WHERE "hentaichannel" IS NOT NULL'
         )
         try:
             embed.set_image(url=(await self.get_hentai_img()))
@@ -130,9 +110,6 @@ class autoposting(commands.Cog, name="ap"):
             except Exception as e:
                 logger.error(f"AutoPosting Error | {formatColor(e), 'red'}")
                 pass
-        except Exception as e:
-            logger.error(f"Autoposting error | {formatColor(e), 'red'}")
-            return
         else:
             for row in cursor_n.fetchall():
                 if row[0] is None:
@@ -157,7 +134,7 @@ class autoposting(commands.Cog, name="ap"):
                             if not channel.is_nsfw():
                                 # Remove hentai channel from db
                                 cursor_n.execute(
-                                    f"UPDATE public.guilds SET hentai_channel = NULL WHERE guildId = '{channel.guild.id}'"
+                                    f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
                                 )
                                 mydb_n.commit()
                                 logger.warning(

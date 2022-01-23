@@ -1,16 +1,3 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
 import asyncio
 import datetime
 import functools
@@ -19,12 +6,10 @@ import io
 import random
 import secrets
 import unicodedata
-import urllib
 from io import BytesIO
 from typing import List, Optional, Tuple, Union
 
 import aiohttp
-import alexflipnote
 import asyncpraw
 import discord
 import matplotlib
@@ -150,13 +135,6 @@ class Fun(commands.Cog, name="fun"):
             else:
                 result += char.lower()
         return result
-
-    async def async_text(url, headers=None):
-        data = await async_dl(url, headers)
-        if data is not None:
-            return data.decode("utf-8", "replace")
-        else:
-            return data
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
@@ -502,7 +480,7 @@ class Fun(commands.Cog, name="fun"):
 
         try:
             await ctx.message.delete()
-        except discord.errors.Forbidden:
+        except discord.NotFound:
             pass
         if user != ctx.author:
             async with aiohttp.ClientSession() as session:
@@ -521,24 +499,20 @@ class Fun(commands.Cog, name="fun"):
         else:
             await ctx.send("bonk <a:BONK:825511960741150751>")
 
+    # make this command work with replies
+
     @commands.command(usage="`tp!enlarge emoji`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def enlarge(self, ctx, emoji):
         """Post a large .png of an emoji"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        channel = ctx.channel
         convert = False
         if emoji[0] == "<":
             # custom Emoji
             try:
                 name = emoji.split(":")[1]
             except IndexError:
-                await ctx.send("That doesn't look like an emoji to me!")
+                await ctx.send("thats not even an emote bruh")
                 return
             emoji_name = emoji.split(":")[2][:-1]
             if emoji.split(":")[0] == "<a":
@@ -582,7 +556,7 @@ class Fun(commands.Cog, name="fun"):
             img = await resp.read()
 
         if convert:
-            task = functools.partial(Bigmoji.generate, img)
+            task = functools.partial(Fun.generate, img)
             task = self.bot.loop.run_in_executor(None, task)
 
             try:
@@ -610,40 +584,16 @@ class Fun(commands.Cog, name="fun"):
     @commands.command(usage="`tp!ascii Optional:font text`")
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
     async def ascii(self, ctx, *, text: str = None):
-        """Beautify some text
-        You can find a fonts list here: http://artii.herokuapp.com/fonts_list"""
+        """Beautify some text"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
 
         if len(text) > 30:
-            await ctx.send(
-                "The message you wanted was too long, it has to be under 30 characters!"
-            )
-            return
-        # Get list of fonts
-        fonturl = "http://artii.herokuapp.com/fonts_list"
-        response = await self.async_text(fonturl)
-        fonts = response.split()
+            return await ctx.send("Text too long!")
 
-        font = None
-        # Split text by space - and see if the first word is a font
-        parts = text.split()
-        if len(parts) > 1:
-            # We have enough entries for a font
-            if parts[0] in fonts:
-                # We got a font!
-                font = parts[0]
-                text = " ".join(parts[1:])
-
-        url = "http://artii.herokuapp.com/make?{}".format(
-            urllib.parse.urlencode({"text": text})
-        )
-        if font:
-            url += "&font={}".format(font)
-        response = await self.async_text(url)
-        await ctx.send("```ascii\n{}```".format(response))
+        await ctx.send(f"```ascii\n{default.ascii_art(text)}\n```")
 
     @commands.command(aliases=["topics", "revive"], usage="`tp!topics`")
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -721,16 +671,12 @@ class Fun(commands.Cog, name="fun"):
             await ctx.send(":x: This command has been disabled!")
             return
 
-        if ctx.author.id == 101118549958877184:
-            await ctx.reply(
-                "Somehow, the coin never came back down when you flipped it!"
-            )
-            return
+        sides = ["**Heads**", "**Tails**"]
+        randomcoin = random.choice(sides)
+        if random.randint(1, 6000) == 1:
+            await ctx.reply("The coin landed on its side!")
         else:
-            sides = ["**Heads**", "**Tails**", "**Heads**", "**Middle**"]
-            randomcoin = random.choice(sides)
             await ctx.reply(f"The coin landed on {randomcoin}!")
-
 
     @commands.command(usage="`tp!pp @user`")
     @commands.bot_has_permissions(embed_links=True)
@@ -1821,19 +1767,19 @@ class Fun(commands.Cog, name="fun"):
         if user == ctx.author:
             embed = discord.Embed(
                 title=f"Okay you've killed yourself {ctx.author.name}, I hope this was worth it! Now tag someone else to kill them!",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
-                icon_url=ctx.author.avatar,
             )
             await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
                 title=f"{random.choice(kill_msg)}",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
                 url=f"{Website}",
                 colour=EMBED_COLOUR,
                 timestamp=ctx.message.created_at,
-                icon_url=ctx.author.avatar,
             )
             await ctx.send(embed=embed)
 
@@ -2120,14 +2066,14 @@ class Fun(commands.Cog, name="fun"):
                 )
                 embed = discord.Embed(
                     title="Enjoy this doggo <3",
-                    url="https://agb-dev.xyz/dashboard",
+                    url="https://lunardev.group/dashboard",
                     description=f"**Name**\n{'Name Unavailable' if not breeds else breeds[0]['name']}\n\n**Weight**\n{weight}",
                     colour=EMBED_COLOUR,
                     timestamp=ctx.message.created_at,
                 )
                 embed.set_image(url=data[0]["url"])
                 embed.set_footer(
-                    text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+                    text=f"lunardev.group",
                     icon_url=ctx.author.avatar,
                 )
                 await ctx.send(embed=embed)
@@ -2147,13 +2093,13 @@ class Fun(commands.Cog, name="fun"):
                 data = await r.json()
                 embed = discord.Embed(
                     title="Enjoy this cat <3",
-                    url="https://agb-dev.xyz/dashboard",
+                    url="https://lunardev.group/dashboard",
                     colour=EMBED_COLOUR,
                     timestamp=ctx.message.created_at,
                 )
                 embed.set_image(url=data[0]["url"])
                 embed.set_footer(
-                    text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+                    text=f"lunardev.group",
                     icon_url=ctx.author.avatar,
                 )
                 await ctx.send(embed=embed)
@@ -2473,280 +2419,3 @@ class Fun(commands.Cog, name="fun"):
 
 def setup(bot):
     bot.add_cog(Fun(bot))
-
-    # @commands.command(usage="`tp!supreme text`")
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def supreme(self, ctx, *, text: str):
-    #     """
-    #     Make mockups of the shittiest clothing brand of all time.
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if len(text) > 25:
-    #         return await ctx.send(
-    #             "The file you tried to render was over 25 characters! Please try again!"
-    # )
-    #     embed = discord.Embed(
-    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-    # ).set_image(url="attachment://supreme.png")
-    #     image = discord.File(
-    #         await (await self.alex_api.supreme(text=text)).read(), "supreme.png"
-    # )
-    #     await ctx.send(embed=embed, file=image)
-
-    # @commands.command(usage="`tp!facts text`")
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def facts(self, ctx, *, text: str):
-    #     """
-    #     And that's a fact.
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if len(text) > 40:
-    #         return await ctx.send(
-    #             "The file you tried to render was over 40 characters! Please try again!"
-    # )
-    #     embed = discord.Embed(
-    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-    # ).set_image(url="attachment://fact.png")
-    #     image = discord.File(
-    #         await (await self.alex_api.facts(text=text)).read(), "fact.png"
-    # )
-    #     await ctx.send(embed=embed, file=image)
-
-    # @commands.command(usage="`tp!scroll text`")
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def scroll(self, ctx, *, text: str):
-    #     """
-    #     The scroll of truth!
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if len(text) > 40:
-    #         return await ctx.send(
-    #             "The file you tried to render was over 40 characters! Please try again!"
-    # )
-    #     embed = discord.Embed(
-    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-    # ).set_image(url="attachment://scroll.png")
-    #     image = discord.File(
-    #         await (await self.alex_api.scroll(text=text)).read(), "scroll.png"
-    # )
-    #     await ctx.send(embed=embed, file=image)
-
-    # @commands.command(usage="`tp!calling text`")
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def calling(self, ctx, *, text: str):
-    #     """
-    #     Tom calling whatever.
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if len(text) > 70:
-    #         return await ctx.send(
-    #             "The file you tried to render was over 70 characters! Please try again!"
-    # )
-    #     embed = discord.Embed(
-    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-    # ).set_image(url="attachment://call.png")
-    #     image = discord.File(
-    #         await (await self.alex_api.calling(text=text)).read(), "call.png"
-    # )
-    #     await ctx.send(embed=embed, file=image)
-
-    # @commands.command(usage="`tp!salty @user`")
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def salty(self, ctx, user: discord.Member = None):
-    #     """
-    #     Comparable to the amount of salt on the Atlantic Ocean
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if not user:
-    #         user = ctx.author
-
-    #     embed = discord.Embed(colour=EMBED_COLOUR, title=f"{':salt:'*7}").set_image(
-    #         url="attachment://salty.png"
-    # )
-    #     embed.set_footer(
-    #         text=f"{ctx.author.name} > {user.name} | mc.agb-dev.xyz, 1.17.1, Java"
-    # )
-    #     image = discord.File(
-    #         await (await self.alex_api.salty(image=user.avatar)).read(), "salty.png"
-    # )
-    #     await ctx.send(embed=embed, file=image)
-
-    # @commands.command(usage="`tp!shame @user`")
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def shame(self, ctx, user: discord.Member = None):
-    #     """
-    #     The dock of shame.
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if not user:
-    #         user = ctx.author
-
-    #     embed = discord.Embed(colour=EMBED_COLOUR, title=f"Dock of shame.").set_image(
-    #         url="attachment://shame.png"
-    # )
-    #     embed.set_footer(
-    #         text=f"{ctx.author.name} > {user.name} | mc.agb-dev.xyz, 1.17.1, Java"
-    # )
-    #     image = discord.File(
-    #         await (await self.alex_api.shame(image=user.avatar)).read(), "shame.png"
-    # )
-    #     await ctx.send(embed=embed, file=image)
-
-    # @commands.command(usage="`tp!captcha text`")
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def captcha(self, ctx, *, text: str):
-    #     """
-    #     Funny captcha image hahaha
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if len(text) > 25:
-    #         return await ctx.send(
-    #             "The file you tried to render was over 25 characters! Please try again!"
-    # )
-    #     embed = discord.Embed(
-    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-    # ).set_image(url="attachment://captcha.png")
-    #     image = discord.File(
-    #         await (await self.alex_api.captcha(text=text)).read(), "captcha.png"
-    # )
-    #     await ctx.send(embed=embed, file=image)
-
-    # @commands.command(usage="`tp!hex hex_code`")
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def hex(self, ctx, hex: str):
-    #     """
-    #     Get color information from hex string.
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     try:
-    #         if len(hex) == 6:
-    #             colorinf = await self.alex_api.colour(colour=hex)
-    #             embed = discord.Embed(colour=EMBED_COLOUR, title=f"{colorinf.name}")
-    #             embed.set_image(url=colorinf.image)
-    #             embed.set_footer(
-    #                 text=f"Rendered by {ctx.author} | mc.agb-dev.xyz, 1.17.1, Java"
-    # )
-    #             await ctx.send(embed=embed)
-    #         else:
-    #             await ctx.send(
-    #                 "A hex color code without transparency is composed of 6 characters, no more, no less."
-    # )
-    #     except:
-    #         await ctx.send(
-    #             f"Failed to obtain color information. Maybe {hex} isn't a valid code."
-    # )
-
-    # @commands.command(usage="`tp!hub text1 text2`")
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def hub(self, ctx, text1, text2):
-    #     """
-    #     Hehe.
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if len(text1) > 10 or len(text2) > 10:
-    #         return await ctx.send(
-    #             "One or both words for the file you tried to render were over 10 characters! Please try again."
-    # )
-    #     embed = discord.Embed(
-    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-    # ).set_image(url="attachment://hub.png")
-    #     image = discord.File(
-    #         await (await self.alex_api.pornhub(text=text1, text2=text2)).read(),
-    #         "hub.png",
-    # )
-    #     await ctx.send(embed=embed, file=image)
-
-    # @commands.command(usage="`tp!achievement text`", aliases=["ach"])
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def achievement(self, ctx, *, text: str):
-    #     """
-    #     Le minecraft achievement has arrived.
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if len(text) > 30:
-    #         return await ctx.send(
-    #             "The file you tried to render was over 30 characters! Please try again!"
-    # )
-    #     embed = discord.Embed(
-    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-    # ).set_image(url="attachment://achievment.png")
-    #     image = discord.File(
-    #         await (await self.alex_api.achievement(text=text, icon=46)).read(),
-    #         "achievment.png",
-    # )
-    #     await ctx.send(embed=embed, file=image)
-
-    # @commands.command(usage="`tp!challenge text`", aliases=["ch"])
-    # @commands.bot_has_permissions(embed_links=True)
-    # @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    # async def challenge(self, ctx, *, text: str):
-    #     """
-    #     Le minecraft challenge has arrived.
-    #     """
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     if len(text) > 40:
-    #         return await ctx.send(
-    #             "The file you tried to render was over 40 characters! Please try again!"
-    # )
-    #     embed = discord.Embed(
-    #         colour=EMBED_COLOUR, title=f"Rendered by {ctx.author}"
-    # ).set_image(url="attachment://challenge.png")
-    #     image = discord.File(
-    #         await (await self.alex_api.challenge(text=text, icon=46)).read(),
-    #         "challenge.png",
-    # )
-    #     await ctx.send(embed=embed, file=image)

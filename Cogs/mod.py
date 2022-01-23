@@ -188,17 +188,18 @@ class Moderator(commands.Cog, name="mod"):
         except:
             pass
         self.default_prefix = "tp!"
-        # cursor.execute(f"SELECT userId FROM users WHERE blacklisted = 'true'")
+        # cursor.execute(f"SELECT userid FROM users WHERE blacklisted = 'true'")
         # res = cursor.fetchall()
         blist = []
         # for row in res:
         #     blist.append(int(row[0]))
         self.blacklist = blist
-
+        self.prefixes = None
         # with open('blacklist.json') as f:
         #     self.blacklist = json.load(f)
 
     def get_prefix(self, bot, message):
+        prefix = None
         try:
             cursor_n.execute(
                 f"SELECT prefix FROM public.guilds WHERE guildId = '{message.guild.id}'"
@@ -217,6 +218,13 @@ class Moderator(commands.Cog, name="mod"):
         except:
             pass
         return prefix
+
+    async def create_embed(self, ctx, error):
+        embed = discord.Embed(
+            title=f"Error Caught!", color=discord.Colour.red(), description=f"{error}"
+        )
+        embed.set_thumbnail(url=self.bot.user.avatar)
+        await ctx.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -261,9 +269,12 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.has_permissions(manage_guild=True)
     async def toggle(self, ctx, *, command):
         """Toggle commands in your server to be enabled/disabled"""
-        cursor_n.execute(
-            f"SELECT {command} FROM public.commands WHERE guild = '{ctx.guild.id}'"
-        )
+        try:
+            cursor_n.execute(
+                f"SELECT {command} FROM public.commands WHERE guild = '{ctx.guild.id}'"
+            )
+        except:
+            await ctx.send("Command can not be found or can not be toggled.")
         cmdRow = cursor_n.fetchall()
 
         # if not commandsEnabled[str(ctx.guild.id)][str(ctx.command.name)]:
@@ -337,7 +348,9 @@ class Moderator(commands.Cog, name="mod"):
             return
 
         try:
-            await ctx.guild.edit(verification_level=discord.VerificationLevel.extreme)
+            await ctx.guild.edit(
+                verification_level=discord.VerificationLevel.extreme
+            ) or (ctx.guild.edit(verification_level=discord.VerificationLevel.high))
         except discord.HTTPException:
             await ctx.send("\N{WARNING SIGN} Could not set verification level.")
             return
@@ -509,7 +522,7 @@ class Moderator(commands.Cog, name="mod"):
             )
             embed.add_field(name="Prefix for this server:", value=f"{row[0]}")
             embed.set_footer(
-                text="agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+                text="lunardev.group",
                 icon_url=ctx.author.avatar,
             )
             await ctx.send(embed=embed)
@@ -604,7 +617,7 @@ class Moderator(commands.Cog, name="mod"):
             timestamp=ctx.message.created_at,
         )
         embed.set_footer(
-            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java",
+            text=f"lunardev.group",
             icon_url=ctx.author.avatar,
         )
         await ctx.send(embed=embed)
@@ -954,7 +967,7 @@ class Moderator(commands.Cog, name="mod"):
 
         try:
             await ctx.message.delete()
-        except discord.errors.Forbidden:
+        except discord.NotFound:
             pass
         if await permissions.check_priv(ctx, member):
             return
@@ -1001,7 +1014,7 @@ class Moderator(commands.Cog, name="mod"):
 
         try:
             await ctx.message.delete()
-        except discord.errors.Forbidden:
+        except discord.NotFound:
             pass
         if await permissions.check_priv(ctx, member):
             return
@@ -1524,7 +1537,8 @@ class Moderator(commands.Cog, name="mod"):
     )
     @commands.cooldown(rate=1, per=4.5, type=commands.BucketType.user)
     async def bot(self, ctx, prefix=None, search=300):
-        """Removes a bot user's messages and messages with their optional prefix."""
+        """Removes a bot user's messages and messages with their optional prefix.
+        Example: `tp!purge bots <the bots prefix[this is optional]> <amount[this is also optional]>`"""
         try:
             await ctx.message.delete()
         except discord.NotFound:

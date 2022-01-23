@@ -30,7 +30,6 @@ from index import (
     config,
     embed_space,
     emojis,
-    logger,
     suggestion_no,
     suggestion_yes,
 )
@@ -50,6 +49,9 @@ class DiscordCmds(commands.Cog, name="discord"):
         self.halloween_re = re.compile(r"h(a|4)(l|1)(l|1)(o|0)w(e|3)(e|3)n", re.I)
         # self.october_re = re.compile(r"o(c|4)(t|7)(o|0)(b|2)(e|3)(r|1)", re.I)
         self.spooky_re = re.compile(r"(s|5)(p|7)(o|0)(o|0)(k|9)(y|1)", re.I)
+        self.nword_re = re.compile(
+            r"\b(n|m|и|й)(i|1|l|!|ᴉ|¡)(g|ƃ|6|б)(g|ƃ|6|б)(e|3|з|u)(r|Я)\b", re.I
+        )
         self.message_cooldown = commands.CooldownMapping.from_cooldown(
             1.0, 3.0, commands.BucketType.user
         )
@@ -109,7 +111,7 @@ class DiscordCmds(commands.Cog, name="discord"):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        if "n word" in message.content.lower():
+        if self.nword_re.search(message.content.lower()):
             return
         if message.author.bot:
             return
@@ -237,7 +239,7 @@ class DiscordCmds(commands.Cog, name="discord"):
 
         try:
             await ctx.message.delete()
-        except:
+        except discord.NotFound:
             pass
         description = f"Emojis for {ctx.guild.name}"
         if not ids:
@@ -318,7 +320,7 @@ class DiscordCmds(commands.Cog, name="discord"):
         embed = discord.Embed(
             title="User Icon", colour=EMBED_COLOUR, description=f"{user}'s avatar is:"
         )
-        embed.set_image(url=user.avatar_url_as(size=1024))
+        embed.set_image(url=user.avatar)
         await ctx.send(embed=embed)
 
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -422,101 +424,6 @@ class DiscordCmds(commands.Cog, name="discord"):
             name=message.author.display_name, icon_url=message.author.avatar
         )
 
-        await ctx.reply(embed=embed)
-
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(aliases=["serverinfo"], usage="`tp!serverinfo`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.guild_only()
-    async def server(self, ctx):
-        """Check info about current server"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        embed = discord.Embed(
-            title=f"{self.bot.user.name}",
-            url=f"{Website}",
-            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
-            color=ctx.author.color,
-            timestamp=ctx.message.created_at,
-        )
-
-        if ctx.guild.icon:
-            embed.set_thumbnail(url=ctx.guild.icon)
-        if ctx.guild.banner:
-            embed.set_image(url=ctx.guild.banner)
-
-        embed.add_field(name="Server Name", value=f"`{ctx.guild.name}`", inline=True)
-        embed.add_field(name="Server ID", value=f"`{ctx.guild.id}`", inline=True)
-        embed.add_field(
-            name="Bots", value=f"`{len([bot for bot in ctx.guild.members if bot.bot])}`"
-        )
-        if len(ctx.guild.text_channels) == 69:
-            embed.add_field(
-                name="Text channels",
-                value=f"`{len(ctx.guild.text_channels)}` Nice",
-                inline=True,
-            )
-        else:
-            embed.add_field(
-                name="Text channels",
-                value=f"`{len(ctx.guild.text_channels)}`",
-                inline=True,
-            )
-        embed.add_field(
-            name="Voice channels",
-            value=f"`{len(ctx.guild.voice_channels)}`",
-            inline=True,
-        )
-        embed.add_field(
-            name="Server on shard", value=f"`{ctx.guild.shard_id}`", inline=True
-        )
-        embed.add_field(
-            name="Members", value=f"`{ctx.guild.member_count}`", inline=True
-        )
-        if len(ctx.guild.roles) == 69:
-            embed.add_field(
-                name="Roles", value=(f"`{len(ctx.guild.roles)}` Nice"), inline=True
-            )
-        else:
-            embed.add_field(
-                name="Roles", value=(f"`{len(ctx.guild.roles)}`"), inline=True
-            )
-        embed.add_field(
-            name="Emoji Count", value=f"`{len(ctx.guild.emojis)}`", inline=True
-        )
-        embed.add_field(
-            name="Emoji Limit", value=f"`{ctx.guild.emoji_limit}` Emojis", inline=True
-        )
-        embed.add_field(
-            name="Filesize Limit",
-            value=f"`{str(default.bytesto(ctx.guild.filesize_limit, 'm'))}` mb",
-        )
-        embed.add_field(
-            name="Bitrate Limit",
-            value=f"`{str(ctx.guild.bitrate_limit / 1000).split('.', 1)[0]}` Kbps",
-        )
-        embed.add_field(
-            name="Security Level",
-            value=f"`{ctx.guild.verification_level}`",
-            inline=True,
-        )
-        embed.add_field(
-            name="Owner/ID",
-            value=f"**Name**:`{ctx.guild.owner}` | **ID**:`{ctx.guild.owner.id}`",
-            inline=False,
-        )
-        time_guild_existed = datetime.utcnow() - ctx.guild.created_at
-        embed.add_field(
-            name="Created",
-            value="`{:%b %d, %Y - %H:%M:%S}`\nThat was `{}` days ago!".format(
-                ctx.guild.created_at, time_guild_existed.days
-            ),
-            inline=True,
-        )
-        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
         await ctx.reply(embed=embed)
 
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -696,7 +603,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             colour=EMBED_COLOUR,
             description=f"{ctx.guild.name}'s icon is:",
         )
-        embed.set_image(url=ctx.guild.icon_url_as(size=1024))
+        embed.set_image(url=ctx.guild.icon)
         await ctx.send(embed=embed)
 
     @commands.command(usage="`tp!banner`")
@@ -712,9 +619,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
         if not ctx.guild.banner:
             return await ctx.reply("This server does not have a banner...")
-        await ctx.reply(
-            f"Banner of **{ctx.guild.name}**\n{ctx.guild.banner_url_as(format='png')}"
-        )
+        await ctx.reply(f"Banner of **{ctx.guild.name}**\n{ctx.guild.banner}")
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.bot_has_permissions(embed_links=True)
@@ -729,7 +634,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         user = user or ctx.author
         async with aiohttp.ClientSession() as s:
             async with s.get(
-                f"https://top.gg/api/bots/723726581864071178/check?userId={user.id}",
+                f"https://top.gg/api/bots/723726581864071178/check?userid={user.id}",
                 headers={"Authorization": TOP_GG_TOKEN},
             ) as r:
                 pain = await r.json()
@@ -850,6 +755,106 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             )
 
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.command(aliases=["serverinfo"], usage="`tp!serverinfo`")
+    @commands.bot_has_permissions(embed_links=True)
+    @commands.guild_only()
+    async def server(self, ctx):
+        """Check info about current server"""
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
+        embed = discord.Embed(
+            title=f"{self.bot.user.name}",
+            url=f"{Website}",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
+            color=ctx.author.color,
+            timestamp=ctx.message.created_at,
+        )
+
+        if ctx.guild.icon:
+            embed.set_thumbnail(url=ctx.guild.icon)
+        if ctx.guild.banner:
+            embed.set_image(url=ctx.guild.banner)
+
+        embed.add_field(name="Server Name", value=f"`{ctx.guild.name}`", inline=True)
+        embed.add_field(name="Server ID", value=f"`{ctx.guild.id}`", inline=True)
+        embed.add_field(
+            name="Bots", value=f"`{len([bot for bot in ctx.guild.members if bot.bot])}`"
+        )
+        if len(ctx.guild.text_channels) == 69:
+            embed.add_field(
+                name="Text channels",
+                value=f"`{len(ctx.guild.text_channels)}` Nice",
+                inline=True,
+            )
+        else:
+            embed.add_field(
+                name="Text channels",
+                value=f"`{len(ctx.guild.text_channels)}`",
+                inline=True,
+            )
+        embed.add_field(
+            name="Voice channels",
+            value=f"`{len(ctx.guild.voice_channels)}`",
+            inline=True,
+        )
+        embed.add_field(
+            name="Server on shard", value=f"`{ctx.guild.shard_id}`", inline=True
+        )
+        embed.add_field(
+            name="Members", value=f"`{ctx.guild.member_count}`", inline=True
+        )
+        if len(ctx.guild.roles) == 69:
+            embed.add_field(
+                name="Roles", value=(f"`{len(ctx.guild.roles)}` Nice"), inline=True
+            )
+        else:
+            embed.add_field(
+                name="Roles", value=(f"`{len(ctx.guild.roles)}`"), inline=True
+            )
+        embed.add_field(
+            name="Emoji Count", value=f"`{len(ctx.guild.emojis)}`", inline=True
+        )
+        embed.add_field(
+            name="Emoji Limit", value=f"`{ctx.guild.emoji_limit}` Emojis", inline=True
+        )
+        embed.add_field(
+            name="Filesize Limit",
+            value=f"`{str(default.bytesto(ctx.guild.filesize_limit, 'm'))}` mb",
+        )
+        embed.add_field(
+            name="Bitrate Limit",
+            value=f"`{str(ctx.guild.bitrate_limit / 1000).split('.', 1)[0]}` Kbps",
+        )
+        embed.add_field(
+            name="Security Level",
+            value=f"`{ctx.guild.verification_level}`",
+            inline=True,
+        )
+        try:
+            embed.add_field(
+                name="Owner/ID",
+                value=f"**Name**:`{ctx.guild.owner}`\n**ID**:`{ctx.guild.owner.id}`",
+                inline=False,
+            )
+        except:
+            embed.add_field(
+                name="Owner/ID",
+                value=f"**Name**:`Unable to fetch.`\n**ID**:`Unable to fetch.`",
+                inline=False,
+            )
+        time_guild_existed = discord.utils.utcnow() - ctx.guild.created_at
+        embed.add_field(
+            name="Created",
+            value=f"`{ctx.guild.created_at:%b %d, %Y - %H:%M:%S}`\nThat was `{default.commify(time_guild_existed.days)}` days ago!",
+            inline=True,
+        )
+        embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
+        await ctx.reply(embed=embed)
+
+    @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(aliases=["ui", "userinfo", "whois"], usage="`tp!userinfo user`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
@@ -859,11 +864,12 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
+
         discord_version = discord.__version__
-        usr = user or ctx.author
+        user = user or ctx.author
 
         hs_class = (
-            str(usr.public_flags.all())
+            str(user.public_flags.all())
             .replace("[<UserFlags.", "")
             .replace(">]", "")
             .replace("_", " ")
@@ -879,7 +885,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         )
 
         es_brilliance = (
-            str(usr.public_flags.all())
+            str(user.public_flags.all())
             .replace("[<UserFlags.", "")
             .replace("hypesquad_brilliance", "")
             .replace("[", "")
@@ -915,11 +921,14 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             else:
                 return ""
 
+        banner = await self.bot.fetch_user(user.id)
+        if user.bot:
+            return await ctx.send("Bots don't have any *useful* information!")
+
         embed = discord.Embed()
         embed.title = f"{self.bot.user.name}"
         embed.description = f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) "
         embed.url = f"{Website}"
-        user = user or ctx.author
         embed.add_field(name="User", value=f"`{user}`", inline=True)
         try:
             embed.add_field(
@@ -936,15 +945,19 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
         embed.add_field(
             name="Account created",
-            value=f"`{user.created_at:%x\n%b %d (%a), %Y - %H:%M:%S}`\nThat was `{(discord.utils.utcnow() - user.created_at).days}` days ago!",
+            value=f"`{user.created_at:%x\n%b %d (%a), %Y - %H:%M:%S}`\nThat was `{default.commify((discord.utils.utcnow() - user.created_at).days)}` days ago!",
             inline=False,
         )
         if len(user.mutual_guilds) == 1:
-            embed.add_field(name="Mutual Servers", value=f"`1 Server`", inline=True)
+            embed.add_field(
+                name="Mutual Servers",
+                value=f"`1 Server`\n`(Can be innacurate, requires all servers to be cached)`",
+                inline=True,
+            )
         else:
             embed.add_field(
                 name="Mutual Servers",
-                value=f"`{len(user.mutual_guilds)} Servers`",
+                value=f"`{len(user.mutual_guilds)} Servers`\n`(Can be innacurate, requires all servers to be cached)`",
                 inline=True,
             )
         embed.set_thumbnail(url=user.avatar)
@@ -952,19 +965,26 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             embed.colour = user.color
             embed.add_field(
                 name="Joined Server",
-                value=f"`{user.joined_at:%b %d, %Y - %H:%M:%S}`\nThat was `{(discord.utils.utcnow() - user.joined_at).days}` days ago!",
+                value=f"`{user.joined_at:%b %d, %Y - %H:%M:%S}`\nThat was `{default.commify((discord.utils.utcnow() - user.joined_at).days)}` days ago!",
                 inline=False,
             )
             # .join(
             # x.mention for x in user.roles[1:][::-1]) if user.roles else
             # "None",
-            role_list = [r.mention for r in usr.roles if r != ctx.guild.default_role]
+            role_list = [r.mention for r in user.roles if r != ctx.guild.default_role]
             if len(role_list):
                 embed.add_field(name="Roles", value=f", ".join(role_list), inline=False)
             else:
                 embed.add_field(name="Roles", value=f"None", inline=False)
+        if banner.banner:
+            try:
+                embed.set_image(url=banner.banner)
+            except:
+                pass
+            else:
+                pass
         embed.set_footer(
-            text=f"agb-dev.xyz | mc.agb-dev.xyz, 1.17.1, Java | Discord.py {discord_version} | Python 3.9.5"
+            text=f"lunardev.group | Discord.py {discord_version} | Python 3.9.5"
         )
         await ctx.reply(
             content=f"Basic info about **`{user.id} / {user.name}`**", embed=embed

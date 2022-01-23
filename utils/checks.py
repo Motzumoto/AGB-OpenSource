@@ -93,7 +93,7 @@ async def check_voter(user_id):
         return True
     async with aiohttp.ClientSession() as s:
         async with s.get(
-            f"https://top.gg/api/bots/723726581864071178/check?userId={user_id}",
+            f"https://top.gg/api/bots/723726581864071178/check?userid={user_id}",
             headers={"Authorization": TOP_GG_TOKEN, "Content-Type": "application/json"},
         ) as r:
             vote = await r.json()

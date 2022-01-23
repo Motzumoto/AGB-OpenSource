@@ -61,7 +61,7 @@ class Economy(commands.Cog, name="economy"):
             description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
         )
         cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
         )
         row = cursor_n.fetchall()
         embed.add_field(
@@ -88,7 +88,7 @@ class Economy(commands.Cog, name="economy"):
 
         if ctx.invoked_subcommand is None:
             cursor_n.execute(
-                f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+                f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
             )
             row = cursor_n.fetchall()
             bal = row[0][1]
@@ -112,10 +112,10 @@ class Economy(commands.Cog, name="economy"):
                 value=f"You have deposited **${int(amount):,}** into your bank",
             )
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET bank = bank + '{amount}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET bank = bank + '{amount}' WHERE userid = '{ctx.author.id}'"
             )
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{bal - amount}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET balance = '{bal - amount}' WHERE userid = '{ctx.author.id}'"
             )
             await ctx.send(embed=embed)
             mydb_n.commit()
@@ -123,15 +123,15 @@ class Economy(commands.Cog, name="economy"):
     @deposit.command(name="all", usage="`tp!deposit all`")
     async def dep_all(self, ctx):
         cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
         )
         row = cursor_n.fetchall()
 
         cursor_n.execute(
-            f"UPDATE public.\"userEco\" SET bank = bank + '{row[0][1]}' WHERE \"userId\" = '{ctx.author.id}'"
+            f"UPDATE public.usereco SET bank = bank + '{row[0][1]}' WHERE userid = '{ctx.author.id}'"
         )
         cursor_n.execute(
-            f"UPDATE public.\"userEco\" SET balance = '{row[0][1] - row[0][1]}' WHERE \"userId\" = '{ctx.author.id}'"
+            f"UPDATE public.usereco SET balance = '{row[0][1] - row[0][1]}' WHERE userid = '{ctx.author.id}'"
         )
         embed = discord.Embed(
             color=self.bot.embed_color,
@@ -148,7 +148,6 @@ class Economy(commands.Cog, name="economy"):
     @commands.group(
         aliases=["with"],
         invoke_without_command=True,
-        case_insensitive=True,
         usage="`tp!withdraw amount|all`",
     )
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -160,7 +159,7 @@ class Economy(commands.Cog, name="economy"):
 
         if ctx.invoked_subcommand is None:
             cursor_n.execute(
-                f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+                f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
             )
             row = cursor_n.fetchall()
             bal = row[0][1]
@@ -185,10 +184,10 @@ class Economy(commands.Cog, name="economy"):
                 value=f"You have withdrawn **${int(amount):,}** from your bank!",
             )
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{bal + amount}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET balance = '{bal + amount}' WHERE userid = '{ctx.author.id}'"
             )
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET bank = '{bank_bal - amount}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET bank = '{bank_bal - amount}' WHERE userid = '{ctx.author.id}'"
             )
             mydb_n.commit()
             await ctx.send(embed=embed)
@@ -196,15 +195,15 @@ class Economy(commands.Cog, name="economy"):
     @withdraw.command(name="all", usage="`tp!withdraw all`")
     async def with_all(self, ctx):
         cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
         )
         row = cursor_n.fetchall()
 
         cursor_n.execute(
-            f"UPDATE public.\"userEco\" SET balance = '{row[0][1] + row[0][2]}'' WHERE \"userId\" = '{ctx.author.id}'"
+            f"UPDATE public.usereco SET balance = '{row[0][1] + row[0][2]}'' WHERE userid = '{ctx.author.id}'"
         )
         cursor_n.execute(
-            f"UPDATE public.\"userEco\" SET bank = '{row[0][2] - row[0][2]}'' WHERE \"userId\" = '{ctx.author.id}'"
+            f"UPDATE public.usereco SET bank = '{row[0][2] - row[0][2]}'' WHERE userid = '{ctx.author.id}'"
         )
         embed = discord.Embed(
             color=self.bot.embed_color,
@@ -236,9 +235,7 @@ class Economy(commands.Cog, name="economy"):
             ctx.command.reset_cooldown(ctx)
             return
 
-        cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{usr.id}\''
-        )
+        cursor_n.execute(f"SELECT * FROM public.usereco WHERE \"userid\" = '{usr.id}'")
         row = cursor_n.fetchall()
 
         if row[0][1] <= 0:
@@ -254,12 +251,12 @@ class Economy(commands.Cog, name="economy"):
 
         if chance > 65:
             cursor_n.execute(
-                f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+                f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
             )
             row2 = cursor_n.fetchall()
             # apply the robbed amount to the message author
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{row2[0][1] + rob_amount}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET balance = '{row2[0][1] + rob_amount}' WHERE userid = '{ctx.author.id}'"
             )
             embed = discord.Embed(
                 title=f"Robbed **{usr.display_name}**",
@@ -272,12 +269,12 @@ class Economy(commands.Cog, name="economy"):
             )
             mydb_n.commit()
             cursor_n.execute(
-                f'SELECT * FROM public."userEco" WHERE "userId" = \'{usr.id}\''
+                f"SELECT * FROM public.usereco WHERE \"userid\" = '{usr.id}'"
             )
             row3 = cursor_n.fetchall()
             # delete the amount from the victim
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{row3[0][1] - rob_amount}' WHERE \"userId\" = '{usr.id}'"
+                f"UPDATE public.usereco SET balance = '{row3[0][1] - rob_amount}' WHERE userid = '{usr.id}'"
             )
             mydb_n.commit()
             await ctx.send(embed=embed)
@@ -323,7 +320,7 @@ class Economy(commands.Cog, name="economy"):
 
         # Fetch the author's banking information.
         cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
         )
         row = cursor_n.fetchall()
 
@@ -366,14 +363,14 @@ class Economy(commands.Cog, name="economy"):
                     if self.yes_responses[response.content]:
                         new_wallet = row[0][1] - to_transfer
                         cursor_n.execute(
-                            f"UPDATE public.\"userEco\" SET balance = '{new_wallet}' WHERE \"userId\" = '{ctx.author.id}'"
+                            f"UPDATE public.usereco SET balance = '{new_wallet}' WHERE userid = '{ctx.author.id}'"
                         )
                         cursor_n.execute(
-                            f"UPDATE public.\"userEco\" SET bank = '{new_wallet}' WHERE \"userId\" = '{ctx.author.id}'"
+                            f"UPDATE public.usereco SET bank = '{new_wallet}' WHERE userid = '{ctx.author.id}'"
                         )
 
                         cursor_n.execute(
-                            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+                            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
                         )
                         row = cursor_n.fetchall()
 
@@ -381,38 +378,36 @@ class Economy(commands.Cog, name="economy"):
                         return
 
         cursor_n.execute(
-            "SELECT * FROM public.\"globalVars\" WHERE variablename = 'taxData'"
+            "SELECT * FROM public.globalvars WHERE variablename = 'taxData'"
         )
         tax_info = cursor_n.fetchall()
         taxed_amount = int(amount * (1 - tax_info[0][1]))
         # await ctx.send(tax_info[0][1])
 
         # Fetch the recipient's bank information
-        cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{user.id}\''
-        )
+        cursor_n.execute(f"SELECT * FROM public.usereco WHERE \"userid\" = '{user.id}'")
         row2 = cursor_n.fetchall()
 
         # Give the taxed amount to the recipient's bank
         new_balance = row2[0][2] + taxed_amount
         cursor_n.execute(
-            f"UPDATE public.\"userEco\" SET bank = '{new_balance}' WHERE \"userId\" = '{user.id}'"
+            f"UPDATE public.usereco SET bank = '{new_balance}' WHERE userid = '{user.id}'"
         )
 
         # Take the (non-taxed) money from the author's account
         new_balance = row[0][2] - amount
         cursor_n.execute(
-            f"UPDATE public.\"userEco\" SET bank = '{new_balance}' WHERE \"userId\" = '{ctx.author.id}'"
+            f"UPDATE public.usereco SET bank = '{new_balance}' WHERE userid = '{ctx.author.id}'"
         )
 
         if tax_info[0][2] is not None and tax_info[0][1] != 0:
             cursor_n.execute(
-                f'SELECT * FROM public."userEco" WHERE "userId" = \'{tax_info[0][2]}\''
+                f"SELECT * FROM public.usereco WHERE \"userid\" = '{tax_info[0][2]}'"
             )
             tax_collect_bank = cursor_n.fetchall()
             new_balance = tax_collect_bank[0][2] + (amount - taxed_amount)
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET bank = '{new_balance}' WHERE \"userId\" = '{tax_info[0][2]}'"
+                f"UPDATE public.usereco SET bank = '{new_balance}' WHERE userid = '{tax_info[0][2]}'"
             )
 
         if note is None:
@@ -453,13 +448,13 @@ class Economy(commands.Cog, name="economy"):
 
         earned = random.randint(500, 10000)
         cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
         )
-        # 0 = userId, 1 = balance, 2 = bank, 3 = userTag, 4 = lastDaily, 5 =
+        # 0 = userid, 1 = balance, 2 = bank, 3 = userTag, 4 = lastDaily, 5 =
         # isBot
         row = cursor_n.fetchone()[1]
         cursor_n.execute(
-            f"UPDATE public.\"userEco\" SET balance = '{row + earned}' WHERE \"userId\" = '{ctx.author.id}'"
+            f"UPDATE public.usereco SET balance = '{row + earned}' WHERE userid = '{ctx.author.id}'"
         )
         mydb_n.commit()
         await ctx.reply(f"You finshed work and earned **${int(earned):,}**")
@@ -476,13 +471,13 @@ class Economy(commands.Cog, name="economy"):
         chance = random.randint(1, 10)  # 1/10 chance to fail
         earned = random.randint(50, 1000)
         cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
         )
         row = cursor_n.fetchall()
 
         if chance > 1:
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{row[0][1] + earned}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET balance = '{row[0][1] + earned}' WHERE userid = '{ctx.author.id}'"
             )
             mydb_n.commit()
             await ctx.reply(
@@ -503,9 +498,7 @@ class Economy(commands.Cog, name="economy"):
             return
 
         usr = user or ctx.author
-        cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{usr.id}\''
-        )
+        cursor_n.execute(f"SELECT * FROM public.usereco WHERE \"userid\" = '{usr.id}'")
         row = cursor_n.fetchall()
         embed = discord.Embed(
             title=f"User Balance",
@@ -537,15 +530,15 @@ class Economy(commands.Cog, name="economy"):
 
         dailyAmount = 10000
         cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
         )
         row = cursor_n.fetchall()
         if row[0][3] != date.today():
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{row[0][1] + dailyAmount}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET balance = '{row[0][1] + dailyAmount}' WHERE userid = '{ctx.author.id}'"
             )
             cursor_n.execute(
-                f'UPDATE public."userEco" SET "lastDaily" = \'{date.today()}\' WHERE "userId" = \'{ctx.author.id}\''
+                f"UPDATE public.usereco SET \"lastDaily\" = '{date.today()}' WHERE \"userid\" = '{ctx.author.id}'"
             )
             mydb_n.commit()
             await ctx.reply(f"You claimed your daily and earned **${dailyAmount}**!")
@@ -609,13 +602,13 @@ class Economy(commands.Cog, name="economy"):
         search_place = str(search_place.content)
         earned = random.randint(10, 150)
         cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
         )
         row = cursor_n.fetchall()
         bal = row[0][1]
         edescription = f"You searched `{search_place}` and found **${int(earned):,}**"
         cursor_n.execute(
-            f"UPDATE public.\"userEco\" SET balance = '{bal + earned}' WHERE \"userId\" = '{ctx.author.id}'"
+            f"UPDATE public.usereco SET balance = '{bal + earned}' WHERE userid = '{ctx.author.id}'"
         )
         mydb_n.commit()
         embed = discord.Embed(
@@ -636,7 +629,7 @@ class Economy(commands.Cog, name="economy"):
             return
 
         cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{ctx.author.id}\''
+            f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
         )
         row = cursor_n.fetchall()
         amount = int(str(amount))
@@ -694,7 +687,7 @@ class Economy(commands.Cog, name="economy"):
 
         if slot1 == slot2 == slot3:
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{amount * 11.5 + bal}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET balance = '{amount * 11.5 + bal}' WHERE userid = '{ctx.author.id}'"
             )
             mydb_n.commit()
             await ctx.reply(embed=great)
@@ -702,7 +695,7 @@ class Economy(commands.Cog, name="economy"):
 
         if slot1 == slot2:
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{amount * 2 + bal}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET balance = '{amount * 2 + bal}' WHERE userid = '{ctx.author.id}'"
             )
             mydb_n.commit()
             await ctx.reply(embed=decent)
@@ -710,14 +703,14 @@ class Economy(commands.Cog, name="economy"):
 
         if slot2 == slot3:
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{amount * 1.5 + bal}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET balance = '{amount * 1.5 + bal}' WHERE userid = '{ctx.author.id}'"
             )
             mydb_n.commit()
             await ctx.reply(embed=ok)
 
         else:
             cursor_n.execute(
-                f"UPDATE public.\"userEco\" SET balance = '{bal - amount}' WHERE \"userId\" = '{ctx.author.id}'"
+                f"UPDATE public.usereco SET balance = '{bal - amount}' WHERE userid = '{ctx.author.id}'"
             )
             mydb_n.commit()
             await ctx.reply(embed=lost)

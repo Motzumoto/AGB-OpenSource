@@ -13,8 +13,10 @@
 
 import asyncio
 import datetime
+import requests
 import itertools
 import json
+import os
 import textwrap
 import time
 import traceback
@@ -100,8 +102,39 @@ def code_traceback(err, advance: bool = True):
     return error if advance else f"{type(err).__name__}: {err}"
 
 
+def download(url, name):
+    with open(name, "wb") as f:
+        f.write(requests.get(url).content)
+
+
+def ascii_art(word):
+    url = f"https://artii.herokuapp.com/make?text={word}"
+    response = requests.get(url)
+    return response.text
+
+
+def addcommas(number):
+    if number < 1000:
+        return number
+    number = str(number)
+    return addcommas(number[:-3]) + "," + number[-3:]
+
+
+def commify(n):
+    n = str(n)
+    if len(n) <= 3:
+        return n
+    return commify(n[:-3]) + "," + n[-3:]
+
+
 def timetext(name):
     return f"{name}_{int(time.time())}.txt"
+
+
+def add_one(num):
+    num = int(num)
+    num += 1
+    return num
 
 
 def timeago(target):
@@ -152,7 +185,7 @@ async def type_message(
     content = common_filters.filter_urls(content)
     try:
         async with destination.typing():
-            await asyncio.sleep(len(content) * 0.01)
+            await asyncio.sleep(len(content) * 0.05)
             return await destination.send(content=content, **kwargs)
     except discord.HTTPException:
         # Not allowed to send messages to this destination (or, sending the

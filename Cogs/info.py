@@ -13,14 +13,12 @@
 
 import datetime
 import json
-import math
 import os
 import random
 import time
 from datetime import datetime, timedelta
 from typing import List, Union
 
-import aiohttp
 import discord
 import googletrans
 import psutil
@@ -34,8 +32,7 @@ from index import (
     emojis,
     mydb_n,
 )
-from Manager.commandManager import cmd, commandsEnabled
-from matplotlib.pyplot import title
+from Manager.commandManager import cmd
 from utils import default, permissions
 
 
@@ -117,6 +114,10 @@ class Information(commands.Cog, name="info"):
         """Get weather data for a location
         You can use your zip code or your city name.
         Ex; `tp!weather City / Zip Code` or `tp!weather City,Town`"""
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
+            await ctx.send(":x: This command has been disabled!")
+            return
         if location == None:
             await ctx.send("Please send a valid location.")
             return
@@ -128,6 +129,38 @@ class Information(commands.Cog, name="info"):
             await ctx.send(embed=self.weather_message(data, location))
         except KeyError:
             await ctx.send(embed=self.error_message(location))
+
+    @commands.command(usage="`tp!temp fahrenheit`")
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def f2c(self, ctx, *, temp=None):
+        """Convert Fahrenheit to Celcius"""
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
+            await ctx.send(":x: This command has been disabled!")
+            return
+        if temp == None:
+            await ctx.send("Please send a valid temperature.")
+            return
+
+        temp = float(temp)
+        cel = (temp - 32) * (5 / 9)
+        await ctx.send(f"{temp}°F is {round(cel, 2)}°C")
+
+    @commands.command(usage="`tp!temp celcius`")
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def c2f(self, ctx, *, temp=None):
+        """Convert Celcius to Fahrenheit"""
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
+            await ctx.send(":x: This command has been disabled!")
+            return
+        if temp == None:
+            await ctx.send("Please send a valid temperature.")
+            return
+
+        temp = float(temp)
+        fah = (temp * (9 / 5)) + 32
+        await ctx.send(f"{temp}°C is {round(fah, 2)}°F")
 
     @commands.command(usage="`tp!vote`")
     @commands.cooldown(1, 3, commands.BucketType.user)
@@ -161,7 +194,7 @@ class Information(commands.Cog, name="info"):
             await ctx.reply(err)
 
     @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(usage="`=ping`")
+    @commands.command(usage="`tp!ping`")
     async def Ping(self, ctx):
         """Pong!"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
@@ -346,7 +379,7 @@ class Information(commands.Cog, name="info"):
         ramlol = round(ramUsage) // 10
         ram_box = default.draw_box(ramlol, ":blue_square:", ":black_large_square:")
 
-        GUILD_MODAL = f"""{len(ctx.bot.guilds)} Guilds are visible,\nI can see {round(len(self.bot.users))} users."""
+        GUILD_MODAL = f"""{len(ctx.bot.guilds)} Guilds are visible,\nI can see {default.commify(len(self.bot.users))} users."""
 
         PERFORMANCE_MODAL = f"""
         `RAM Usage: {ramUsage:.2f}MB / 1GB scale`
@@ -391,7 +424,7 @@ class Information(commands.Cog, name="info"):
         # v{mydb._server_version[0]} | {mydb.charset}', inline=False)
         embed.add_field(
             name=" ⠀",
-            value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Statcord]({STATCORD})",
+            value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
             inline=False,
         )
         embed.set_footer(text="Made with Discord.py")
@@ -441,7 +474,7 @@ class Information(commands.Cog, name="info"):
         # if message.
         try:
             await ctx.message.delete()
-        except:
+        except discord.NotFound:
             pass
         await ctx.send(message)
 
@@ -504,16 +537,14 @@ class Information(commands.Cog, name="info"):
 
         msg = await ctx.send("Fetching...")
 
-        cursor_n.execute(
-            f'SELECT * FROM public."userEco" WHERE "userId" = \'{usr.id}\''
-        )
+        cursor_n.execute(f"SELECT * FROM public.usereco WHERE \"userid\" = '{usr.id}'")
         usereco = cursor_n.fetchall()
 
         user_balance = f"${int(usereco[0][1]):,}"
         user_bank = f"${int(usereco[0][2]):,}"
         mydb_n.commit()
 
-        cursor_n.execute(f"SELECT * FROM public.badges WHERE userId = '{usr.id}'")
+        cursor_n.execute(f"SELECT * FROM public.badges WHERE userid = '{usr.id}'")
         userdb = cursor_n.fetchall()
         badges = ""
         if userdb[0][1] != "false":
@@ -540,20 +571,16 @@ class Information(commands.Cog, name="info"):
 
         mydb_n.commit()
 
-        cursor_n.execute(f"SELECT * FROM public.users WHERE \"userId\" = '{usr.id}'")
+        cursor_n.execute(f"SELECT * FROM public.users WHERE userid = '{usr.id}'")
         udb = cursor_n.fetchall()
 
         usedCommands = ""
-        if int(udb[0][3]) <= 0 and usr.id != 101118549958877184:
-            usedCommands += "0"
-        if int(udb[0][3]) > 0 and usr.id != 101118549958877184:
-            usedCommands += f"{udb[0][3]}"
-        if usr.id == 101118549958877184:
-            usedCommands += f"{udb[0][3]}"
+        if int(udb[0][1]) >= 0:
+            usedCommands += f"{udb[0][1]}"
 
         # **Profile Info**\nBadges: {badges}\n\n
         title = f"{usr.name}#{usr.discriminator}"
-        description = f"{badges}\n\n**💰 Economy Info**\n`Balance`: **{user_balance}**\n`Bank`: **{user_bank}**\n\n**📜 Misc Info**\n`Commands Used`: **{usedCommands}**\n\n**<:users:770650885705302036> Overview**\n`User Bio`\n```{udb[0][1]}```"
+        description = f"{badges}\n\n**💰 Economy Info**\n`Balance`: **{user_balance}**\n`Bank`: **{user_bank}**\n\n**📜 Misc Info**\n`Commands Used`: **{usedCommands}**\n\n**<:users:770650885705302036> Overview**\n`User Bio`\n```{udb[0][2]}```"
         embed = discord.Embed(title=title, color=EMBED_COLOUR, description=description)
         embed.set_thumbnail(url=usr.avatar)
         await msg.edit(content="", embed=embed)
@@ -574,11 +601,9 @@ class Information(commands.Cog, name="info"):
             ctx.command.reset_cooldown(ctx)
             return
 
+        cursor_n.execute(f"SELECT * FROM public.users WHERE userid = '{ctx.author.id}'")
         cursor_n.execute(
-            f"SELECT * FROM public.users WHERE \"userId\" = '{ctx.author.id}'"
-        )
-        cursor_n.execute(
-            f"UPDATE public.users SET bio = '{bio}' WHERE \"userId\" = '{ctx.author.id}'"
+            f"UPDATE public.users SET bio = '{bio}' WHERE userid = '{ctx.author.id}'"
         )
         mydb_n.commit()
         embed = discord.Embed(

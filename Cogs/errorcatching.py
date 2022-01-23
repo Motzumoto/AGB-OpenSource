@@ -13,6 +13,7 @@
 
 import json
 import os
+import re
 
 import discord
 import psutil
@@ -34,6 +35,9 @@ class Error(commands.Cog):
         self.default_prefix = "tp!"
         self.message_cooldown = commands.CooldownMapping.from_cooldown(
             1.0, 3.0, commands.BucketType.user
+        )
+        self.nword_re = re.compile(
+            r"(n|m|и|й)(i|1|l|!|ᴉ|¡)(g|ƃ|6|б)(g|ƃ|6|б)(e|3|з|u)(r|Я)", re.I
         )
 
         self.errors = (
@@ -85,6 +89,9 @@ class Error(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.CommandNotFound):
+            return
+
         logger.error(
             f"{formatColor(ctx.command.name, 'grey')} | {formatColor(ctx.author.name, 'grey')} / {formatColor(ctx.author.id, 'grey')}\n{formatColor(default.code_traceback(error), 'red')}"
         )
@@ -123,7 +130,7 @@ class Error(commands.Cog):
             me1 = self.bot.get_user(101118549958877184)
             me2 = self.bot.get_user(683530527239962627)
             cursor_n.execute(
-                f"SELECT * FROM public.blacklist WHERE \"userID\" = '{ctx.message.author.id}'"
+                f"SELECT * FROM public.blacklist WHERE userid = '{ctx.message.author.id}'"
             )
             rows = cursor_n.fetchall()
             if rows[0][1] == "true":
@@ -134,11 +141,9 @@ class Error(commands.Cog):
                 )
                 embed.add_field(name="Message", value=ctx.message.content)
                 embed.add_field(name="Author", value=ctx.message.author.mention)
-                embed.add_field(name="Channel", value=ctx.message.channel.mention)
-                embed.add_field(name="Guild", value=ctx.message.guild.name)
                 embed.add_field(
                     name="Error",
-                    value=f"You've been blacklisted from using this bot\nTo see why and or get the blacklist removed, send us an email - `contact@agb-dev.xyz`\nOr contact the owners directly - {me1}, {me2}",
+                    value=f"You've been blacklisted from using this bot\nTo see why and or get the blacklist removed, send us an email - `agb@agb-dev.xyz`\nOr contact the owners directly - {me1}, {me2}",
                 )
                 embed.set_thumbnail(url=ctx.message.author.avatar)
                 embed.set_footer(
@@ -167,7 +172,7 @@ class Error(commands.Cog):
                         ctx.command.reset_cooldown(ctx)
                         return
             else:
-                if "n word" in ctx.message.content:
+                if self.nword_re.search(ctx.message.content.lower()):
                     await me1.send(
                         f"{ctx.author} is trying to get AGB to say racist things, blacklist that cunt!"
                     )
@@ -183,8 +188,6 @@ class Error(commands.Cog):
                     )
                     embed.add_field(name="Message", value=ctx.message.content)
                     embed.add_field(name="Author", value=ctx.message.author.mention)
-                    embed.add_field(name="Channel", value=ctx.message.channel.mention)
-                    embed.add_field(name="Guild", value=ctx.message.guild.name)
                     embed.add_field(
                         name="Error",
                         value="You don't have permission to run this command.",

@@ -28,7 +28,7 @@ def cmd(name: str, guild: int):
 
         if rowCount == 0:
             cursor_n.execute(
-                f"ALTER TABLE public.commands ADD COLUMN {name.lower()} VARCHAR(75);"
+                f"ALTER TABLE public.commands ADD COLUMN IF NOT EXISTS {name.lower()} VARCHAR(75);"
             )
             mydb_n.commit()
             return False
@@ -40,7 +40,7 @@ def cmd(name: str, guild: int):
             mydb_n.commit()
     except psycopg.errors.UndefinedColumn:
         cursor_n.execute(
-            f"ALTER TABLE public.commands ADD COLUMN {name.lower()} VARCHAR(75);"
+            f"ALTER TABLE public.commands ADD COLUMN IF NOT EXISTS {name.lower()} VARCHAR(75);"
         )
         mydb_n.commit()
         return False
