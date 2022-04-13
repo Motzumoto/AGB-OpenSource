@@ -1,19 +1,3 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
-import logging
-
-
 def formatColor(text, color: str = "reset"):
     grey = "\033[;90m"
     gray = "\033[;90m"

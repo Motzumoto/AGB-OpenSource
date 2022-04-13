@@ -1,33 +1,37 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
 import asyncio
 import datetime
 import requests
 import itertools
 import json
-import os
 import textwrap
 import time
 import traceback
 from collections import namedtuple
 from io import BytesIO
-from typing import Iterator, List, Optional, Sequence, SupportsInt, Union
+from typing import Iterator, Sequence
 
 import discord
 import timeago as timesince
 
+from colorama import Fore, Style
+import logging
+
 from . import common_filters
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format=f"{Style.DIM + '(%(asctime)s)' + Style.RESET_ALL} [{Fore.CYAN + '%(levelname)s' +  Style.RESET_ALL}]: {'%(message)s'}",
+    datefmt="[%a]-%I:%M-%p",
+)
+
+
+def uptime(start_time):
+    delta_uptime = datetime.datetime.utcnow() - start_time
+    hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    days, hours = divmod(hours, 24)
+    return f"{days}d {hours}h {minutes}m {seconds}s"
 
 
 def config(filename: str = "config"):
@@ -46,6 +50,9 @@ def emoji_config(filename: str = "emojis"):
             return json.load(emogee)
     except FileNotFoundError:
         raise FileNotFoundError("emojis.json file wasn't found")
+
+
+# create a function to translate a message to another language
 
 
 def draw_box(usage, active, inactive):
@@ -94,6 +101,19 @@ def traceback_maker(err, advance: bool = True):
     _traceback = "".join(traceback.format_tb(err.__traceback__))
     error = ("```py\n{1}{0}: {2}\n```").format(type(err).__name__, _traceback, err)
     return error if advance else f"{type(err).__name__}: {err}"
+
+
+def log(text: str):
+    """Log the given text to a file.
+    Parameters
+    ----------
+    text : `str`
+        The text to log.
+    """
+    with open(f"logs.txt", "a+", encoding="utf-8") as log_file:
+        log_file.write(f"[{date()}] {text}\n")
+    # output the text to the console
+    logger.info(text)
 
 
 def code_traceback(err, advance: bool = True):

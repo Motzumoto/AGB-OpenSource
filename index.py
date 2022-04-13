@@ -1,52 +1,32 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
-
 import discord
-
-# import statcord
 import logging
 import os
+import asyncio
 import random
 from discord.ext import commands
-import re
+from discord import Interaction, app_commands
 
 
 import Manager.database
 import Manager.logger
+from Manager.logger import formatColor
 
 from datetime import datetime
-from discord.ext.commands import AutoShardedBot
 
-from utils import default, permissions, slash
-from colorama import init, Fore, Back, Style
+from utils import default, permissions
+from colorama import Fore, Style, init
 import logging
 
 
-init()
+try:
+    import uvloop  # type: ignore
+except ImportError:
+    pass
+else:
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-# logger = logging.getLogger("discord")
-# logger.setLevel(logging.INFO)
-# handler = logging.FileHandler(
-#     filename=f"StartLogs/{default.date()}.log", encoding="utf-8", mode="w"
-# )
-# handler.setFormatter(
-#     logging.Formatter(
-#         "[%(name)s][%(levelname)s]  | %(message)s (%(asctime)s)",
-#         datefmt="%B %d, %I:%M %p %Z",
-#     )
-# )
-# logger.addHandler(handler)
+init()
+discord.http._set_api_version(9)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -78,6 +58,74 @@ CHAT_API_KEY = ""
 mydb_n = Manager.database.db2
 cursor_n = Manager.database.csr2
 
+slash_errors = (
+    app_commands.CommandOnCooldown,
+    app_commands.BotMissingPermissions,
+    app_commands.CommandInvokeError,
+    app_commands.MissingPermissions,
+)
+
+
+async def create_slash_embed(self, interaction, error):
+    embed = discord.Embed(title="Error", colour=0xFF0000)
+    embed.add_field(name="Author", value=interaction.user.mention)
+    embed.add_field(name="Error", value=error)
+    embed.set_author(name=interaction.user, icon_url=interaction.user.avatar)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+def msgtracking(user):
+    cursor_n.execute(f"SELECT * FROM users WHERE userid = '{user}'")
+    row = cursor_n.fetchall()[0][4]
+    if row is True:
+        return True
+    else:
+        return False
+
+
+async def update_command_usages(self, interaction):
+    try:
+        cursor_n.execute(
+            f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
+        )
+        row = cursor_n.fetchall()
+
+        cursor_n.execute(
+            f"UPDATE public.users SET usedcmds = '{row[0][1] + 1}' WHERE userid = '{interaction.user.id}'"
+        )
+        # logger.info(f"Updated userCmds for {ctx.author.id} -> {row[0][3]}")
+    except:
+        pass
+
+
+class MyCustomTree(app_commands.CommandTree):
+    async def call(self, interaction):
+        await super().call(interaction)
+        if interaction.user.id in config.owners:
+            logger.info(
+                f"{formatColor('[DEV]', 'bold_red')} {formatColor(interaction.user, 'red')} used command {formatColor(interaction.command.name, 'grey')}"
+            )
+            await update_command_usages(self, interaction)
+            return
+        else:
+            logger.info(
+                f"{formatColor(interaction.user.id, 'grey')} used command {formatColor(interaction.command.name, 'grey')}"
+            )
+            await update_command_usages(self, interaction)
+
+    async def on_error(self, interaction, command, error):
+        if isinstance(error, app_commands.CommandNotFound):
+            return
+        elif isinstance(error, app_commands.CheckFailure):
+            return
+        elif isinstance(error, slash_errors):
+            await create_slash_embed(self, interaction, error)
+            return
+        elif isinstance(error, discord.InteractionResponded):
+            return
+        elif isinstance(error, app_commands.CommandInvokeError):
+            return
+
 
 class Bot(commands.AutoShardedBot):
     def __init__(self, intents: discord.Intents, *args, **kwargs) -> None:
@@ -96,6 +144,7 @@ class Bot(commands.AutoShardedBot):
             shard_count=1,
             chunk_guilds_at_startup=False,
             intents=intents,
+            tree_cls=MyCustomTree,
             allowed_mentions=discord.AllowedMentions(
                 roles=False, users=True, everyone=False, replied_user=False
             ),
@@ -104,74 +153,19 @@ class Bot(commands.AutoShardedBot):
         self.message_cooldown = commands.CooldownMapping.from_cooldown(
             1.0, random.randint(1, 5), commands.BucketType.guild
         )
-        self.nword_re = re.compile(
-            r"(n|m|и|й)(i|1|l|!|ᴉ|¡)(g|ƃ|6|б)(g|ƃ|6|б)(e|3|з|u)(r|Я)", re.I
-        )
-        self.slash_commands = {}
-        self.logger = logging.getLogger("slashbot")
 
-    def run(self, token: str) -> None:
-        self.setup()
-
-        super().run(token)
-
-    def setup(self) -> None:
+    async def setup(self) -> None:
         for file in os.listdir("Cogs"):
             if file.endswith(".py"):
                 name = file[:-3]
-                bot.load_extension(f"Cogs.{name}")
+                await self.load_extension(f"Cogs.{name}")
 
-    def add_cog(self, cog, *, override=False):
-        super().add_cog(cog, override=override)
-        for item in cog.__dir__():
-            item = getattr(cog, item, None)
-            if isinstance(item, slash.SlashCommand):
-                item.cog = cog
-                self.slash_commands[item.path] = item
-                for alias in item.aliases:
-                    self.slash_commands[alias] = item
+    async def setup_hook(self):
+        await self.setup()
 
-    def remove_cog(self, name):
-        removed_cog = super().remove_cog(name)
-        if removed_cog is None:
-            return None
-        for item in removed_cog.__dir__():
-            item = getattr(removed_cog, item, None)
-            if (
-                isinstance(item, slash.SlashCommand)
-                and item.path in self.slash_commands
-            ):
-                del self.slash_commands[item.path]
-        return removed_cog
-
-    async def on_interaction(self, interaction):
-        # Filter out non-slash command interactions
-        if interaction.type != discord.InteractionType.application_command:
-            return
-        # Only accept interactions that occurred in a guild
-        if not interaction.guild:
-            await interaction.response.send_message(
-                content="Commands cannot be used in DMs."
-            )
-            return
-
-        ctx = slash.SlashContext(self, interaction)
-        args, path = slash.prepare_args(interaction)
-        ctx.path = path
-        if path not in self.slash_commands:
-            await interaction.response.send_message(
-                content="That command is not available right now. Try again later.",
-                ephemeral=True,
-            )
-            return
-
-        command = self.slash_commands[path]
-        await ctx._interaction.response.defer(ephemeral=True)
-        try:
-            await command.callback(command.cog, ctx, *args)
-        except Exception as e:
-            await ctx.send("`The command encountered an error. Try again in a moment.`")
-            self.logger.exception(f"Error in command {ctx.path}\n{e}")
+    async def close(self):
+        await super().close()
+        await self.session.close()
 
     async def on_message(self, msg) -> None:
         if not self.is_ready() or msg.author.bot or not permissions.can_send(msg):
@@ -187,33 +181,38 @@ class Bot(commands.AutoShardedBot):
                 pass
             result = cursor_n.fetchall()
             for row in result:
-                embed = discord.Embed(
-                    title="Hi! My name is AGB!",
-                    url=f"{Website}",
-                    colour=EMBED_COLOUR,
-                    description=f"If you like me, please take a look at the links below!\n[Add me]({config.Invite}) | [Support Server]({config.Server}) | [Vote]({config.Vote})",
-                    timestamp=msg.created_at,
-                )
-                embed.add_field(name="Prefix for this server:", value=f"{row[0]}")
-                embed.add_field(name="Help command", value=f"{row[0]}help")
-                embed.set_footer(
-                    text="lunardev.group",
-                    icon_url=msg.author.avatar,
-                )
-                mydb_n.commit()
-                bucket = self.message_cooldown.get_bucket(msg)
-                retry_after = bucket.update_rate_limit()
-                if retry_after:
-                    return
-                else:
-                    if msg.reference is not None:
+                try:
+                    embed = discord.Embed(
+                        title="Hi! My name is AGB!",
+                        url=f"{Website}",
+                        colour=EMBED_COLOUR,
+                        description=f"If you like me, please take a look at the links below!\n[Add me]({config.Invite}) | [Support Server]({config.Server}) | [Vote]({config.Vote})",
+                        timestamp=msg.created_at,
+                    )
+                    embed.add_field(name="Prefix for this server:", value=f"{row[0]}")
+                    embed.add_field(name="Help command", value=f"{row[0]}help")
+                    embed.set_footer(
+                        text="lunardev.group",
+                        icon_url=msg.author.avatar,
+                    )
+                    mydb_n.commit()
+                    bucket = self.message_cooldown.get_bucket(msg)
+                    retry_after = bucket.update_rate_limit()
+                    if retry_after:
                         return
                     else:
-                        if random.randint(1, 2) == 1:
+                        if msg.reference is not None:
                             return
                         else:
-                            await msg.channel.send(embed=embed)
-                            return
+                            if random.randint(1, 2) == 1:
+                                return
+                            else:
+                                await msg.channel.send(embed=embed)
+                                return
+                except:
+                    await msg.channel.send(
+                        f"**Hi, My name is AGB!**\nIf you like me and want to know more information about me, please enable embed permissions in your server settings so I can show you more information!\nIf you don't know how, please join the support server and ask for help!\n{config.Server}"
+                    )
 
         await self.process_commands(msg)
 
@@ -227,16 +226,13 @@ class Bot(commands.AutoShardedBot):
 
 intents = discord.Intents.default()
 intents.members = True
+# intents.message_content = True
 
 bot = Bot(intents)
 
 os.environ.setdefault("JISHAKU_HIDE", "1")
 os.environ["JISHAKU_NO_UNDERSCORE"] = "True"
 os.environ["JISHAKU_NO_DM_TRACEBACK"] = "True"
-
-# key = config.statcord
-# api = statcord.Client(bot, key)
-# api.start_loop()
 
 
 @bot.check
@@ -249,14 +245,5 @@ def no_nwords(ctx):
     return "reggin" not in ctx.message.content.lower()
 
 
-bot.run(config.token)
-
-# datefmt="%B %d, %I:%M %p %Z"
-
-# logger = logging.getLogger('AGB_Log')
-# logger.setLevel(logging.INFO)
-
-# handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
-# handler.setFormatter(Manager.logger.AgbFormatter())
-# logger.propagate = False
-# logger.addHandler(handler)
+if __name__ == "__main__":
+    bot.run(config.token)

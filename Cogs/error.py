@@ -1,32 +1,21 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
 import json
 import os
 import re
+from click import MissingParameter
 
 import discord
+from discord import app_commands
 import psutil
 from discord.ext import commands
 from discord.ext.commands import errors
-from index import Vote, cursor_n, mydb_n
+from index import Vote, cursor_n, mydb_n, logger, EMBED_COLOUR, config
 from utils.checks import NotVoted
-from index import logger
 from utils import default
 from Manager.logger import formatColor
+from utils.default import log
 
 
-class Error(commands.Cog):
+class Error(commands.Cog, name="error"):
     def __init__(self, bot):
         self.bot = bot
         self.process = psutil.Process(os.getpid())
@@ -45,12 +34,10 @@ class Error(commands.Cog):
             commands.MissingPermissions,
             commands.BadArgument,
             commands.CommandInvokeError,
-            commands.NSFWChannelRequired,
             commands.ChannelNotReadable,
             commands.MaxConcurrencyReached,
             commands.BotMissingPermissions,
             commands.NotOwner,
-            commands.CommandOnCooldown,
             commands.TooManyArguments,
             commands.MessageNotFound,
             commands.UserInputError,
@@ -61,15 +48,12 @@ class Error(commands.Cog):
 
     async def create_embed(self, ctx, error):
         embed = discord.Embed(
-            title="Error", colour=discord.Colour.red(), timestamp=ctx.message.created_at
+            title="Error", colour=0xFF0000, timestamp=ctx.message.created_at
         )
         embed.add_field(name="Message", value=ctx.message.content)
         embed.add_field(name="Author", value=ctx.message.author.mention)
         embed.add_field(name="Error", value=error)
-        embed.set_thumbnail(url=ctx.message.author.avatar)
-        embed.set_author(
-            name=ctx.message.author.name, icon_url=ctx.message.author.avatar
-        )
+        embed.set_author(name=ctx.message.author, icon_url=ctx.message.author.avatar)
         bucket = self.message_cooldown.get_bucket(ctx.message)
         retry_after = bucket.update_rate_limit()
         if retry_after:
@@ -77,13 +61,11 @@ class Error(commands.Cog):
         else:
             try:
                 await ctx.send(embed=embed, delete_after=15)
-                await ctx.message.add_reaction("\u274C")
-            except discord.errors.Forbidden:
+            except:
                 await ctx.send(
                     f"`{error}`\n***Enable Embed permissions please.***",
                     delete_after=15,
                 )
-                await ctx.message.add_reaction("\u274C")
                 ctx.command.reset_cooldown(ctx)
                 return
 
@@ -91,11 +73,8 @@ class Error(commands.Cog):
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
             return
-
-        logger.error(
-            f"{formatColor(ctx.command.name, 'grey')} | {formatColor(ctx.author.name, 'grey')} / {formatColor(ctx.author.id, 'grey')}\n{formatColor(default.code_traceback(error), 'red')}"
-        )
-        await ctx.message.add_reaction("\u274C")
+        # if isinstance(error, app_commands.errors.CommandNotFound):
+        #     return
         error = getattr(error, "original", error)
         if hasattr(ctx.command, "on_error"):
             return
@@ -103,15 +82,28 @@ class Error(commands.Cog):
             pass
 
         if isinstance(error, commands.MissingRequiredArgument):
-            await self.create_embed(ctx, error)
-
-        elif isinstance(error, NotVoted):
             bucket = self.message_cooldown.get_bucket(ctx.message)
             retry_after = bucket.update_rate_limit()
             embed = discord.Embed(
                 title="Hey now...",
-                color=discord.Colour.red(),
-                description=f"This command `({ctx.command})` is for voters only!\nVote **[here]({Vote})**",
+                color=0xFF0000,
+                description=f"You're missing a required argument.\ntry again by doing `{ctx.command.signature}`\nif you still don't understand, type `{ctx.prefix}help {ctx.command}`",
+            )
+            embed.set_thumbnail(url=ctx.author.avatar)
+            if retry_after:
+                return
+            else:
+                await ctx.send(embed=embed)
+                ctx.command.reset_cooldown(ctx)
+                return
+
+        elif isinstance(error, ValueError):
+            bucket = self.message_cooldown.get_bucket(ctx.message)
+            retry_after = bucket.update_rate_limit()
+            embed = discord.Embed(
+                title="Hey now...",
+                color=0xFF0000,
+                description=f"This command requires a number as an argument.\nTry again by doing `{ctx.command.signature}`\nif you still don't understand, type `{ctx.prefix}help {ctx.command}`",
             )
             embed.set_thumbnail(url=self.bot.user.avatar)
             if retry_after:
@@ -119,9 +111,74 @@ class Error(commands.Cog):
             else:
                 await ctx.send(embed=embed)
                 ctx.command.reset_cooldown(ctx)
+                return
 
         elif isinstance(error, self.errors):
             await self.create_embed(ctx, error)
+            return
+
+        elif isinstance(error, commands.CommandOnCooldown):
+            bucket = self.message_cooldown.get_bucket(ctx.message)
+            retry_after = bucket.update_rate_limit()
+            log(
+                f"{formatColor(ctx.author.name, 'gray')} tried to use {ctx.command.name} but it was on cooldown for {error.retry_after:.2f} seconds."
+            )
+            day = round(error.retry_after / 86400)
+            hour = round(error.retry_after / 3600)
+            minute = round(error.retry_after / 60)
+            if retry_after:
+                return
+            else:
+                if day > 0:
+                    await ctx.send(
+                        "This command has a cooldown for " + str(day) + "day(s)"
+                    )
+                elif hour > 0:
+                    await ctx.send(
+                        "This command has a cooldown for " + str(hour) + " hour(s)"
+                    )
+                elif minute > 0:
+                    await ctx.send(
+                        "This command has a cooldown for " + str(minute) + " minute(s)"
+                    )
+                else:
+                    await ctx.send(
+                        f"This command has a cooldown for {error.retry_after:.2f} second(s)"
+                    )
+                    return
+
+        elif isinstance(error, commands.NSFWChannelRequired):
+            embed = discord.Embed(
+                title="Error",
+                colour=0xFF0000,
+                timestamp=ctx.message.created_at,
+            )
+            embed.add_field(name="Message", value=ctx.message.content)
+            embed.add_field(name="Author", value=ctx.message.author.mention)
+            embed.add_field(
+                name="Error", value="This command is for NSFW channels only!"
+            )
+            embed.set_image(url="https://i.imgur.com/oe4iK5i.gif")
+            embed.set_thumbnail(url=ctx.message.author.avatar)
+            embed.set_author(
+                name=ctx.message.author.name, icon_url=ctx.message.author.avatar
+            )
+            bucket = self.message_cooldown.get_bucket(ctx.message)
+            retry_after = bucket.update_rate_limit()
+            if retry_after:
+                return
+            else:
+                try:
+                    await ctx.send(embed=embed, delete_after=30)
+                    await ctx.message.add_reaction("\u274C")
+                except discord.errors.Forbidden:
+                    await ctx.send(
+                        f"`{error}`\n***Enable Embed permissions please.***",
+                        delete_after=30,
+                    )
+                    await ctx.message.add_reaction("\u274C")
+                    ctx.command.reset_cooldown(ctx)
+                    return
 
         elif isinstance(error, commands.CheckAnyFailure):
             pass
@@ -136,14 +193,14 @@ class Error(commands.Cog):
             if rows[0][1] == "true":
                 embed = discord.Embed(
                     title="Error",
-                    colour=discord.Colour.red(),
+                    colour=0xFF0000,
                     timestamp=ctx.message.created_at,
                 )
                 embed.add_field(name="Message", value=ctx.message.content)
                 embed.add_field(name="Author", value=ctx.message.author.mention)
                 embed.add_field(
                     name="Error",
-                    value=f"You've been blacklisted from using this bot\nTo see why and or get the blacklist removed, send us an email - `agb@agb-dev.xyz`\nOr contact the owners directly - {me1}, {me2}",
+                    value=f"You've been blacklisted from using this bot\nTo see why and or get the blacklist removed, send us an email - `contact@lunardev.group`\nOr contact the owners directly - {me1}, {me2}",
                 )
                 embed.set_thumbnail(url=ctx.message.author.avatar)
                 embed.set_footer(
@@ -174,16 +231,16 @@ class Error(commands.Cog):
             else:
                 if self.nword_re.search(ctx.message.content.lower()):
                     await me1.send(
-                        f"{ctx.author} is trying to get AGB to say racist things, blacklist that cunt!"
+                        f"{ctx.author} is trying to get AGB to say racist things"
                     )
                     await me2.send(
-                        f"{ctx.author} is trying to get AGB to say racist things, blacklist that cunt!"
+                        f"{ctx.author} is trying to get AGB to say racist things"
                     )
                     return
                 else:
                     embed = discord.Embed(
                         title="Error",
-                        colour=discord.Colour.red(),
+                        colour=0xFF0000,
                         timestamp=ctx.message.created_at,
                     )
                     embed.add_field(name="Message", value=ctx.message.content)
@@ -220,7 +277,33 @@ class Error(commands.Cog):
                             ctx.command.reset_cooldown(ctx)
                             return
             mydb_n.commit()
+            return
+        logger.error(
+            f"{formatColor(ctx.command.name, 'grey')} | {formatColor(ctx.author.name, 'grey')} / {formatColor(ctx.author.id, 'grey')}\n{formatColor(default.code_traceback(error), 'red')}"
+        )
+
+        bucket = self.message_cooldown.get_bucket(ctx.message)
+        retry_after = bucket.update_rate_limit()
+        if retry_after:
+            return
+        else:
+            await ctx.send(
+                f"An error has occured. The error has automatically been reported and logged. Please wait until the developers work on a fix.\nJoin the support server for updates: {config.Server}",
+            )
+            bug_channel = self.bot.get_channel(791265212429762561)
+
+            embed = discord.Embed(
+                title=f"New Bug Submitted By {ctx.author.name}.",
+                colour=EMBED_COLOUR,
+            )
+            embed.add_field(name="Error", value=default.traceback_maker(error))
+            embed.add_field(name="Command", value=ctx.command.name)
+            embed.set_footer(
+                text=f"Issue was raised in {ctx.guild.name}/{ctx.guild.id} by {ctx.author.id}/{ctx.author}",
+                icon_url=ctx.author.avatar,
+            )
+            await bug_channel.send(embed=embed)
 
 
-def setup(bot):
-    bot.add_cog(Error(bot))
+async def setup(bot):
+    await bot.add_cog(Error(bot))

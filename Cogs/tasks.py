@@ -1,25 +1,7 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
-from datetime import datetime
-
 import aiohttp
 import discordlists
 from discord.ext import commands, tasks
-from index import logger
 from utils import default
-import requests
-import os
 import nekos
 import random
 
@@ -27,6 +9,23 @@ import random
 class Tasks(commands.Cog, name="task"):
     def __init__(self, bot):
         self.bot = bot
+        self.modules = [
+            "nsfw_neko_gif",
+            "anal",
+            "les",
+            "hentai",
+            "bj",
+            "cum_jpg",
+            "tits",
+            "pussy_jpg",
+            "pwankg",
+            "classic",
+            "spank",
+            "boobs",
+            "random_hentai_gif",
+        ]
+        # self.fear_apiUrl = "https://fearvps.tk/api/users/edit"
+        # self.fear_api.start()
         self.config = default.get("config.json")
         self.api = discordlists.Client(self.bot)
         self.api.set_auth("top.gg", self.config.topgg)
@@ -36,27 +35,44 @@ class Tasks(commands.Cog, name="task"):
         self.api.set_auth("discord.bots.gg", self.config.discordbots)
         self.api.set_auth("bots.discordlabs.org", self.config.discordlabs)
         self.api.start_loop()
-        self.happy_birthday.start()
+        self.start_chunking.start()
 
-    @tasks.loop(count=None, minutes=2)
-    async def happy_birthday(self):
+    async def get_hentai_img(self):
+        if random.randint(1, 2) == 1:
+            url = nekos.img(random.choice(self.modules))
+        else:
+            other_stuff = [
+                "ass",
+                "hentai",
+                "thighs",
+                "gif",
+                "panties",
+                "boobs",
+                "ahegao",
+                "yuri",
+                "cum",
+                "jpg",
+            ]
+            async with aiohttp.ClientSession() as s:
+                async with s.get(
+                    f"https://api.dbot.dev/images/nsfw/{random.choice(other_stuff)}"
+                ) as r:
+                    j = await r.json()
+                    url = j["url"]
+        return url
+
+    @tasks.loop(count=None, minutes=20)
+    async def start_chunking(self):
         await self.bot.wait_until_ready()
-        if datetime.today().month == 10 and datetime.today().day == 3:
-            me = self.bot.get_user(101118549958877184)
-            await me.send("Happy Birthday :D")
+        for guild in self.bot.guilds:
+            if not guild.chunked:
+                await guild.chunk()
 
-    @tasks.loop(minutes=1)
-    async def fear_api(self):
-        await self.bot.wait_until_ready()
-        await self.post_fear()
-
-
-    def cog_unload(self):
-        self.fear_api.stop()
-        self.hentai_steal.stop()
-        self.happy_birthday.stop()
+    async def cog_unload(self):
+        # self.fear_api.stop()
         self.api.stop()
+        self.start_chunking.stop()
 
 
-def setup(bot):
-    bot.add_cog(Tasks(bot))
+async def setup(bot):
+    await bot.add_cog(Tasks(bot))

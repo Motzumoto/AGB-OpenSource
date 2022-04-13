@@ -1,17 +1,6 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
 import psycopg
+import asyncio
+import asyncpg
 from utils import default
 
 config = default.get("db_config.json")
@@ -25,3 +14,14 @@ db2 = psycopg.connect(
 db2.autocommit = True
 
 csr2 = db2.cursor()
+
+# NEW DB MANAGER
+loop = asyncio.get_event_loop()
+POSTGRES_INFO = {
+    "user": f"{config.user}",
+    "password": f"{config.password}",
+    "database": f"{config.database}",
+    "host": f"{config.host}",
+}
+
+pool = loop.run_until_complete(asyncpg.create_pool(**POSTGRES_INFO))

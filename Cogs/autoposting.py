@@ -9,6 +9,8 @@ from index import EMBED_COLOUR, config, cursor_n, logger, mydb_n
 from utils import default
 from Manager.logger import formatColor
 
+from utils.default import log
+
 BotList_Servers = [
     336642139381301249,
     716445624517656727,
@@ -56,15 +58,14 @@ class autoposting(commands.Cog, name="ap"):
             "boobs",
             "random_hentai_gif",
         ]
-
-    def cog_unload(self):
-        self.autoh.stop()
+        self.lunar_headers = {f"{config.lunarapi.header}": f"{config.lunarapi.token}"}
 
     async def get_hentai_img(self):
         other_stuff = ["jpg", "gif", "yuri"]
-        async with aiohttp.ClientSession() as s:
+        async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
             async with s.get(
-                f"https://lunardev.group/api/{random.choice(other_stuff)}"
+                f"https://lunardev.group/api/nsfw/{random.choice(other_stuff)}",
+                json={"user": "ID"},
             ) as r:
                 j = await r.json()
                 url = j["url"]
@@ -78,25 +79,27 @@ class autoposting(commands.Cog, name="ap"):
             logger.error(f"Autoposting: webhook error | {formatColor(e), 'red'}")
             return
 
-    @tasks.loop(count=None, minutes=1)
+    @tasks.loop(count=None, minutes=random.randint(1, 5))
     async def autoh(self):
         await self.bot.wait_until_ready()
         posts = 0
-        logger.info("Starting autoposting")
+        log("Starting autoposting")
         me = await self.bot.fetch_user(101118549958877184)
         if random.randint(1, 10) == 3:
             embed = discord.Embed(
                 title="Enjoy your poggers porn lmao",
-                description=f"Posting can be slow, please take into consideration how many servers this bot is in and how many are using auto posting. Please be patient. If I completely stop posting, please rerun the command or join the support server.\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
+                description=f"Posting can be slow, please take into consideration how many servers this bot is in and how many are using auto posting. Please be patient. If I completely stop posting, please rerun the command or join the support server.\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate})",
                 colour=EMBED_COLOUR,
             )
         else:
             embed = discord.Embed(
                 title="Enjoy your poggers porn lmao",
-                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
+                description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate})",
                 colour=EMBED_COLOUR,
             )
-        embed.set_footer(text="lunardev.group", icon_url=me.avatar)
+        embed.set_footer(
+            text=f"lunardev.group\nPosting every 1-5 minutes", icon_url=me.avatar
+        )
 
         cursor_n.execute(
             'SELECT DISTINCT "hentaichannel" FROM public.guilds WHERE "hentaichannel" IS NOT NULL'
@@ -104,12 +107,19 @@ class autoposting(commands.Cog, name="ap"):
         try:
             embed.set_image(url=(await self.get_hentai_img()))
         except Exception as e:
-            logger.error(f"AutoPosting Error | {formatColor('red', 'Error')} {e}")
+            logger.error(f"AutoPosting Error | {formatColor(e), 'red'}")
             try:
                 embed.set_image(url=(await self.get_hentai_img()))
             except Exception as e:
                 logger.error(f"AutoPosting Error | {formatColor(e), 'red'}")
-                pass
+            # check if the embed image is None
+            if embed.image is None:
+                try:
+                    embed.set_image(url=(await self.get_hentai_img()))
+                except Exception as e:
+                    logger.error(f"AutoPosting Error | {formatColor(e), 'red'}")
+                else:
+                    pass
         else:
             for row in cursor_n.fetchall():
                 if row[0] is None:
@@ -117,29 +127,35 @@ class autoposting(commands.Cog, name="ap"):
                 else:
                     channel = self.bot.get_channel(int(row[0]))
                     if channel is None:
-                        try:
-                            await channel.guild.chunk()
-                        except:
-                            pass
                         continue
+                    # if not channel.guild.chunked:
+                    #     await channel.guild.chunk()
+                    #     if channel.guild.member_count < 15:
+                    #         # remove that channel
+                    #         cursor_n.execute(
+                    #             f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
+                    #         )
+                    #         log(
+                    #             f"Removed hentaichannel from {channel.guild.name}: {channel.guild.member_count} members"
+                    #         )
+                    #         continue
                     if channel is not None:
-                        if not channel.guild.chunked:
-                            await channel.guild.chunk()
-                            logger.info(
-                                f"Chunked {formatColor(channel.guild.name, 'grey')} | {formatColor(channel.guild.member_count, 'yellow')} from autoposting."
-                            )
                         if channel.guild.id == BotList_Servers:
                             continue
                         else:
                             if not channel.is_nsfw():
-                                # Remove hentai channel from db
-                                cursor_n.execute(
-                                    f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
-                                )
-                                mydb_n.commit()
-                                logger.warning(
-                                    f"{channel.guild.id} is no longer NSFW, so I have removed the channel from the database."
-                                )
+                                if channel.guild.id in BotList_Servers:
+                                    continue
+                                else:
+                                    # Remove hentai channel from db
+                                    cursor_n.execute(
+                                        f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
+                                    )
+                                    mydb_n.commit()
+                                    logger.warning(
+                                        f"{channel.guild.id} is no longer NSFW, so I have removed the channel from the database."
+                                    )
+                                    continue
                             else:
                                 try:
                                     webhooks = await channel.webhooks()
@@ -159,7 +175,7 @@ class autoposting(commands.Cog, name="ap"):
                                         )
                                 except discord.errors.Forbidden:
                                     webhook = None
-                                except Exception as e:
+                                except Exception:
                                     webhook = None
                                 final_messagable: Union[
                                     discord.Webhook, discord.TextChannel
@@ -170,22 +186,41 @@ class autoposting(commands.Cog, name="ap"):
                                         final_messagable, discord.TextChannel
                                     ):
                                         await final_messagable.send(embed=embed)
-                                        await asyncio.sleep(0.05)
+                                        await asyncio.sleep(0.5)
                                     else:
                                         await self.send_from_webhook(
                                             final_messagable, embed
                                         )
-                                        await asyncio.sleep(0.05)
-                                except Exception as e:
+                                        await asyncio.sleep(0.5)
+                                except discord.Forbidden as e:
                                     ## error is more likely to be a 404, check the logs regardless
                                     logger.error(
-                                        f"""Autoposting error caused from {channel.guild.id} / {channel.guild.name} / {channel.id} | {e}\n{e.__traceback__}"""
+                                        f"Autoposting error | {channel.guild.id} / {channel.guild.name} / {channel.id}"
                                     )
-                                    pass
-            logger.info(
-                f"Autoposting - Posted Batch: {formatColor(str(posts), 'green')}"
-            )
+                                    logger.error(f"Autoposting error | {e}")
+                                    logger.error(
+                                        f"Autoposting error | {e.__traceback__}"
+                                    )
+                                    log(
+                                        "Autoposting info | Removing hentai channel from database"
+                                    )
+                                    # this is probably an awful idea but its the only way to remove the channel if the bot is not allowed to post in it
+                                    # lets hope discord doesnt fuck up and the webhook is actually there
+                                    cursor_n.execute(
+                                        f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
+                                    )
+                                    # subtarct 1 from the posts
+                                    posts -= 1
+            log(f"Autoposting - Posted Batch: {formatColor(str(posts), 'green')}")
+
+    async def cog_unload(self):
+        self.autoh.stop()
+        log("Autoposting - Stopped")
+
+    async def cog_relaod(self):
+        self.autoh.stop()
+        log("Autoposting - Reloaded")
 
 
-def setup(bot):
-    bot.add_cog(autoposting(bot))
+async def setup(bot):
+    await bot.add_cog(autoposting(bot))

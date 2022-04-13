@@ -1,6 +1,8 @@
-from matplotlib.pyplot import title
 import discord
+import datetime
+from datetime import timedelta
 from discord.ext import commands
+from index import logger
 
 from utils import default
 
@@ -10,6 +12,18 @@ owners = default.config()["owners"]
 def is_owner(ctx):
     """Checks if the author is one of the owners"""
     return ctx.author.id in owners
+
+
+async def is_owner_slash(interaction):
+    """Checks if the interaction user is one of the owners"""
+    if interaction.user.id in owners:
+        return True
+    else:
+        await interaction.response.send_message(
+            "You are not one of the owners of this bot. You can't use this command.",
+            ephemeral=True,
+        )
+        return False
 
 
 async def check_permissions(ctx, perms, *, check=all):
@@ -23,17 +37,32 @@ async def check_permissions(ctx, perms, *, check=all):
     )
 
 
+def dynamic_ownerbypass_cooldown(rate: int, per: float, type):
+    def actual_func(message):
+        if message.author.id in owners:
+            return None
+        # Otherwise cooldown of 1 per 1 second
+        return commands.Cooldown(rate, per)
+
+    return commands.dynamic_cooldown(actual_func, type)
+
+
 def has_permissions(*, check=all, **perms):
     """discord.Commands method to check if author has permissions"""
 
     async def pred(ctx):
-        return await check_permissions(ctx, perms, check=check)
+        if ctx.author.id in owners:
+            return True
+        else:
+            return await check_permissions(ctx, perms, check=check)
 
     return commands.check(pred)
 
 
 async def check_priv(ctx, member):
     """Custom (weird) way to check permissions when handling moderation commands"""
+    if ctx.author.id in owners:
+        return True
     embed = discord.Embed(
         title="Permission Denied", color=0xFF0000, description="no lol are u dumb"
     )

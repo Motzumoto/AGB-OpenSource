@@ -1,26 +1,15 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
-from ast import alias
 import asyncio
 import json
 import re
 from datetime import datetime
+import urllib.parse
 from io import BytesIO
 from typing import Union
+import xml.etree.ElementTree as ET
 
 import aiohttp
 import discord
+from discord import app_commands
 from discord.ext import commands
 from index import (
     EMBED_COLOUR,
@@ -45,6 +34,7 @@ class DiscordCmds(commands.Cog, name="discord"):
         self.bot = bot
         self.config = default.get("config.json")
         self.bot.sniped_messages = {}
+        self.session = aiohttp.ClientSession()
         self.bot.edit_sniped_messages = {}
         self.halloween_re = re.compile(r"h(a|4)(l|1)(l|1)(o|0)w(e|3)(e|3)n", re.I)
         # self.october_re = re.compile(r"o(c|4)(t|7)(o|0)(b|2)(e|3)(r|1)", re.I)
@@ -55,6 +45,42 @@ class DiscordCmds(commands.Cog, name="discord"):
         self.message_cooldown = commands.CooldownMapping.from_cooldown(
             1.0, 3.0, commands.BucketType.user
         )
+
+    # create a discord invite regex
+
+    class MemberConverter(commands.MemberConverter):
+        async def convert(self, ctx, argument):
+            try:
+                return await super().convert(ctx, argument)
+            except commands.BadArgument:
+                members = [
+                    member
+                    for member in ctx.guild.members
+                    if member.display_name.lower().startswith(argument.lower())
+                ]
+                if len(members) == 1:
+                    return members[0]
+                else:
+                    raise commands.BadArgument(
+                        f"{len(members)} members found, please be more specific."
+                    )
+
+    class SlashMemberConverter(commands.MemberConverter):
+        async def convert(self, interaction, argument):
+            try:
+                return await super().convert(interaction, argument)
+            except:
+                members = [
+                    member
+                    for member in interaction.guild.members
+                    if member.display_name.lower().startswith(argument.lower())
+                ]
+                if len(members) == 1:
+                    return members[0]
+                else:
+                    raise commands.BadArgument(
+                        f"{len(members)} members found, please be more specific."
+                    )
 
     @commands.Cog.listener(name="on_message")
     async def spooky(self, message):
@@ -128,7 +154,7 @@ class DiscordCmds(commands.Cog, name="discord"):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        bad_words = ["n word"]
+        bad_words = "n word"
         for word in bad_words:
             if word in before.content.lower() or word in after.content.lower():
                 return
@@ -146,7 +172,7 @@ class DiscordCmds(commands.Cog, name="discord"):
 
     @commands.command(aliases=["s"], usage="`tp!s`")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(1, 5, commands.BucketType.channel)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     async def snipe(self, ctx):
         """Snipe recently deleted messages to see what someone said."""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
@@ -169,7 +195,7 @@ class DiscordCmds(commands.Cog, name="discord"):
             embed = discord.Embed(
                 title=f"{self.bot.user.name}",
                 url=f"{Website}",
-                description=contents,
+                description=f"`{contents}`",
                 color=EMBED_COLOUR,
                 timestamp=time,
             )
@@ -182,13 +208,16 @@ class DiscordCmds(commands.Cog, name="discord"):
             )
             embed.set_footer(text=f"Deleted in #{channel_name}")
 
-            await ctx.send(embed=embed)
+            await ctx.send(
+                content="This command is reaching its life expectancy. This command will no longer work after april 30th",
+                embed=embed,
+            )
         except:
             await ctx.send("Nothing has been recently deleted.")
 
     @commands.command(aliases=["es"], usage="`tp!es`")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     async def editsnipe(self, ctx):
         """Snipe edited messages to see what the message said before."""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
@@ -216,11 +245,14 @@ class DiscordCmds(commands.Cog, name="discord"):
             embed.set_footer(text=f"Edited in #{channel_name}")
             embed.add_field(
                 name="‎‎‎‎‎‎",
-                value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
+                value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
                 inline=False,
             )
 
-            await ctx.send(embed=embed)
+            await ctx.send(
+                content="This command is reaching its life expectancy. This command will no longer work after april 30th",
+                embed=embed,
+            )
         except:
             await ctx.send("Nothing has been recently edited.")
 
@@ -239,7 +271,7 @@ class DiscordCmds(commands.Cog, name="discord"):
 
         try:
             await ctx.message.delete()
-        except discord.NotFound:
+        except:
             pass
         description = f"Emojis for {ctx.guild.name}"
         if not ids:
@@ -306,24 +338,23 @@ class DiscordCmds(commands.Cog, name="discord"):
     #            except (discord.HTTPException, discord.errors.Forbidden, ):
     #                pass
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(aliases=["av"], usage="`tp!av @user`")
-    @commands.bot_has_permissions(embed_links=True)
-    async def avatar(self, ctx, *, user: Union[discord.User, discord.Member] = None):
-        """Get someones avatar"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        user = user or ctx.author
+    @app_commands.command(description="Get anyone in Discord's avatar")
+    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    async def avatar(
+        self,
+        interaction: discord.Interaction,
+        *,
+        user: Union[discord.User, discord.Member] = None,
+        ephemeral: bool = False,
+    ):
+        user = user or interaction.user
         embed = discord.Embed(
             title="User Icon", colour=EMBED_COLOUR, description=f"{user}'s avatar is:"
         )
         embed.set_image(url=user.avatar)
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @permissions.has_permissions(manage_roles=True)
     @commands.command(usage="`tp!roles`")
     @commands.bot_has_permissions(attach_files=True)
@@ -341,12 +372,12 @@ class DiscordCmds(commands.Cog, name="discord"):
             allroles += f"[{str(num).zfill(2)}] {role.id}\t{role.name}\t[ Users: {len(role.members)} ]\r\n"
 
         data = BytesIO(allroles.encode("utf-8"))
-        await ctx.reply(
+        await ctx.send(
             content=f"Roles in **{ctx.guild.name}**",
             file=discord.File(data, filename=f"{default.timetext('Roles')}"),
         )
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @commands.command(usage="`tp!joinedat @user`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
@@ -360,13 +391,13 @@ class DiscordCmds(commands.Cog, name="discord"):
         user = user or ctx.author
         embed = discord.Embed(
             title=f"{self.bot.user.name}",
-            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
             url=f"{Website}",
             colour=user.top_role.colour.value,
         )
         embed.set_thumbnail(url=user.avatar)
         embed.description = f"**{user}** joined **`{user.joined_at:%b %d, %Y - %H:%M:%S}`**\nThat was **`{(datetime.utcnow() - user.joined_at).days}`** days ago!"
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.command(usage="`tp!mods`")
     @commands.guild_only()
@@ -392,14 +423,14 @@ class DiscordCmds(commands.Cog, name="discord"):
             mod_list = ""
             for num, mod in enumerate(mods, start=1):
                 mod_list += f"[{num}] {mod.name}#{mod.discriminator} [{mod.id}]\n"
-            await ctx.reply(f"{default.pycode(mod_list)}")
+            await ctx.send(f"{default.pycode(mod_list)}")
         else:
-            await ctx.reply("There are no mods online.")
+            await ctx.send("There are no mods online.")
 
     @commands.command(usage="`tp!firstmessage`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=3, type=commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     async def firstmessage(self, ctx, channel: discord.TextChannel = None):
         """Provide a link to the first message in current or provided channel."""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
@@ -414,7 +445,7 @@ class DiscordCmds(commands.Cog, name="discord"):
                 await channel.history(limit=1, oldest_first=True).flatten()
             )[0]
         except (discord.errors.Forbidden, discord.HTTPException):
-            await ctx.reply("Unable to read message history for that channel")
+            await ctx.send("Unable to read message history for that channel")
             return
 
         embed = discord.Embed(
@@ -424,9 +455,9 @@ class DiscordCmds(commands.Cog, name="discord"):
             name=message.author.display_name, icon_url=message.author.avatar
         )
 
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @commands.command(aliases=["channelinfo"], usage="`tp!channelinfo`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
@@ -468,7 +499,7 @@ class DiscordCmds(commands.Cog, name="discord"):
         aliases=["feedback", "suggestion"], usage="`tp!suggest suggestion`"
     )
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 10, commands.BucketType.user)
     async def suggest(self, ctx, *, suggestion: str):
         """Suggest things this bot should have or not have."""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
@@ -488,7 +519,7 @@ class DiscordCmds(commands.Cog, name="discord"):
         )
         embed.set_footer(text=f"ID: {ctx.author.id}", icon_url=ctx.author.avatar)
         message = await suggestion_channel.send(embed=embed)
-        await ctx.reply(embed=thanks)
+        await ctx.send(embed=thanks)
         await message.add_reaction(suggestion_no)
         await message.add_reaction(suggestion_yes)
 
@@ -496,7 +527,7 @@ class DiscordCmds(commands.Cog, name="discord"):
         aliases=["reportbug", "sendbug", "bugreport"], usage="`tp!bug bug`"
     )
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 10, commands.BucketType.user)
     async def bug(self, ctx, *, bug: str):
         """Report bugs that you run into
         If you can, paste the error code that might have been sent."""
@@ -521,9 +552,9 @@ class DiscordCmds(commands.Cog, name="discord"):
             text=f"Bug reported by: {ctx.author.id}", icon_url=ctx.author.avatar
         )
         await bug_channel.send(embed=embed)
-        await ctx.reply(embed=thanks)
+        await ctx.send(embed=thanks)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 10, commands.BucketType.user)
     @commands.command(usage="`tp!colors`")
     @commands.bot_has_permissions(embed_links=True)
     async def colors(self, ctx):
@@ -538,7 +569,7 @@ class DiscordCmds(commands.Cog, name="discord"):
         colors = "\n".join(data.keys())
         embed = discord.Embed(
             title="I can give / make the following colours...",
-            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
         )
         embed.add_field(
             name="\u200b",
@@ -553,7 +584,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         async def convert(self, ctx, argument):
             return await super().convert(ctx, argument.lower())
 
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @commands.command(
         aliases=["colorme", "colourme", "color"], usage="`tp!colorme color`"
     )
@@ -581,11 +612,11 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                         )
                         return
                 await ctx.author.add_roles(role)
-                await ctx.reply(
+                await ctx.send(
                     f"Alright, {role} was given.\n**Reminder, if you want to remove your colors, just run `tp!colorme` just like that to remove them!**"
                 )
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @commands.command(aliases=["icon"], usage="`tp!icon`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
@@ -597,7 +628,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             return
 
         if not ctx.guild.icon:
-            return await ctx.reply("This server does not have a icon...")
+            return await ctx.send("This server does not have a icon...")
         embed = discord.Embed(
             title="Server Icon",
             colour=EMBED_COLOUR,
@@ -607,7 +638,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         await ctx.send(embed=embed)
 
     @commands.command(usage="`tp!banner`")
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def banner(self, ctx):
@@ -618,10 +649,10 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             return
 
         if not ctx.guild.banner:
-            return await ctx.reply("This server does not have a banner...")
-        await ctx.reply(f"Banner of **{ctx.guild.name}**\n{ctx.guild.banner}")
+            return await ctx.send("This server does not have a banner...")
+        await ctx.send(f"Banner of **{ctx.guild.name}**\n{ctx.guild.banner}")
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 10, commands.BucketType.user)
     @commands.bot_has_permissions(embed_links=True)
     @commands.command(help="Check if a user has voted or not!")
     async def checkvote(self, ctx, user: Union[discord.Member, discord.User] = None):
@@ -650,9 +681,9 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                     title = "Not pog!"
                     description = f"You haven't voted in the last **12** hours.\nClick **[here]({Vote})** to vote!"
                     embed = error_embed(title, description)
-                return await ctx.reply(embed=embed)
+                return await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @commands.command(usage="`tp!roleinfo role`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
@@ -662,10 +693,18 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
-
-        perms = " **|** ".join(
+        list_members_with_the_role = [
+            member.mention for member in ctx.guild.members if role in member.roles
+        ]
+        if len(list_members_with_the_role) == 0:
+            list_members_with_the_role = "None"
+        if len(list_members_with_the_role) > 40:
+            list_members_with_the_role = "Too many members to list"
+        else:
+            list_members_with_the_role = ", ".join(list_members_with_the_role)
+        perms = ", ".join(
             [
-                f"`{p.capitalize()}`".replace("_", " ")
+                f"{p.capitalize()}".replace("_", " ")
                 for p, value in role.permissions
                 if value is True
             ]
@@ -673,29 +712,34 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         if "administrator" in perms:
             perms = "All of them lol"
         embed = discord.Embed(title=f"**{role.name}**", color=role.colour)
-        embed.add_field(name="ID", value=role.id)
         embed.add_field(
-            name="Created", value=role.created_at.strftime("%d %b %Y %H:%M")
+            name="Created",
+            value=role.created_at.strftime("%d %b %Y %H:%M"),
+            inline=True,
         )
         embed.add_field(name="Color", value=str(role.colour), inline=True)
         embed.add_field(name="Members", value=f"{len(role.members)}", inline=True)
+        embed.add_field(name="Who all has this role", value=list_members_with_the_role)
+        if int(role.permissions.value) == 0:
+            embed.add_field(
+                name="Permissions", value="No permissions granted.", inline=False
+            )
+        else:
+            embed.add_field(name="Permissions", value=f"{perms}", inline=False)
         embed.add_field(name="Mentionable", value=role.mentionable, inline=True)
         embed.add_field(name="Hoist", value=role.hoist, inline=True)
         embed.add_field(name="Position", value=role.position, inline=True)
         embed.add_field(name="Managed", value=role.managed, inline=True)
-        if int(role.permissions.value) == 0:
-            embed.add_field(
-                name="Permissions", value="No permissions granted.", inline=True
-            )
-        else:
-            embed.add_field(name="Permissions", value=f"{perms}", inline=True)
         embed.add_field(name="Mention", value=f"{role.mention}", inline=True)
         embed.add_field(
-            name="Created", value=role.created_at.strftime("%d %b %Y %H:%M")
+            name="Created",
+            value=role.created_at.strftime("%d %b %Y %H:%M"),
+            inline=True,
         )
+        embed.set_footer(text=f"{role.__hash__()}")
         await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @commands.command(alias=["ms"], usage="`tp!massrole role`", hidden=True)
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
@@ -709,9 +753,9 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
         added = 0
         if role.is_default():
-            return await ctx.reply(f"Cant give a default role to users! {role.mention}")
+            return await ctx.send(f"Cant give a default role to users! {role.mention}")
         if role.position > ctx.author.top_role.position:
-            return await ctx.reply(
+            return await ctx.send(
                 f"You cant give a role that is higher than your top role! {role.mention}"
             )
         async with ctx.channel.typing():
@@ -725,7 +769,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 content=f"**{role.name}** role was given to {added} users in the server!"
             )
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @commands.command(alias=["msr"], usage="`tp!massrole_remove role`", hidden=True)
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
@@ -739,9 +783,9 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
         removed = 0
         if role.is_default():
-            return await ctx.reply(f"Cant remove a default role from all users!")
+            return await ctx.send(f"Cant remove a default role from all users!")
         if role.position > ctx.author.top_role.position:
-            return await ctx.reply(
+            return await ctx.send(
                 f"You cant remove a role that is higher than your top role!"
             )
         async with ctx.channel.typing():
@@ -754,7 +798,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 content=f"**{role.name}** role was removed from {removed} users in this server!"
             )
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @commands.command(aliases=["serverinfo"], usage="`tp!serverinfo`")
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
@@ -768,7 +812,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         embed = discord.Embed(
             title=f"{self.bot.user.name}",
             url=f"{Website}",
-            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
             color=ctx.author.color,
             timestamp=ctx.message.created_at,
         )
@@ -852,27 +896,25 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             inline=True,
         )
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(aliases=["ui", "userinfo", "whois"], usage="`tp!userinfo user`")
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.guild_only()
-    async def user(self, ctx, user: Union[discord.Member, discord.User] = None):
+    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.command()
+    @app_commands.describe(user="any user within the server")
+    async def ui(self, interaction, user: discord.User = None):
         """Get user information"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
+        chunked = []
+        for guild in self.bot.guilds:
+            if guild.chunked:
+                chunked.append(guild)
+        first = await interaction.response.send_message("Fetching...", ephemeral=True)
         discord_version = discord.__version__
-        user = user or ctx.author
+        user = user or interaction.user
 
         hs_class = (
             str(user.public_flags.all())
             .replace("[<UserFlags.", "")
             .replace(">]", "")
-            .replace("_", " ")
             .replace(":", "")
             .replace(">", "")
             .title()
@@ -923,11 +965,13 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
         banner = await self.bot.fetch_user(user.id)
         if user.bot:
-            return await ctx.send("Bots don't have any *useful* information!")
+            return await interaction.response.send_message(
+                "Bots don't have any *useful* information!", ephemeral=True
+            )
 
         embed = discord.Embed()
         embed.title = f"{self.bot.user.name}"
-        embed.description = f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) "
+        embed.description = f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) "
         embed.url = f"{Website}"
         embed.add_field(name="User", value=f"`{user}`", inline=True)
         try:
@@ -948,18 +992,26 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             value=f"`{user.created_at:%x\n%b %d (%a), %Y - %H:%M:%S}`\nThat was `{default.commify((discord.utils.utcnow() - user.created_at).days)}` days ago!",
             inline=False,
         )
-        if len(user.mutual_guilds) == 1:
+        if len(chunked) == len(self.bot.guilds):
             embed.add_field(
                 name="Mutual Servers",
-                value=f"`1 Server`\n`(Can be innacurate, requires all servers to be cached)`",
-                inline=True,
+                value=f"`{len(user.mutual_guilds)} Servers`",
+                inline=False,
             )
         else:
-            embed.add_field(
-                name="Mutual Servers",
-                value=f"`{len(user.mutual_guilds)} Servers`\n`(Can be innacurate, requires all servers to be cached)`",
-                inline=True,
-            )
+            if len(user.mutual_guilds) == 1:
+                embed.add_field(
+                    name="Mutual Servers",
+                    value=f"`1 Server`",
+                    inline=True,
+                )
+            else:
+                embed.add_field(
+                    name="Mutual Servers",
+                    value=f"`{len(user.mutual_guilds)} Servers`\n`(Can be innacurate, requires all servers to be cached)`",
+                    inline=True,
+                )
+
         embed.set_thumbnail(url=user.avatar)
         if isinstance(user, discord.Member):
             embed.colour = user.color
@@ -968,32 +1020,128 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 value=f"`{user.joined_at:%b %d, %Y - %H:%M:%S}`\nThat was `{default.commify((discord.utils.utcnow() - user.joined_at).days)}` days ago!",
                 inline=False,
             )
-            # .join(
-            # x.mention for x in user.roles[1:][::-1]) if user.roles else
-            # "None",
-            role_list = [r.mention for r in user.roles if r != ctx.guild.default_role]
-            if len(role_list):
-                embed.add_field(name="Roles", value=f", ".join(role_list), inline=False)
-            else:
-                embed.add_field(name="Roles", value=f"None", inline=False)
-        if banner.banner:
-            try:
-                embed.set_image(url=banner.banner)
-            except:
-                pass
-            else:
-                pass
+
+            roles = [x.name for x in user.roles if x.name != "@everyone"]
+            if len(user.roles) > 20:
+                roles = roles[:20]
+                print(roles)
+                roles.append("...")
+                embed.add_field(
+                    name=f"Roles[{len(roles)}]",
+                    value=f"{', '.join(roles)}",
+                    inline=True,
+                )
+
+            if banner.banner:
+                try:
+                    embed.set_image(url=banner.banner)
+                except:
+                    pass
+                else:
+                    pass
         embed.set_footer(
             text=f"lunardev.group | Discord.py {discord_version} | Python 3.9.5"
         )
-        await ctx.reply(
+        await first.edit_message(
             content=f"Basic info about **`{user.id} / {user.name}`**", embed=embed
         )
 
-    #        embed.add_field(name="Status", value=user.status, inline=True)
-    #        embed.add_field(name="Activity", value=user.activity)
-    #        if isinstance(user.activity, discord.Spotify):
-    #            embed.add_field(name="Listening To", value=user.activity.title)
+    @app_commands.command(name="ask", description="Ask a general question")
+    @app_commands.describe(
+        question="The question you want to ask",
+        ephemeral="whether or not to send the message so either you or everyone else can see it",
+    )
+    async def ask(self, interaction, *, question: str, ephemeral: bool = True):
+        await interaction.response.defer(ephemeral=ephemeral, thinking=True)
+        api_key = config.WolframAlpha
+        url = "http://api.wolframalpha.com/v2/query?"
+        query = question
+        payload = {"input": query, "appid": api_key}
+        headers = {"user-agent": "AGB"}
+        async with self.session.get(url, params=payload, headers=headers) as r:
+            result = await r.text()
+        root = ET.fromstring(result)
+        a = []
+        for pt in root.findall(".//plaintext"):
+            if pt.text:
+                a.append(pt.text.capitalize())
+        if len(a) < 1:
+            message = "There is as yet insufficient data for a meaningful answer."
+        else:
+            message = "\n".join(a[0:3])
+            if "Current geoip location" in message:
+                message = "There is as yet insufficient data for a meaningful answer."
+
+        await interaction.followup.send(default.box(message))
+
+    @app_commands.command(name="image", description="Get an image from wolfram alpha")
+    @app_commands.describe(
+        thing="The thing you want to get an image of",
+        ephemeral="whether or not to send the message so either you or everyone else can see it",
+    )
+    async def image(self, interaction, *, thing: str, ephemeral: bool = True):
+        api_key = config.WolframAlpha
+        if not api_key:
+            return await interaction.response.send_message(
+                "No API key set for Wolfram Alpha. Get one at http://products.wolframalpha.com/api/"
+            )
+        await interaction.response.defer(ephemeral=ephemeral, thinking=True)
+        width = 500
+        font_size = 15
+        layout = "divider"
+        background = "193555"
+        foreground = "white"
+        units = "metric"
+        query = " ".join(thing)
+        query = urllib.parse.quote(query)
+        url = f"http://api.wolframalpha.com/v1/simple?appid={api_key}&i={query}%3F&width={width}&fontsize={font_size}&layout={layout}&background={background}&foreground={foreground}&units={units}&ip=127.0.0.1"
+
+        async with self.session.request("GET", url) as r:
+            img = await r.content.read()
+            if len(img) == 43:
+                # img = b'Wolfram|Alpha did not understand your input'
+                return await interaction.followup.send(
+                    "There is as yet insufficient data for a meaningful answer."
+                )
+            wolfram_img = BytesIO(img)
+            try:
+                await interaction.followup.send(
+                    file=discord.File(wolfram_img, f"wolfram{interaction.user.id}.gif")
+                )
+            except Exception as e:
+                await interaction.followup.send(f"Oops, there was a problem: {e}")
+
+    @app_commands.command(name="solve", description="ask a math question")
+    @app_commands.describe(
+        query="Solve a math problem",
+        ephemeral="whether or not to send the message so either you or everyone else can see it",
+    )
+    async def solve(self, interaction, *, query: str, ephemeral: bool = True):
+        api_key = config.WolframAlpha
+        url = f"http://api.wolframalpha.com/v2/query"
+        params = {
+            "appid": api_key,
+            "input": query,
+            "podstate": "Step-by-step solution",
+            "format": "plaintext",
+        }
+        msg = ""
+        await interaction.response.defer(ephemeral=ephemeral, thinking=True)
+        async with self.session.request("GET", url, params=params) as r:
+            text = await r.content.read()
+            root = ET.fromstring(text)
+            for pod in root.findall(".//pod"):
+                if pod.attrib["title"] == "Number line":
+                    continue
+                msg += f"{pod.attrib['title']}\n"
+                for pt in pod.findall(".//plaintext"):
+                    if pt.text:
+                        strip = pt.text.replace(" | ", " ").replace("| ", " ")
+                        msg += f"- {strip}\n\n"
+            if len(msg) < 1:
+                msg = "There is as yet insufficient data for a meaningful answer."
+            for text in default.pagify(msg):
+                await interaction.followup.send(default.box(text))
 
     #######Baby Shaking Zone Media Only Channel#########
 
@@ -1005,30 +1153,9 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         ):
             await message.delete()
 
-    ####Lunar Development prevent other people from talking in announcements####
-    @commands.Cog.listener(name="on_message")
-    async def OwnerOwnly(self, message):
-        if message.author.bot:
-            return
-        whitelist = [
-            599063034329038889,
-            101118549958877184,
-            417052810161684511,
-            393996898945728523,
-            454421372911878145,
-            146151306216734720,
-            343048549744902144,
-            683530527239962627,
-            828858385113939969,
-            678395576525652001,
-        ]
-        if message.channel.id == 755722577049026562:
-            if message.author.id not in whitelist:
-                await message.delete()
+    async def cog_unload(self):
+        self.bot.loop.create_task(self.session.close())
 
 
-########################################################################
-
-
-def setup(bot):
-    bot.add_cog(DiscordCmds(bot))
+async def setup(bot):
+    await bot.add_cog(DiscordCmds(bot))

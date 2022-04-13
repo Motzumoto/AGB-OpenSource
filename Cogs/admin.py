@@ -1,30 +1,32 @@
-import nekos
 import asyncio
 import concurrent
 import importlib
 import io
-import json
+import datetime
+from datetime import timedelta
 import os
 import re
 import subprocess
 import textwrap
 import traceback
 from contextlib import redirect_stdout
+from subprocess import check_output
 from typing import Union
 
 import aiohttp
 import discord
-from datetime import datetime
-
-from psycopg import cursor
-import requests
+import nekos
+import psycopg
 import speedtest
+from discord import app_commands
 from discord.ext import commands
-from discord.ext.buttons import Paginator
 from index import EMBED_COLOUR, cursor_n, delay, logger, mydb_n
+from Manager.database import pool
 from Manager.logger import formatColor
-from Manager.commandManager import cmd
+from matplotlib.pyplot import contour
+from psycopg import cursor
 from utils import default, http, permissions
+from utils.default import log
 
 from .Utils import *
 
@@ -67,6 +69,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             "boobs",
             "random_hentai_gif",
         ]
+        self.email_re = "^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$"
         self.blacklisted = False
         self.blacklist = self.blacklisted_users()
         bot.add_check(self.blacklist_check)
@@ -127,13 +130,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             result = await self.bot.loop.run_in_executor(None, process.communicate)
         return [output.decode() for output in result]
 
-    class Pag(Paginator):
-        async def teardown(self):
-            try:
-                await self.page.clear_reactions()
-            except discord.HTTPException:
-                pass
-
     def cleanup_code(self, content):
         """Automatically removes code blocks from the code."""
         # remove ```py\n```
@@ -183,9 +179,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             if member.bot:
                 role = discord.utils.get(guild.roles, name="Bots")
                 await member.add_roles(role)
-                await me.send(
-                    f"A bot was just added to Lunar Development... {member.bot.name} / {member.bot.mention}"
-                )
                 return
             else:
                 role = discord.utils.get(guild.roles, name="Members")
@@ -199,7 +192,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member, guild=None):
-        me = self.bot.get_user(101118549958877184)
         guild = member.guild
         if member.guild.id == 755722576445046806:
             if member.bot:
@@ -215,7 +207,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     @commands.check(permissions.is_owner)
     async def economy(self, ctx):
         if ctx.invoked_subcommand is None:
-            await ctx.reply("Please use a subcommand. (eco)")
+            await ctx.send("Please use a subcommand. (eco)")
 
     @economy.command(aliases=["give"], hidden=True)
     @commands.check(permissions.is_owner)
@@ -227,10 +219,10 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         account: str = "bank",
     ):
         if amount == 0:
-            await ctx.reply("Please enter a non-zero amount.")
+            await ctx.send("Please enter a non-zero amount.")
             return
         elif amount < 0:
-            await ctx.reply(f"Please use tp!eco remove {abs(amount)}")
+            await ctx.send(f"Please use tp!eco remove {abs(amount)}")
             return
 
         if user is None:
@@ -246,7 +238,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             account_to_change = row[0][1]
             account = "balance"
         else:
-            await ctx.reply("You can only give to either the `bank` or `wallet`.")
+            await ctx.send("You can only give to either the `bank` or `wallet`.")
             return
 
         final_amount = account_to_change + amount
@@ -258,7 +250,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             cursor_n.execute(
                 f"UPDATE public.usereco SET balance = '{final_amount}' WHERE userid = '{user.id}'"
             )
-        await ctx.reply(
+        await ctx.send(
             f"Gave ${amount} to {str(user)}, their {account} is now at ${account_to_change + amount}"
         )
 
@@ -272,10 +264,10 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         account: str = "bank",
     ):
         if amount == 0:
-            await ctx.reply("Please enter a non-zero amount.")
+            await ctx.send("Please enter a non-zero amount.")
             return
         elif amount < 0:
-            await ctx.reply(f"Please use tp!eco add {abs(amount)}")
+            await ctx.send(f"Please use tp!eco add {abs(amount)}")
             return
 
         if user is None:
@@ -291,12 +283,12 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             account_to_change = row[0][1]
             account = "balance"
         else:
-            await ctx.reply("You can only take from either the `bank` or `wallet`.")
+            await ctx.send("You can only take from either the `bank` or `wallet`.")
             return
 
         final_balance = account_to_change - amount
         if final_balance < 0:
-            await ctx.reply(
+            await ctx.send(
                 f"This would cause the user's balance to be a negative number.\nYou may take a max of ${account_to_change}."
             )
             return
@@ -317,7 +309,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                     user.id,
                 ),
             )
-        await ctx.reply(
+        await ctx.send(
             f"Took ${amount} from {str(user)}, their {account} is now at ${account_to_change + amount}"
         )
 
@@ -333,24 +325,24 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         if user is None:
             user = ctx.author
         if amount == 0:
-            await ctx.reply(f"Please use `tp!eco reset {user.id} {account}`")
+            await ctx.send(f"Please use `tp!eco reset {user.id} {account}`")
             return
         elif amount < 0:
-            await ctx.reply(f"Please enter a positive, non-zero number.")
+            await ctx.send(f"Please enter a positive, non-zero number.")
             return
 
         if account == "bank":
             cursor_n.execute(
                 f"UPDATE public.usereco SET bank = '{amount}' WHERE userid = '{user.id}'"
             )
-            await ctx.reply(f"Set bank to ${amount} for {str(user)}.")
+            await ctx.send(f"Set bank to ${amount} for {str(user)}.")
         elif account == "wallet" or account == "balance":
             cursor_n.execute(
                 f"UPDATE public.usereco SET balance = '{amount}' WHERE userid = '{user.id}'"
             )
-            await ctx.reply(f"Set wallet to ${amount} for {str(user)}.")
+            await ctx.send(f"Set wallet to ${amount} for {str(user)}.")
         else:
-            await ctx.reply("Please choose either `bank` or `wallet`.")
+            await ctx.send("Please choose either `bank` or `wallet`.")
 
     @economy.command(aliases=["clear", "wipe"], hidden=True)
     @commands.check(permissions.is_owner)
@@ -377,16 +369,16 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         elif account == "wallet" or account == "balance":
             to_erase = "balance"
 
-        await ctx.reply(
+        await ctx.send(
             f"Are you sure you want to erase {str(user)}'s {to_erase}?\n**This action cannot be undone.**"
         )
         try:
             response = await self.bot.wait_for("message", check=check, timeout=15)
         except asyncio.TimeoutError:
-            await ctx.reply("Canceled.")
+            await ctx.send("Canceled.")
             return
         if not self.yes_responses[response.content]:
-            ctx.reply("Canceled")
+            ctx.send("Canceled")
             return
 
         if account == "both" or account == "bank":
@@ -397,13 +389,13 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             cursor_n.execute(
                 f"UPDATE public.usereco SET balance = '0' WHERE userid = '{user.id}'"
             )
-        await ctx.reply(f"Cleared {to_erase} for {str(user)}")
+        await ctx.send(f"Cleared {to_erase} for {str(user)}")
 
     @economy.group(pass_context=True, hidden=True)
     @commands.check(permissions.is_owner)
     async def setting(self, ctx):
         if ctx.invoked_subcommand is None:
-            await ctx.reply("Please use a subcommand. (set)")
+            await ctx.send("Please use a subcommand. (set)")
 
     @setting.command(aliases=["tax", "change_tax"], hidden=True)
     @commands.check(permissions.is_owner)
@@ -417,7 +409,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             f"SELECT * FROM public.globalvars WHERE variableName = 'taxData'"
         )
         row = cursor_n.fetchall()
-        await ctx.reply(f"Tax rate changed to {int(row[0][1] * 100)}%.")
+        await ctx.send(f"Tax rate changed to {int(row[0][1] * 100)}%.")
 
     @setting.command(aliases=["collector", "bastard"], hidden=True)
     @commands.check(permissions.is_owner)
@@ -439,11 +431,11 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         )
         row = cursor_n.fetchall()
         if row[0][2] is None:
-            await ctx.reply(
+            await ctx.send(
                 f"Tax collector cleared. User might still be taxed, but no one will collect it."
             )
         else:
-            await ctx.reply(f"Tax collector set to {str(user)} (ID: {row[0][2]})")
+            await ctx.send(f"Tax collector set to {str(user)} (ID: {row[0][2]})")
 
     @commands.check(permissions.is_owner)
     @commands.command()
@@ -492,7 +484,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         try:
             with redirect_stdout(stdout):
                 ret = await func()
-        except Exception as e:
+        except Exception:
             value = stdout.getvalue()
             embed.add_field(
                 name="Output",
@@ -523,11 +515,68 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                 await ctx.send(embed=embed)
 
     @commands.check(permissions.is_owner)
+    @commands.command()
+    async def spokemost(self, ctx):
+        """Shows the user who has spoken the most in the server"""
+        # iterate through the servers channels and messages and collect the messages
+        channel_messages = []
+        what_channel_we_are_in = await ctx.send("Getting messages...")
+        for channel in ctx.guild.text_channels:
+            async for message in channel.history(limit=None):
+                if not message.author.bot:
+                    channel_messages.append(message)
+                    if len(channel_messages) % 50 == 0:
+                        await what_channel_we_are_in.edit(
+                            f"We're in {channel.name} now, we've gathered {len(channel_messages)} messages"
+                        )
+
+        # iterate through the messages and count the number of times each user has spoken
+        speaker_count = {}
+        for message in channel_messages:
+            if message.author.id in speaker_count:
+                speaker_count[message.author.id] += 1
+            else:
+                speaker_count[message.author.id] = 1
+
+        # find the user with the most messages
+        most_messages = max(speaker_count.values())
+        most_messages_users = []
+        for user in speaker_count:
+            if speaker_count[user] == most_messages:
+                most_messages_users.append(user)
+
+        # find the user with the most messages
+        most_messages_user = most_messages_users[0]
+        for user in most_messages_users:
+            if (
+                ctx.guild.get_member(user).display_name
+                > ctx.guild.get_member(most_messages_user).display_name
+            ):
+                most_messages_user = user
+
+        # find the user with the most messages
+        most_messages_user = ctx.guild.get_member(most_messages_user)
+
+        # send the message
+        await ctx.send(
+            f"{most_messages_user.mention} has spoken the most in the server! ({most_messages} messages)"
+        )
+
+    @commands.check(permissions.is_owner)
+    @commands.command()
+    async def whatcanyousee(self, ctx):
+        """Displays what channels the bot can see"""
+        channel_list = ""
+        for channel in ctx.guild.text_channels:
+            channel_list += f"{channel.mention}\n"
+        await ctx.send(f"Here are the channels I can see:\n{channel_list}")
+
+    @commands.check(permissions.is_owner)
     @commands.command(hidden=True)
     async def ghost(self, ctx):
         try:
             await ctx.message.delete()
-        except discord.NotFound:
+        except:
             pass
 
     @commands.command()
@@ -553,12 +602,12 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def load(self, ctx, *names):
         """Loads an extension."""
         try:
-            await ctx.message.delete(delay=delay)
+            await ctx.message.delete(delete_after=delay)
         except:
             pass
         for name in names:
             try:
-                self.bot.load_extension(f"Cogs.{name}")
+                await self.bot.load_extension(f"Cogs.{name}")
             except Exception as e:
                 await ctx.send(default.traceback_maker(e))
                 await ctx.message.add_reaction("\u274C")
@@ -571,12 +620,12 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def unload(self, ctx, *names):
         """Unloads an extension."""
         try:
-            await ctx.message.delete(delay=delay)
+            await ctx.message.delete(delete_after=delay)
         except:
             pass
         for name in names:
             try:
-                self.bot.unload_extension(f"Cogs.{name}")
+                await self.bot.unload_extension(f"Cogs.{name}")
             except Exception as e:
                 return await ctx.send(default.traceback_maker(e))
             await ctx.send(
@@ -589,19 +638,26 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def reload(self, ctx, *names):
         """Reloads an extension."""
         try:
-            await ctx.message.delete(delay=delay)
+            await ctx.message.delete(delete_after=delay)
         except:
             pass
         for name in names:
             try:
-                self.bot.reload_extension(f"Cogs.{name}")
+                await self.bot.reload_extension(f"Cogs.{name}")
             except Exception as e:
                 await ctx.send(default.traceback_maker(e))
                 await ctx.message.add_reaction("\u274C")
                 return
             await ctx.message.add_reaction("\u2705")
+        if len(names) == 1:
             await ctx.send(
                 f"Reloaded extension **{name}.py** {ctx.author.mention}",
+                delete_after=delay,
+            )
+        else:
+            await ctx.send(
+                f"Reloaded the following extensions\n"
+                + "\n".join(f"**{name}.py**" for name in names),
                 delete_after=delay,
             )
 
@@ -610,7 +666,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def loadall(self, ctx):
         """Loads all extensions"""
         try:
-            await ctx.message.delete(delay=delay)
+            await ctx.message.delete(delete_after=delay)
         except:
             pass
         error_collection = []
@@ -618,7 +674,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             if file.endswith(".py"):
                 name = file[:-3]
                 try:
-                    self.bot.load_extension(
+                    await self.bot.load_extension(
                         f"Cogs.{name}",
                     )
                 except Exception as e:
@@ -645,7 +701,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def reloadall(self, ctx):
         """Reloads all extensions."""
         try:
-            await ctx.message.delete(delay=delay)
+            await ctx.message.delete(delete_after=delay)
         except:
             pass
         error_collection = []
@@ -653,7 +709,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             if file.endswith(".py"):
                 name = file[:-3]
                 try:
-                    self.bot.reload_extension(
+                    await self.bot.reload_extension(
                         f"Cogs.{name}",
                     )
                 except Exception as e:
@@ -677,79 +733,38 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @commands.command()
     @commands.check(permissions.is_owner)
-    async def reloadutils(self, ctx, name: str):
+    async def reloadutils(self, ctx, *names):
         """Reloads a utils module."""
         try:
-            await ctx.message.delete(delay=delay)
+            await ctx.message.delete(delete_after=delay)
         except:
             pass
-        name_maker = f"utils/{name}.py"
-        try:
-            module_name = importlib.import_module(f"utils.{name}")
-            importlib.reload(module_name)
-        except ModuleNotFoundError:
-            return await ctx.send(f"Couldn't find module named **{name_maker}**")
-        except Exception as e:
-            error = default.traceback_maker(e)
-            return await ctx.send(
-                f"Module **{name_maker}** returned error and was not reloaded...\n{error}"
+        for name in names:
+            try:
+                module_name = importlib.import_module(f"utils.{name}")
+                importlib.reload(module_name)
+            except Exception as e:
+                await ctx.send(default.traceback_maker(e))
+                await ctx.message.add_reaction("\u274C")
+                return
+            await ctx.message.add_reaction("\u2705")
+        if len(names) == 1:
+            await ctx.send(
+                f"Reloaded extension **{name}.py** {ctx.author.mention}",
+                delete_after=delay,
             )
-        await ctx.send(f"Reloaded module **{name_maker}**")
-
-    @commands.command()
-    @commands.check(permissions.is_owner)
-    async def reboot(self, ctx):
-        """Reboot the bot"""
-        try:
-            await ctx.message.delete()
-        except discord.NotFound:
-            pass
-        await self.bot.change_presence(
-            status=discord.Status.idle,
-            activity=discord.Activity(
-                type=discord.ActivityType.playing, name="Restarting..."
-            ),
-        )
-        embed = discord.Embed(
-            title="Cya, lmao.", color=EMBED_COLOUR, description="Rebooting... 👌"
-        )
-        await ctx.send(embed=embed)
-        await os.system("chmod +x * && ./reboot.sh")
-
-    @commands.command()
-    @commands.check(permissions.is_owner)
-    async def shutdown(self, ctx):
-        """completely shut the bot down"""
-        try:
-            await ctx.message.delete()
-        except discord.NotFound:
-            pass
-        await self.bot.change_presence(
-            status=discord.Status.dnd,
-            activity=discord.Activity(
-                type=discord.ActivityType.playing, name="Shutting down..."
-            ),
-        )
-        embed = discord.Embed(
-            title="Cya, lmao.", color=EMBED_COLOUR, description="Shutting Down...👌"
-        )
-        await ctx.send(embed=embed)
-        url = "https://panel.ponbus.com/api/client/servers/1acee413/power"
-
-        payload_kill = json.dumps({"signal": "kill"})
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"{self.config.ponbus}",
-        }
-
-        response2 = requests.request("POST", url, headers=headers, data=payload_kill)
-        print(response2.text)
+        else:
+            await ctx.send(
+                f"Reloaded the following extensions\n"
+                + "\n".join(f"**{name}.py**" for name in names),
+                delete_after=delay,
+            )
 
     @commands.command()
     @commands.check(permissions.is_owner)
     async def pull(self, ctx):
         try:
-            await ctx.message.delete(delay=delay)
+            await ctx.message.delete(delete_after=delay)
         except:
             pass
         async with ctx.channel.typing():
@@ -803,7 +818,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     @commands.check(permissions.is_owner)
     async def change(self, ctx):
         try:
-            await ctx.message.delete(delay=delay)
+            await ctx.message.delete(delete_after=delay)
         except:
             pass
         if ctx.invoked_subcommand is None:
@@ -815,7 +830,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Change username."""
         try:
             await ctx.message.delete()
-        except discord.NotFound:
+        except:
             pass
         try:
             await self.bot.user.edit(username=name)
@@ -832,7 +847,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Change nickname."""
         try:
             await ctx.message.delete()
-        except discord.NotFound:
+        except:
             pass
         try:
             await ctx.guild.me.edit(nick=name)
@@ -851,7 +866,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Change avatar."""
         try:
             await ctx.message.delete()
-        except discord.NotFound:
+        except:
             pass
         if url is None and len(ctx.message.attachments) == 1:
             url = ctx.message.attachments[0].url
@@ -878,59 +893,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                 delete_after=delay,
             )
 
-    @commands.check(permissions.is_owner)
-    @commands.command()
-    async def ownersay(self, ctx, *, message):
-        try:
-            await ctx.message.delete()
-        except discord.NotFound:
-            pass
-        await ctx.send(message)
 
-    @commands.Cog.listener(name="on_message")
-    async def linkblacklist(self, message):
-        if message.guild is None:
-            return
-        me = self.bot.get_user(101118549958877184)
-        blacklisted_links = [
-            "cehfhc.dateshookp.com",
-            "streancommunnity.",
-            "steancomunnity.",
-            "steancomunlty.",
-            "stearncomminuty.",
-            "steamcommunytu.",
-            "steamconmmuntiy.",
-            "steamcomminytu.",
-            "steamcommutiny.",
-            "streancommunnity.",
-            "steancomunnity.",
-            "steancomunlty.",
-            "stearncomminuty.",
-            "steamcommunytu.",
-            "steamconmmuntiy.",
-            "steamcomminytu.",
-            "bit.ly/Discord--Nitro-Generator",
-            "store-steampowered.",
-            "steamnconnmunity.",
-            "discordgivenitro.",
-            "freenitros.",
-            "freenitros.",
-            "discordgift.",
-            "discordgift.",
-            "discordgift.",
-            "steamcomminuty.",
-            "discord.giveawey.",
-        ]
-
-        if any(elem in message.content for elem in blacklisted_links):
-            await me.send(
-                f"**New Scammer**\n**{message.guild.id}** | **{message.guild.name}**\n{message.author.id}\n`{message.content}`\n"
-            )
-            try:
-                await message.delete()
-            except:
-                pass
-
-
-def setup(bot):
-    bot.add_cog(Admin(bot))
+async def setup(bot):
+    await bot.add_cog(Admin(bot))

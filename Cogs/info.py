@@ -1,25 +1,14 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
 import datetime
+import aiohttp
 import json
 import os
+import pathlib
 import random
 import time
-from datetime import datetime, timedelta
 from typing import List, Union
 
 import discord
+from discord import app_commands
 import googletrans
 import psutil
 import requests
@@ -55,11 +44,12 @@ class Information(commands.Cog, name="info"):
         self.bot = bot
         self.trans = googletrans.Translator()
         self.config = default.get("config.json")
+        self.lunar_headers = {f"{config.lunarapi.header}": f"{config.lunarapi.token}"}
         # self.thanks = default.get("thanks.json")
         # self.blist_api = blist.Blist(bot, token=self.config.blist)
         self.process = psutil.Process(os.getpid())
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.process.stop()
 
     def parse_weather_data(self, data):
@@ -103,13 +93,30 @@ class Information(commands.Cog, name="info"):
 
     async def create_embed(self, ctx, error):
         embed = discord.Embed(
-            title=f"Error Caught!", color=discord.Colour.red(), description=f"{error}"
+            title=f"Error Caught!", color=0xFF0000, description=f"{error}"
         )
         embed.set_thumbnail(url=self.bot.user.avatar)
         await ctx.send(embed=embed)
 
+    class MemberConverter(commands.MemberConverter):
+        async def convert(self, ctx, argument):
+            try:
+                return await super().convert(ctx, argument)
+            except commands.BadArgument:
+                members = [
+                    member
+                    for member in ctx.guild.members
+                    if member.display_name.lower().startswith(argument.lower())
+                ]
+                if len(members) == 1:
+                    return members[0]
+                else:
+                    raise commands.BadArgument(
+                        f"{len(members)} members found, please be more specific."
+                    )
+
     @commands.command(usage="`tp!weather location`")
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     async def Weather(self, ctx, *, location=None):
         """Get weather data for a location
         You can use your zip code or your city name.
@@ -130,40 +137,53 @@ class Information(commands.Cog, name="info"):
         except KeyError:
             await ctx.send(embed=self.error_message(location))
 
-    @commands.command(usage="`tp!temp fahrenheit`")
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    async def f2c(self, ctx, *, temp=None):
-        """Convert Fahrenheit to Celcius"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-        if temp == None:
-            await ctx.send("Please send a valid temperature.")
+    @app_commands.command(description="Convert Fahrenheit to Celcius")
+    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    async def f2c(self, interaction, *, temp: str, ephemeral: bool = False):
+        if temp is None:
+            await interaction.response.send_message(
+                "Please send a valid temperature.", ephemeral=True
+            )
             return
 
         temp = float(temp)
         cel = (temp - 32) * (5 / 9)
-        await ctx.send(f"{temp}°F is {round(cel, 2)}°C")
+        await interaction.response.send_message(
+            f"{temp}°F is {round(cel, 2)}°C", ephemeral=ephemeral
+        )
 
-    @commands.command(usage="`tp!temp celcius`")
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    async def c2f(self, ctx, *, temp=None):
+    @app_commands.command(description="Convert Celcius to Fahrenheit")
+    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    async def c2f(self, interaction, *, temp: str, ephemeral: bool = False):
         """Convert Celcius to Fahrenheit"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-        if temp == None:
-            await ctx.send("Please send a valid temperature.")
+        if temp is None:
+            await interaction.response.send_message(
+                "Please send a valid temperature.", ephemeral=True
+            )
             return
 
         temp = float(temp)
         fah = (temp * (9 / 5)) + 32
-        await ctx.send(f"{temp}°C is {round(fah, 2)}°F")
+        await interaction.response.send_message(
+            f"{temp}°C is {round(fah, 2)}°F", ephemeral=ephemeral
+        )
+
+    @commands.command()
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
+    async def uptime(self, ctx):
+        """Get the uptime of the bot in days, hours, minutes, and seconds"""
+        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
+        if cmdEnabled:
+            await ctx.send(":x: This command has been disabled!")
+            return
+
+        embed = discord.Embed(
+            title=f"Uptime: {default.uptime(start_time=self.bot.launch_time)}"
+        )
+        await ctx.send(embed=embed)
 
     @commands.command(usage="`tp!vote`")
-    @commands.cooldown(1, 3, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     async def Vote(self, ctx):
         """Vote for the bot"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
@@ -189,55 +209,26 @@ class Information(commands.Cog, name="info"):
         )
         embed.set_thumbnail(url=ctx.author.avatar)
         try:
-            await ctx.reply(embed=embed)
+            await ctx.send(embed=embed)
         except Exception as err:
-            await ctx.reply(err)
+            await ctx.send(err)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(usage="`tp!ping`")
-    async def Ping(self, ctx):
-        """Pong!"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        before = time.monotonic()
-        before_ws = int(round(self.bot.latency * 1000, 2))
-        message = await ctx.reply("Ping ")
-        ping = (time.monotonic() - before) * 1000
-        embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
+    @app_commands.command(description="ping the bot")
+    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    async def ping(self, interaction, ephemeral: bool = False):
+        embed = discord.Embed(color=EMBED_COLOUR)
         embed.set_author(
-            name=ctx.bot.user.name,
-            icon_url=ctx.bot.user.avatar,
+            name=self.bot.user.name,
+            icon_url=self.bot.user.avatar,
         )
-        embed.add_field(name="REST", value=f"{int(ping)}ms")
-        embed.add_field(name="WS", value=f"{before_ws}ms")
-        await message.edit(content="Ping ¯\\_(ツ)_/¯", embed=embed)
-
-    # @commands.command(usage="`tp!host`")
-    # @commands.cooldown(1, 2, commands.BucketType.user)
-    # async def host(self, ctx):
-    #     """Our hosting provider"""
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     embed = discord.Embed(
-    #         color=EMBED_COLOUR,
-    #         title="Hosting Provider",
-    #         timestamp=ctx.message.created_at,
-    #     )
-    #     embed.add_field(
-    #         name="Thank you Ponbus!",
-    #         value=f"A huge thanks to William, the CEO and Systems Administrator of [Ponbus]({config.host}) for allowing us to use your service to fuel AGB and keep it online <3\nPlease go check out [Ponbus]({config.host}) ",
-    #         inline=False,
-    #     )
-    #     await ctx.send(embed=embed)
+        embed.add_field(
+            name="Ping", value=f"{round(self.bot.latency * 1000)}ms", inline=True
+        )
+        embed.set_thumbnail(url=interaction.user.avatar)
+        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
 
     @commands.command(usage="`tp!todo`")
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def Todo(self, ctx):
         """Stuff to come, future updates i have planned for this bot"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
@@ -247,35 +238,13 @@ class Information(commands.Cog, name="info"):
 
         channel = self.bot.get_channel(784053877040873522)
         message = await channel.fetch_message(784054226439372832)
-        await ctx.reply(message.content)
-
-    # @commands.command(usage="`tp!credits`", aliases=["thanks"])
-    # @commands.bot_has_permissions(embed_links=True)
-    # async def Credits(self, ctx):
-    #     """Just a thank you command to the people who helped me make agb, thank you everyone who helped and who is continually helping me on this project"""
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
-
-    #     embed = discord.Embed(
-    #         color=EMBED_COLOUR,
-    #         timestamp=ctx.message.created_at,
-    #         title="Thank you, so much.",
-    #         description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
-    #     )
-    #     embed.add_field(
-    #         name=f"{ctx.bot.user.name} couldn't be what it is without these people:{'' if len(self.thanks) == 1 else ''}",
-    #         value=", ".join([str(await self.bot.fetch_user(x)) for x in self.thanks]),
-    #         inline=False,
-    #     )
-    #     await ctx.send(embed=embed)
+        await ctx.send(message.content)
 
     @commands.command(
         aliases=["supportserver", "feedbackserver", "support"], usage="`tp!support`"
     )
     @commands.bot_has_permissions(embed_links=True)
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def Botserver(self, ctx):
         """Get an invite to our support server!"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
@@ -297,7 +266,7 @@ class Information(commands.Cog, name="info"):
             embed.add_field(
                 name="You can join here:", value=f"[Click Here.]({config.Server})"
             )
-            return await ctx.reply(embed=embed)
+            return await ctx.send(embed=embed)
         embed = discord.Embed(color=ctx.author.color, timestamp=ctx.message.created_at)
         embed.set_author(
             name=ctx.bot.user.name,
@@ -307,24 +276,17 @@ class Information(commands.Cog, name="info"):
             name=f"{ctx.author.name}, you're already in it.",
             value=f"Regardless, a bot invite is [here]({config.Invite}) \n A server invite is also [here]({config.Server})",
         )
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(aliases=["joinme", "botinvite", "kek"], usage="`tp!invite`")
-    @commands.bot_has_permissions(embed_links=True)
-    async def Invite(self, ctx):
-        """Invite me to your server"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
+    @app_commands.command(description="Invite me to your server")
+    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    async def invite(self, interaction, ephemeral: bool = False):
+        embed = discord.Embed(color=EMBED_COLOUR)
         embed.set_author(
-            name=ctx.bot.user.name,
-            icon_url=ctx.bot.user.avatar,
+            name=self.bot.user.name,
+            icon_url=self.bot.user.avatar,
         )
-        embed.set_thumbnail(url=ctx.bot.user.avatar)
+        embed.set_thumbnail(url=self.bot.user.avatar)
         embed.add_field(
             name="Bot Invite", value=f"[Invite Me!]({config.Invite})", inline=True
         )
@@ -334,16 +296,16 @@ class Information(commands.Cog, name="info"):
             inline=True,
         )
         embed.add_field(
-            name=f"{ctx.bot.user.name} was made with love by: {'' if len(self.config.owners) == 1 else ''}",
+            name=f"{self.bot.user.name} was made with love by: {'' if len(self.config.owners) == 1 else ''}",
             value=", ".join(
                 [str(await self.bot.fetch_user(x)) for x in self.config.owners]
             ),
             inline=False,
         )
-        embed.set_thumbnail(url=ctx.author.avatar)
-        await ctx.send(embed=embed)
+        embed.set_thumbnail(url=interaction.user.avatar)
+        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
 
-    # @commands.cooldown(1, 5, commands.BucketType.user)
+    # @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     # @commands.command(usage="`tp!source`")
     # async def Source(self, ctx):
     #     """Who Coded This Bot """
@@ -352,10 +314,10 @@ class Information(commands.Cog, name="info"):
     #     embed.add_field(name="**The repo is private**",
     #                     value=f"This command really doesn't have a purpose. \nBut its here for when the repo does become public.")
     #     embed.add_field(name="Look at these",
-    #                     value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})", inline=False)
-    #     await ctx.reply(embed=embed)
+    #                     value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate})", inline=False)
+    #     await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @commands.command(aliases=["info", "stats", "status"], usage="`tp!about`")
     @commands.bot_has_permissions(embed_links=True)
     async def About(self, ctx):
@@ -364,70 +326,184 @@ class Information(commands.Cog, name="info"):
         if cmdEnabled:
             await ctx.send(":x: This command has been disabled!")
             return
+
+        discord_version = discord.__version__
         chunked = []
         for guild in self.bot.guilds:
             if guild.chunked:
                 chunked.append(guild)
         msg = await ctx.send("Fetching...")
-        ramUsage = self.process.memory_full_info().rss / 1024 ** 2
+        ramUsage = self.process.memory_full_info().rss / 1024**2
+        intervals = (
+            ("w", 604800),  # 60 * 60 * 24 * 7
+            ("d", 86400),  # 60 * 60 * 24
+            ("h", 3600),  # 60 * 60
+            ("m", 60),
+            ("s", 1),
+        )
 
-        STATCORD = "https://statcord.com/bot/723726581864071178"
+        def display_time(seconds, granularity=2):
+            result = []
+
+            for name, count in intervals:
+                value = seconds // count
+                if value:
+                    seconds -= value * count
+                    if value == 1:
+                        name = name.rstrip("s")
+                    result.append("{}{}".format(value, name))
+            return " ".join(result[:granularity])
+
+        async def lunar_api_stats(self):
+            async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
+                try:
+                    async with s.get(f"https://lunardev.group/api/ping") as r:
+                        j = await r.json()
+                        seconds = j["uptime"]
+
+                        # str(await lunar_api_stats(self)).partition(".")
+
+                        if r.status == 200:
+                            return display_time(int(str(seconds).partition(".")[0]), 4)
+                        elif r.status == 503:
+                            return "❌ API Error"
+                        else:
+                            return "❌ API Error"
+                except:
+                    return "❌ API Error"
+
+        async def lunar_api_cores(self):
+            async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
+                try:
+                    async with s.get(f"https://lunardev.group/api/ping") as r:
+                        j = await r.json()
+                        cores = j["system"]["cores"]
+
+                        # str(await lunar_api_stats(self)).partition(".")
+
+                        if r.status == 200:
+                            return cores
+                        elif r.status == 503:
+                            return "❌ API Error"
+                        else:
+                            return "❌ API Error"
+                except:
+                    return "❌ API Error"
+
+        async def lunar_api_files(self):
+            async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
+                try:
+                    async with s.get(f"https://lunardev.group/api/ping") as r:
+                        j = await r.json()
+                        files = j["images"]["total"]
+
+                        # str(await lunar_api_stats(self)).partition(".")
+
+                        if r.status == 200:
+                            return f"{int(files):,}"
+                        elif r.status == 503:
+                            return "❌ API Error"
+                        else:
+                            return "❌ API Error"
+                except:
+                    return "❌ API Error"
+
+        async def lunar_system_uptime(self):
+            async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
+                try:
+                    async with s.get(f"https://lunardev.group/api/ping") as r:
+                        j = await r.json()
+                        uptime = j["system"]["uptime"]
+
+                        # str(await lunar_api_stats(self)).partition(".")
+
+                        if r.status == 200:
+                            return display_time(int(str(uptime).partition(".")[0]), 4)
+                        elif r.status == 503:
+                            return "❌ API Error"
+                        else:
+                            return "❌ API Error"
+                except:
+                    return "❌ API Error"
+
+        async def line_count(self):
+            total = 0
+            file_amount = 0
+            ENV = "env"
+
+            for path, _, files in os.walk("."):
+                for name in files:
+                    file_dir = str(pathlib.PurePath(path, name))
+                    # ignore env folder and not python files.
+                    if not name.endswith(".py") or ENV in file_dir:
+                        continue
+                    if "__pycache__" in file_dir:
+                        continue
+                    if ".git" in file_dir:
+                        continue
+                    if ".local" in file_dir:
+                        continue
+                    if ".config" in file_dir:
+                        continue
+                    if "?" in file_dir:
+                        continue
+                    if ".cache" in file_dir:
+                        continue
+                    file_amount += 1
+                    with open(file_dir, "r", encoding="utf-8") as file:
+                        for line in file:
+                            if not line.strip().startswith("#") or not line.strip():
+                                total += 1
+            return f"{total:,} lines, {file_amount:,} files"
 
         # create the cpu usage embed
         cpu = psutil.cpu_percent()
         cpu_box = default.draw_box(round(cpu), ":blue_square:", ":black_large_square:")
         ramlol = round(ramUsage) // 10
         ram_box = default.draw_box(ramlol, ":blue_square:", ":black_large_square:")
-
-        GUILD_MODAL = f"""{len(ctx.bot.guilds)} Guilds are visible,\nI can see {default.commify(len(self.bot.users))} users."""
-
+        GUILD_MODAL = f"""{len(ctx.bot.guilds)} Guilds are seen,\n{default.commify(len(self.bot.users))} users."""
         PERFORMANCE_MODAL = f"""
         `RAM Usage: {ramUsage:.2f}MB / 1GB scale`
         {ram_box}
         `CPU Usage: {cpu}%`
         {cpu_box}"""
+        API_UPTIME = await lunar_api_stats(self)
+        BOT_INFO = f"""Latency: {round(self.bot.latency * 1000, 2)}ms\nLoaded CMDs: {len([x.name for x in self.bot.commands])}\nMade: <t:1592620263:R>\n{await line_count(self)}\nUptime: {default.uptime(start_time=self.bot.launch_time)}"""
+        API_INFO = f"""API Uptime: {API_UPTIME}\nCPU Cores: {await lunar_api_cores(self)}\nTotal Images: {await lunar_api_files(self)}"""
+        SYS_INFO = f"""System Uptime: {await lunar_system_uptime(self)}\nCPU Cores: {await lunar_api_cores(self)}"""
 
-        BOT_INFO = f"""Latency: {round(self.bot.latency * 1000, 2)}ms\nLoaded CMDs: {len([x.name for x in self.bot.commands])}"""
-
-        embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
-        embed.set_thumbnail(url=ctx.bot.user.avatar)
-        embed.add_field(
-            name="Programmers",
-            value=", ".join(
-                [str(await self.bot.fetch_user(x)) for x in self.config.owners]
-            ),
-            inline=True,
+        embed = discord.Embed(
+            color=EMBED_COLOUR,
+            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate})",
+            timestamp=ctx.message.created_at,
         )
+        embed.set_thumbnail(url=ctx.bot.user.avatar)
         embed.add_field(
             name="Performance Overview", value=PERFORMANCE_MODAL, inline=False
         )
-        # embed.add_field(name="DB Connection", value=f"Con {mydb.connection_id}, v{mydb._server_version[0]}", inline=True)
         embed.add_field(
             name="Guild Information",
-            value=f"{default.pycode(GUILD_MODAL)}",
+            value=GUILD_MODAL,
             inline=False,
         )
         if len(chunked) == len(self.bot.guilds):
             embed.add_field(
-                name="\u200b", value=f"**`All servers are cached!`**", inline=False
+                name="\u200b", value=f"**All servers are cached!**", inline=False
             )
         else:
             embed.add_field(
                 name="\u200b",
-                value=f"**`{len(chunked)}`** / **`{len(self.bot.guilds)}`** servers are cached.",
+                value=f"**{len(chunked)}** / **{len(self.bot.guilds)}** servers are cached.",
             )
-        embed.add_field(
-            name="Bot Information", value=f"{default.pycode(BOT_INFO)}", inline=False
+        embed.add_field(name="Bot Information", value=BOT_INFO, inline=False)
+        embed.add_field(name="API Information", value=API_INFO, inline=False)
+        embed.add_field(name="System Information", value=SYS_INFO, inline=False)
+        embed.set_image(
+            url="https://media.discordapp.net/attachments/940897271120273428/954507474394808451/group.gif"
         )
-        # embed.add_field(name="Total Members",
-        # value=f' total users\n\n**DB Connection**\nCon {mydb.connection_id},
-        # v{mydb._server_version[0]} | {mydb.charset}', inline=False)
-        embed.add_field(
-            name=" ⠀",
-            value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote})",
-            inline=False,
+        embed.set_footer(
+            text=f"Made with ❤️ by the Lunar Development team.\nLibrary used: Discord.py{discord_version}"
         )
-        embed.set_footer(text="Made with Discord.py")
         await msg.edit(
             content=f"ℹ About **{ctx.bot.user}** | **{self.config.version}**",
             embed=embed,
@@ -462,7 +538,7 @@ class Information(commands.Cog, name="info"):
             pass
         os.remove(f"{filename}.txt")
 
-    @commands.cooldown(1, random.randint(3, 5), commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @commands.command(usage="`tp!say message`")
     @commands.bot_has_permissions(embed_links=True)
     async def Say(self, ctx, *, message):
@@ -474,11 +550,11 @@ class Information(commands.Cog, name="info"):
         # if message.
         try:
             await ctx.message.delete()
-        except discord.NotFound:
+        except:
             pass
         await ctx.send(message)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @commands.command(usage="`tp!policy`")
     @commands.bot_has_permissions(embed_links=True)
     async def Policy(self, ctx):
@@ -518,15 +594,15 @@ class Information(commands.Cog, name="info"):
         )
         embed.add_field(
             name="Look at these",
-            value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) ",
+            value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
             inline=False,
         )
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @commands.command(usage="`tp!profile`")
     @commands.bot_has_permissions(embed_links=True)
-    async def profile(self, ctx, user: Union[discord.Member, discord.User] = None):
+    async def profile(self, ctx, user: Union[MemberConverter, discord.User] = None):
         """Show your user profile"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
@@ -540,34 +616,45 @@ class Information(commands.Cog, name="info"):
         cursor_n.execute(f"SELECT * FROM public.usereco WHERE \"userid\" = '{usr.id}'")
         usereco = cursor_n.fetchall()
 
-        user_balance = f"${int(usereco[0][1]):,}"
-        user_bank = f"${int(usereco[0][2]):,}"
+        try:
+            user_balance = f"${int(usereco[0][1]):,}"
+        except:
+            user_balance = "$0"
+            pass
+        try:
+            user_bank = f"${int(usereco[0][2]):,}"
+        except:
+            user_bank = "$0"
+            pass
         mydb_n.commit()
-
-        cursor_n.execute(f"SELECT * FROM public.badges WHERE userid = '{usr.id}'")
-        userdb = cursor_n.fetchall()
-        badges = ""
-        if userdb[0][1] != "false":
-            badges += f"{emojis.dev}"
-        if userdb[0][2] != "false":
-            badges += f" {emojis.admin}"
-        if userdb[0][3] != "false":
-            badges += f" {emojis.mod}"
-        if userdb[0][4] != "false":
-            badges += f" {emojis.partner}"
-        if userdb[0][5] != "false":
-            badges += f" {emojis.support}"
-        if userdb[0][6] != "false":
-            badges += f" {emojis.friend}"
-        if (
-            userdb[0][1] == "false"
-            and userdb[0][2] == "false"
-            and userdb[0][3] == "false"
-            and userdb[0][4] == "false"
-            and userdb[0][5] == "false"
-            and userdb[0][6] == "false"
-        ):
+        try:
+            cursor_n.execute(f"SELECT * FROM public.badges WHERE userid = '{usr.id}'")
+            userdb = cursor_n.fetchall()
+            badges = ""
+            if userdb[0][1] != "false":
+                badges += f"{emojis.dev}"
+            if userdb[0][2] != "false":
+                badges += f" {emojis.admin}"
+            if userdb[0][3] != "false":
+                badges += f" {emojis.mod}"
+            if userdb[0][4] != "false":
+                badges += f" {emojis.partner}"
+            if userdb[0][5] != "false":
+                badges += f" {emojis.support}"
+            if userdb[0][6] != "false":
+                badges += f" {emojis.friend}"
+            if (
+                userdb[0][1] == "false"
+                and userdb[0][2] == "false"
+                and userdb[0][3] == "false"
+                and userdb[0][4] == "false"
+                and userdb[0][5] == "false"
+                and userdb[0][6] == "false"
+            ):
+                badges += ""
+        except:
             badges += ""
+            pass
 
         mydb_n.commit()
 
@@ -580,12 +667,21 @@ class Information(commands.Cog, name="info"):
 
         # **Profile Info**\nBadges: {badges}\n\n
         title = f"{usr.name}#{usr.discriminator}"
-        description = f"{badges}\n\n**💰 Economy Info**\n`Balance`: **{user_balance}**\n`Bank`: **{user_bank}**\n\n**📜 Misc Info**\n`Commands Used`: **{usedCommands}**\n\n**<:users:770650885705302036> Overview**\n`User Bio`\n```{udb[0][2]}```"
+        description = f"""{badges}\n\n**💰 Economy Info**
+        `Balance`: **{user_balance}**
+        `Bank`: **{user_bank}**
+        
+        **📜 Misc Info**
+        `Commands Used`: **{usedCommands}**
+        
+        **<:users:770650885705302036> Overview**
+        `User Bio`\n{udb[0][2]}"""
+
         embed = discord.Embed(title=title, color=EMBED_COLOUR, description=description)
         embed.set_thumbnail(url=usr.avatar)
         await msg.edit(content="", embed=embed)
 
-    @commands.cooldown(rate=1, per=5.5, type=commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @commands.command(usage="`tp!bio new_bio`")
     @commands.bot_has_permissions(embed_links=True)
     async def bio(self, ctx, *, bio=None):
@@ -596,7 +692,7 @@ class Information(commands.Cog, name="info"):
             return
 
         if bio is None:
-            await ctx.reply("Incorrect usage. Check the usage below:", delete_after=10)
+            await ctx.send("Incorrect usage. Check the usage below:", delete_after=10)
             await ctx.send_help(str(ctx.command))
             ctx.command.reset_cooldown(ctx)
             return
@@ -611,10 +707,10 @@ class Information(commands.Cog, name="info"):
             color=EMBED_COLOUR,
             description=f"Your bio has been set to: `{bio}`",
         )
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.command(usage="`tp!timestamp <MM/DD/YYYY HH:MM:SS>`")
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def timestamp(self, ctx, date, time=None):
         """
         Displays given time in all Discord timestamp formats.
@@ -629,9 +725,11 @@ class Information(commands.Cog, name="info"):
         if time is None:
             time = "00:00:00"
 
-        datetime_object = datetime.strptime(f"{date} {time}", "%m/%d/%Y %H:%M:%S")
+        datetime_object = datetime.datetime.strptime(
+            f"{date} {time}", "%m/%d/%Y %H:%M:%S"
+        )
         uts = str(datetime_object.timestamp())[:-2]
-        await ctx.reply(
+        await ctx.send(
             embed=discord.Embed(
                 title="Here's the timestamp you asked for",
                 color=EMBED_COLOUR,
@@ -647,15 +745,6 @@ class Information(commands.Cog, name="info"):
             ),
         )
 
-    @timestamp.error
-    async def timestamp_error(self, ctx, error):
-        if isinstance(error, commands.TooManyArguments):
-            await self.create_embed(ctx, error)
-        elif isinstance(error, commands.MissingRequiredArgument):
-            await self.create_embed(ctx, error)
-        elif isinstance(error, commands.CommandInvokeError):
-            await self.create_embed(ctx, error)
 
-
-def setup(bot):
-    bot.add_cog(Information(bot))
+async def setup(bot):
+    await bot.add_cog(Information(bot))

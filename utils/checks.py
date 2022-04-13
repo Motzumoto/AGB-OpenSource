@@ -1,16 +1,3 @@
-### IMPORTANT ANNOUNCEMENT ###
-#
-# All additions to AGB will now cease.
-# AGB's management will be limited to the following:
-# - Optimization
-# - Bug Fixes
-# - Basic Maintenance
-#
-# DO NOT ADD ANY NEW FEATURES TO AGB
-# ALL NEW FEATURES WILL BE RESERVED FOR MEKU
-#
-### IMPORTANT ANNOUNCEMENT ###
-
 import aiohttp
 import discord
 from discord.ext import commands
@@ -70,11 +57,14 @@ async def send_embed(ctx, embed):
                 "Hey, seems like I can't send embeds. Please check my permissions :)"
             )
         except discord.errors.Forbidden:
-            await ctx.author.send(
-                f"Hey, seems like I can't send any message in {ctx.channel.name} on {ctx.guild.name}\n"
-                f"May you inform the server team about this issue? :slight_smile: ",
-                embed=embed,
-            )
+            try:
+                await ctx.author.send(
+                    f"Hey, seems like I can't send any message in {ctx.channel.name} on {ctx.guild.name}\n"
+                    f"May you inform the server team about this issue?",
+                    embed=embed,
+                )
+            except discord.errors.Forbidden:
+                pass
 
 
 def has_guild_permissions(*, check=all, **perms):
