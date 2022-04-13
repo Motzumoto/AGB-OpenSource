@@ -1623,66 +1623,6 @@ class Moderator(commands.Cog, name="mod"):
         else:
             await ctx.send(f"{member.mention} has been muted out for {time} seconds.")
 
-    @commands.command(usage="`tp!massmute member1 member2 member3...`")
-    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
-    @commands.guild_only()
-    @permissions.has_permissions(moderate_members=True)
-    @commands.bot_has_permissions(embed_links=True, moderate_members=True)
-    async def massmute(self, ctx, *member: discord.Member, time, reason):
-        """Mute multiple people at the same time
-        ex: `tp!massmute @member1 @member2 @member3`
-        DOES NOT automatically unmutes in 30 minutes."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-        if reason is None:
-            reason = f"Action done by {ctx.author} (ID: {ctx.author.id})"
-        try:
-            await ctx.message.delete()
-        except:
-            pass
-        if await permissions.check_priv(ctx, member):
-            return
-        if time > 2419200:
-            await ctx.send(f"You can't mute people for longer than 28 days!")
-        # add the muted role to the specified members
-        if time.endswith("s"):
-            time = int(time[:-1])
-        elif time.endswith("m"):
-            time = int(time[:-1]) * 60
-        elif time.endswith("h"):
-            time = int(time[:-1]) * 3600
-        elif time.endswith("d"):
-            time = int(time[:-1]) * 86400
-        elif time.endswith("w"):
-            time = int(time[:-1]) * 604800
-        else:
-            time = int(time)
-        if time > int(2419200):
-            await ctx.send(
-                "You can't timeout someone for more than 28 days! Please use a shorter time."
-            )
-            return
-        for member in member:
-            await member.timeout(datetime.timedelta(seconds=time), reason=reason)
-
-        if time > 86400:
-            await ctx.send(
-                f"{member.mention} has been timed out for {time // 86400} days."
-            )
-        elif time > 3600:
-            await ctx.send(
-                f"{member.mention} has been timed out for {time // 3600} hours."
-            )
-        elif time > 60:
-            await ctx.send(
-                f"{member.mention} has been timed out for {time // 60} minutes."
-            )
-        else:
-            await ctx.send(f"{len(member)} members have been timed out for {time}")
-        await ctx.send(default.actionmessage("mass muted", mass=True))
-
     @commands.command(usage="`tp!unmute member optional:reason`")
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @commands.guild_only()
