@@ -1,11 +1,13 @@
 import aiohttp
 import discord
+from discord import app_commands
 from discord.ext import commands
-from index import TOP_GG_TOKEN
 
 from utils import default
 
 owners = default.get("config.json").owners
+config = default.get("config.json")
+TOP_GG_TOKEN = config.topgg
 
 
 async def check_permissions(ctx, perms, *, check=all):
@@ -78,12 +80,16 @@ class NotVoted(commands.CheckFailure):
     pass
 
 
+class SlashNotVoted(app_commands.CheckFailure):
+    pass
+
+
 async def check_voter(user_id):
     if user_id in owners:
         return True
     async with aiohttp.ClientSession() as s:
         async with s.get(
-            f"https://top.gg/api/bots/723726581864071178/check?userid={user_id}",
+            f"https://top.gg/api/bots/723726581864071178/check?userId={user_id}",
             headers={"Authorization": TOP_GG_TOKEN, "Content-Type": "application/json"},
         ) as r:
             vote = await r.json()
@@ -99,10 +105,22 @@ def voter_only():
             return True
         check_vote = await check_voter(ctx.author.id)
         if not check_vote:
-            raise NotVoted("Please vote!")
+            raise NotVoted
         return True
 
     return commands.check(predicate)
+
+
+def slash_voter_only():
+    async def predicate(interaction):
+        # if interaction.user.id in owners:
+        #     return True
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            raise SlashNotVoted
+        return True
+
+    return app_commands.check(predicate)
 
 
 # These do not take channel overrides into account

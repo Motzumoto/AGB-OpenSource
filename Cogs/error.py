@@ -44,6 +44,7 @@ class Error(commands.Cog, name="error"):
             discord.errors.Forbidden,
             discord.HTTPException,
             errors.DisabledCommand,
+            commands.BadBoolArgument,
         )
 
     async def create_embed(self, ctx, error):
@@ -61,7 +62,7 @@ class Error(commands.Cog, name="error"):
         else:
             try:
                 await ctx.send(embed=embed, delete_after=15)
-            except:
+            except Exception:
                 await ctx.send(
                     f"`{error}`\n***Enable Embed permissions please.***",
                     delete_after=15,
@@ -96,7 +97,24 @@ class Error(commands.Cog, name="error"):
                 await ctx.send(embed=embed)
                 ctx.command.reset_cooldown(ctx)
                 return
+        elif isinstance(error, NotVoted):
+            bucket = self.message_cooldown.get_bucket(ctx.message)
+            retry_after = bucket.update_rate_limit()
+            embed = discord.Embed(
+                title="Hey now...",
+                color=0xFF0000,
+                description=f"This command requires a vote for you to be able to use it. Vote **[here]({config.Vote})**",
+            )
+            embed.set_thumbnail(url=self.bot.user.avatar)
+            if retry_after:
+                return
+            else:
+                await ctx.send(embed=embed)
+                ctx.command.reset_cooldown(ctx)
+                return
 
+        elif isinstance(error, discord.errors.InteractionResponded):
+            return
         elif isinstance(error, ValueError):
             bucket = self.message_cooldown.get_bucket(ctx.message)
             retry_after = bucket.update_rate_limit()

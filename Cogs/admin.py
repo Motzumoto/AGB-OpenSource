@@ -106,7 +106,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             cursor_n.execute(
                 f"SELECT blacklisted FROM public.blacklist WHERE userid = '{ctx.author.id}'"
             )
-        except:
+        except Exception:
             pass
         for row in cursor_n.fetchall():
             self.blacklisted = row[0]
@@ -143,8 +143,25 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             try:
                 await channel.send(msg)
                 break
-            except:
+            except Exception:
                 pass
+
+    class MemberConverter(commands.MemberConverter):
+        async def convert(self, ctx, argument):
+            try:
+                return await super().convert(ctx, argument)
+            except commands.BadArgument:
+                members = [
+                    member
+                    for member in ctx.guild.members
+                    if member.display_name.lower().startswith(argument.lower())
+                ]
+                if len(members) == 1:
+                    return members[0]
+                else:
+                    raise commands.BadArgument(
+                        f"{len(members)} members found, please be more specific."
+                    )
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
@@ -497,7 +514,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             value = stdout.getvalue()
             try:
                 await ctx.message.add_reaction("\u2705")
-            except:
+            except Exception:
                 pass
             if ret is None:
                 if value:
@@ -576,7 +593,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def ghost(self, ctx):
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
 
     @commands.command()
@@ -603,7 +620,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Loads an extension."""
         try:
             await ctx.message.delete(delete_after=delay)
-        except:
+        except Exception:
             pass
         for name in names:
             try:
@@ -617,11 +634,17 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @commands.command()
     @commands.check(permissions.is_owner)
+    async def sync(self, ctx):
+        arg = ctx.guild.id
+        await ctx.invoke(self.bot.get_command("jsk sync"), command_string=arg)
+
+    @commands.command()
+    @commands.check(permissions.is_owner)
     async def unload(self, ctx, *names):
         """Unloads an extension."""
         try:
             await ctx.message.delete(delete_after=delay)
-        except:
+        except Exception:
             pass
         for name in names:
             try:
@@ -639,7 +662,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Reloads an extension."""
         try:
             await ctx.message.delete(delete_after=delay)
-        except:
+        except Exception:
             pass
         for name in names:
             try:
@@ -667,7 +690,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Loads all extensions"""
         try:
             await ctx.message.delete(delete_after=delay)
-        except:
+        except Exception:
             pass
         error_collection = []
         for file in os.listdir("Cogs"):
@@ -702,7 +725,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Reloads all extensions."""
         try:
             await ctx.message.delete(delete_after=delay)
-        except:
+        except Exception:
             pass
         error_collection = []
         for file in os.listdir("Cogs"):
@@ -737,7 +760,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Reloads a utils module."""
         try:
             await ctx.message.delete(delete_after=delay)
-        except:
+        except Exception:
             pass
         for name in names:
             try:
@@ -765,7 +788,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def pull(self, ctx):
         try:
             await ctx.message.delete(delete_after=delay)
-        except:
+        except Exception:
             pass
         async with ctx.channel.typing():
             # this a real pain in the ass
@@ -784,7 +807,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @commands.command()
     @commands.check(permissions.is_owner)
-    async def dm(self, ctx, user: discord.User, *, message):
+    async def dm(self, ctx, user: MemberConverter, *, message):
         """DMs the user of your choice.
         If you somehow found out about this command, it is owner ONLY
         you cannot use it."""
@@ -802,12 +825,17 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             icon_url=ctx.author.avatar,
         )
         embed = discord.Embed(
-            title=f"New message From {ctx.author.name}", description=message
+            title=f"New message From {ctx.author.name} | The owner of {self.bot.user.name}",
+            description=message,
         )
         embed.set_footer(
             text=f"To contact me, just DM the bot",
             icon_url=ctx.author.avatar,
         )
+        send_embed_to_logging_guild = self.bot.get_guild(730651628302106714)
+        get_log_channel = self.bot.get_channel(730651628302106718)
+        if send_embed_to_logging_guild.id != ctx.guild.id:
+            await get_log_channel.send(embed=embed2)
         try:
             await user.send(embed=embed)
             await ctx.send(embed=embed2)
@@ -819,7 +847,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     async def change(self, ctx):
         try:
             await ctx.message.delete(delete_after=delay)
-        except:
+        except Exception:
             pass
         if ctx.invoked_subcommand is None:
             await ctx.send_help(str(ctx.command))
@@ -830,7 +858,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Change username."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         try:
             await self.bot.user.edit(username=name)
@@ -847,7 +875,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Change nickname."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         try:
             await ctx.guild.me.edit(nick=name)
@@ -866,7 +894,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         """Change avatar."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         if url is None and len(ctx.message.attachments) == 1:
             url = ctx.message.attachments[0].url

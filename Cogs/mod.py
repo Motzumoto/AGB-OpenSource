@@ -10,6 +10,7 @@ from collections import Counter
 from typing import Union
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from index import EMBED_COLOUR, Website, config, delay, cursor_n, mydb_n
 from utils import checks, default, permissions
@@ -185,7 +186,7 @@ class Moderator(commands.Cog, name="mod"):
         self.config = default.get("config.json")
         try:
             self.bot.command_prefix = self.get_prefix
-        except:
+        except Exception:
             pass
         self.default_prefix = "tp!"
         blist = []
@@ -198,7 +199,7 @@ class Moderator(commands.Cog, name="mod"):
             cursor_n.execute(
                 f"SELECT prefix FROM public.guilds WHERE guildId = '{message.guild.id}'"
             )
-        except:
+        except Exception:
             pass
         try:
             for row in cursor_n.fetchall():
@@ -209,7 +210,7 @@ class Moderator(commands.Cog, name="mod"):
                 else self.default_prefix
             )
             mydb_n.commit()
-        except:
+        except Exception:
             pass
         return prefix
 
@@ -254,7 +255,7 @@ class Moderator(commands.Cog, name="mod"):
                     )
                 try:
                     await channel.send(embed=embed)
-                except:
+                except Exception:
                     pass
 
     @commands.command(usage="`tp!toggle <command_name>`")
@@ -288,7 +289,7 @@ class Moderator(commands.Cog, name="mod"):
                 cursor_n.execute(
                     f"SELECT {command} FROM public.commands WHERE guild = '{ctx.guild.id}'"
                 )
-            except:
+            except Exception:
                 await ctx.send("Command can not be found or can not be toggled.")
             cmdRow = cursor_n.fetchall()
 
@@ -343,9 +344,9 @@ class Moderator(commands.Cog, name="mod"):
             return
 
         try:
-            await ctx.guild.edit(
-                verification_level=discord.VerificationLevel.extreme
-            ) or (ctx.guild.edit(verification_level=discord.VerificationLevel.high))
+            await ctx.guild.edit(verification_level=discord.VerificationLevel.high) or (
+                ctx.guild.edit(verification_level=discord.VerificationLevel.highest)
+            )
         except discord.HTTPException:
             await ctx.send("\N{WARNING SIGN} Could not set verification level.")
             return
@@ -406,7 +407,7 @@ class Moderator(commands.Cog, name="mod"):
 
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
 
         strategy = self._basic_cleanup_strategy
@@ -437,7 +438,7 @@ class Moderator(commands.Cog, name="mod"):
 
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         if await permissions.check_priv(ctx, member):
             return
@@ -505,7 +506,7 @@ class Moderator(commands.Cog, name="mod"):
             cursor_n.execute(
                 f"SELECT prefix FROM public.guilds WHERE guildId = '{ctx.guild.id}'"
             )
-        except:
+        except Exception:
             pass
         result = cursor_n.fetchall()
         for row in result:
@@ -558,7 +559,7 @@ class Moderator(commands.Cog, name="mod"):
 
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         await user.remove_roles(role)
         await ctx.send(
@@ -721,7 +722,7 @@ class Moderator(commands.Cog, name="mod"):
 
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
 
         try:
@@ -752,7 +753,7 @@ class Moderator(commands.Cog, name="mod"):
 
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         if time < 0 or time > 21600:
             await ctx.send(
@@ -838,7 +839,7 @@ class Moderator(commands.Cog, name="mod"):
                                 await member.edit(nick="No Hoisting")
                                 await asyncio.sleep(random.randint(1, 5))
                                 temp.update({"numbers": temp.get("numbers", 0) + 1})
-                            except:
+                            except Exception:
                                 failed += 1
         stats = "\n".join([f"`{char}` - `{amount}`" for char, amount in temp.items()])
         await initial.edit(
@@ -879,7 +880,7 @@ class Moderator(commands.Cog, name="mod"):
                     await member.edit(nick=None)
                     await asyncio.sleep(random.randint(1, 5))
                     count += 1
-                except:
+                except Exception:
                     pass
         await inital.edit(content=f"{count} nicknames have been reset.")
 
@@ -905,7 +906,7 @@ class Moderator(commands.Cog, name="mod"):
                 content="Sorry if this took a while to send, but here is all of this servers bans!",
                 file=discord.File(f"{str(filename)}.txt"),
             )
-        except:
+        except Exception:
             await ctx.send(
                 "I couldn't send the file of this servers bans for whatever reason"
             )
@@ -954,7 +955,7 @@ class Moderator(commands.Cog, name="mod"):
 
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         if await permissions.check_priv(ctx, member):
             return
@@ -965,7 +966,7 @@ class Moderator(commands.Cog, name="mod"):
         )
         try:
             await member.send(f"You were banned in **{ctx.guild.name}**\n**{reason}**.")
-        except:
+        except Exception:
             pass
         try:
             await ctx.guild.ban(member, reason=reason)
@@ -1001,7 +1002,7 @@ class Moderator(commands.Cog, name="mod"):
 
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         if await permissions.check_priv(ctx, member):
             return
@@ -1040,7 +1041,7 @@ class Moderator(commands.Cog, name="mod"):
         banned_members = 0
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         if not members:
             if len(members) < 1:
@@ -1064,7 +1065,7 @@ class Moderator(commands.Cog, name="mod"):
                                 reason = (
                                     f"Action done by {ctx.author} (ID: {ctx.author.id})"
                                 )
-                        except:
+                        except Exception:
                             pass
                         await ctx.guild.ban(member, reason=reason)
                         banned_members += 1
@@ -1127,11 +1128,11 @@ class Moderator(commands.Cog, name="mod"):
     @commands.command(usage="`tp!kick member:optional ID optional:reason`")
     @commands.guild_only()
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
-    @permissions.has_permissions(kick_members=True)
-    @commands.bot_has_permissions(embed_links=True, kick_members=True)
+    @permissions.has_permissions(kick_members=True, ban_members=True)
+    @commands.bot_has_permissions(embed_links=True, kick_members=True, ban_members=True)
     async def softban(self, ctx, member: MemberID, *, reason: ActionReason = None):
         """Soft bans a member from the server.
-        To use this command you must have Kick Members permissions.
+        To use this command you must have Kick and Ban Members permissions.
         """
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
@@ -1182,7 +1183,7 @@ class Moderator(commands.Cog, name="mod"):
             return
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         if ctx.invoked_subcommand is None:
             await ctx.send_help(str(ctx.command))
@@ -1250,7 +1251,7 @@ class Moderator(commands.Cog, name="mod"):
             return
 
     @channel.command(name="create", usage="`tp!channel create channel_name`")
-    async def create(self, ctx, channel):
+    async def create(self, ctx, channel: str):
         """Create a channel"""
         if channel in [i.name for i in ctx.guild.channels]:
             return await ctx.send(f"{channel} already exists!")
@@ -1319,10 +1320,10 @@ class Moderator(commands.Cog, name="mod"):
             return
 
     @role.command(
-        name="create",
-        usage="`tp!role create name permissions:number or all hoist:True/False mentionable:True/False hex:number`",
+        name="make",
+        usage="`tp!role make name permissions:number or all hoist:True/False mentionable:True/False hex:number`",
     )
-    async def create(
+    async def make(
         self,
         ctx,
         name,
@@ -1369,8 +1370,8 @@ class Moderator(commands.Cog, name="mod"):
             f"Alright, I've created {name} with the following overrides: Permission Value:{permissions.value} Hex:{hex} Hoist:{hoist} Mentionable:{mentionable}"
         )
 
-    @role.command(name="delete", usage="`tp!role delete name`")
-    async def delete(self, ctx, role):
+    @role.command(name="delete", usage="`tp!role remove name`")
+    async def remove(self, ctx, role):
         """Deletes a role
         Example: `tp!role delete role_name`"""
         loop = [i for i in ctx.guild.roles if role.lower() in i.name.lower()]
@@ -1397,7 +1398,7 @@ class Moderator(commands.Cog, name="mod"):
 
     @role.command(
         name="change",
-        usage="`tp!role edit role_name permissions:number or all hoist:True/False mentionable:True/False hex:number`",
+        usage="`tp!role change role_name permissions:number or all hoist:True/False mentionable:True/False hex:number`",
     )
     async def change(
         self,
@@ -1485,7 +1486,7 @@ class Moderator(commands.Cog, name="mod"):
             return
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         embed = discord.Embed(title="Channel Nuked", color=0x00FF00)
         embed.set_image(url="https://media.giphy.com/media/HhTXt43pk1I1W/giphy.gif")
@@ -1528,9 +1529,12 @@ class Moderator(commands.Cog, name="mod"):
         await deleted_channel.delete(reason=f"{ctx.author} used nuke")
         try:
             await new_channel.send(embed=embed)
-        except:
+        except Exception:
             pass
-        await ctx.send("Channel nuked!", delete_after=5)
+        try:
+            await ctx.send("Channel nuked!", delete_after=5)
+        except Exception:
+            pass
 
     @commands.command(usage="`tp!mutesetup`")
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
@@ -1571,22 +1575,35 @@ class Moderator(commands.Cog, name="mod"):
                     await channel.set_permissions(muted_role, send_messages=False)
         await init.edit(content=f"I've set up the muted role and permissions for you!")
 
-    @commands.command(usage="`tp!mute @member time:time reason:reason`")
-    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
-    @commands.guild_only()
-    @permissions.has_permissions(moderate_members=True)
-    @commands.bot_has_permissions(embed_links=True, moderate_members=True)
-    async def mute(self, ctx, member: discord.Member, time, reason):
-        """Mute a user out for a certain amount of time
-        Example: `tp!mute @user 1h reason`
+    @app_commands.command()
+    @permissions.slash_has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(embed_links=True, moderate_members=True)
+    async def mute(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        time: str,
+        reason: str,
+        ephemeral: bool = False,
+    ):
+        """Mute someone for a certain amount of time, from 10 seconds to 28 days.
 
         Args:
-            member (discord.Member): The user to mute
-            time (_type_): The amount of time to mute the user for
-            reason (_type_): The reason for the mute
+                member (discord.Member): The member to mute.
+                time (_type_): the duration of the mute.
+                reason (_type_): the reason for the mute.
+                ephemeral (bool, optional): To make the message visable to you or not. Defaults to False.
         """
+        await interaction.response.defer(ephemeral=ephemeral, thinking=True)
+        # make a tuple of valid time unit strings
+        valid_time_units = ("s", "m", "h", "d", "w")
+        if not time.endswith(valid_time_units):
+            await interaction.followup.send(
+                "Invalid time unit! Please use s, m, h, d, or w."
+            )
+            return
         if reason is None:
-            reason = f"Action done by {ctx.author} (ID: {ctx.author.id})"
+            reason = f"Action done by {interaction.user} (ID: {interaction.user.id})"
         if time.endswith("s"):
             time = int(time[:-1])
         elif time.endswith("m"):
@@ -1600,59 +1617,69 @@ class Moderator(commands.Cog, name="mod"):
         else:
             time = int(time)
         if time > int(2419200):
-            await ctx.send(
-                "You can't mute someone for more than 28 days! Please use a shorter time."
+            await interaction.followup.send(
+                "You can't mute someone for more than 28 days! Please use a shorter time.",
+                ephemeral=True,
             )
             return
-        if await permissions.check_priv(ctx, member):
+        if await permissions.slash_check_priv(interaction=interaction, member=member):
             return
-        await member.timeout(datetime.timedelta(seconds=time), reason=reason)
+        try:
+            await member.timeout(datetime.timedelta(seconds=time), reason=reason)
+        except Exception as e:
+            # say that the bot needs moderate_members permissions
+            await interaction.followup.send(
+                f"I couldn't mute {member.mention}! Please make sure I have the `Timeout Members` permission!\nHere's the error: {e}",
+                ephemeral=True,
+            )
+            return
 
         if time > 86400:
-            await ctx.send(
-                f"{member.mention} has been muted out for {time // 86400} days."
+            await interaction.followup.send(
+                f"{member.mention} has been muted for {time // 86400} days.",
+                ephemeral=ephemeral,
             )
         elif time > 3600:
-            await ctx.send(
-                f"{member.mention} has been muted out for {time // 3600} hours."
+            await interaction.followup.send(
+                f"{member.mention} has been muted for {time // 3600} hours.",
+                ephemeral=ephemeral,
             )
         elif time > 60:
-            await ctx.send(
-                f"{member.mention} has been muted out for {time // 60} minutes."
+            await interaction.followup.send(
+                f"{member.mention} has been muted for {time // 60} minutes.",
+                ephemeral=ephemeral,
             )
         else:
-            await ctx.send(f"{member.mention} has been muted out for {time} seconds.")
-
-    @commands.command(usage="`tp!unmute member optional:reason`")
-    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
-    @commands.guild_only()
-    @permissions.has_permissions(manage_roles=True)
-    @commands.bot_has_permissions(embed_links=True, manage_roles=True)
-    async def unmute(self, ctx, member: discord.Member, *, reason: str = None):
-        """Unmutes a user from the current server."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
-        try:
-            await ctx.message.delete()
-        except:
-            pass
-
-        muted_role = next(
-            (g for g in ctx.guild.roles if g.name.lower() == "muted"), None
-        )
-
-        if not muted_role:
-            return await ctx.send(
-                "This technically shouldn't happen... Did you delete your muted role?"
+            await interaction.followup.send(
+                f"{member.mention} has been muted for {time} seconds.",
+                ephemeral=ephemeral,
             )
 
-        await member.remove_roles(
-            muted_role, reason=default.responsible(ctx.author, reason)
-        )
-        await ctx.send(default.actionmessage("unmuted"))
+    @app_commands.command()
+    @permissions.slash_has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(embed_links=True, moderate_members=True)
+    async def unmute(self, interaction, member: discord.Member, *, reason: str = None):
+        """Unmute someone
+
+        Args:
+            member (discord.Member): The member to unmute
+            reason (str, optional): The reason the member gets unmuted. Defaults to None.
+        """
+        # check if the member is timed out
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        if member.is_timed_out:
+            try:
+                await member.timeout(None, reason=reason)
+                await interaction.followup.send(f"{member.mention} has been unmuted.")
+            except Exception as e:
+                await interaction.followup.send(
+                    f"I couldn't unmute {member.mention}! Please make sure I have the `Timeout Members` permission!\nHere's the error: {e}",
+                    ephemeral=True,
+                )
+        else:
+            await interaction.followup.send(
+                f"{member.mention} is not timed out!", ephemeral=True
+            )
 
     # Forked from and edited
     # https://github.com/Rapptz/RoboDanny/blob/715a5cf8545b94d61823f62db484be4fac1c95b1/cogs/mod.py#L1163
@@ -1725,7 +1752,7 @@ class Moderator(commands.Cog, name="mod"):
         """Removes all messages."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         await self.do_removal(ctx, search, lambda e: True)
 
@@ -1735,7 +1762,7 @@ class Moderator(commands.Cog, name="mod"):
         """Removes messages that have embeds in them."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         await self.do_removal(ctx, search, lambda e: len(e.embeds))
 
@@ -1751,7 +1778,7 @@ class Moderator(commands.Cog, name="mod"):
         """Removes messages that have embeds or attachments."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         await self.do_removal(
             ctx, search, lambda e: len(e.embeds) or len(e.attachments)
@@ -1763,7 +1790,7 @@ class Moderator(commands.Cog, name="mod"):
         """Removes messages that have user mentions."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         await self.do_removal(ctx, search, lambda e: len(e.mentions))
 
@@ -1773,7 +1800,7 @@ class Moderator(commands.Cog, name="mod"):
         """Removes all messages by the member."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         await self.do_removal(ctx, search, lambda e: e.author == member)
 
@@ -1783,7 +1810,7 @@ class Moderator(commands.Cog, name="mod"):
         """Removes all messages that start with a keyword"""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
 
         await self.do_removal(ctx, 100, lambda e: e.content.startswith(substr))
@@ -1796,7 +1823,7 @@ class Moderator(commands.Cog, name="mod"):
         """
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         await self.do_removal(ctx, 100, lambda e: substr in e.content)
 
@@ -1809,7 +1836,7 @@ class Moderator(commands.Cog, name="mod"):
         Example: `tp!purge bots <the bots prefix[this is optional]> <amount[this is also optional]>`"""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
 
         getprefix = prefix if prefix else self.config.prefix
@@ -1831,7 +1858,7 @@ class Moderator(commands.Cog, name="mod"):
         """Removes all messages containing custom emoji."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         custom_emoji = re.compile(r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>")
 
@@ -1846,7 +1873,7 @@ class Moderator(commands.Cog, name="mod"):
         """Removes all reactions from messages that have them."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
 
         if search > 2000:
@@ -1867,7 +1894,7 @@ class Moderator(commands.Cog, name="mod"):
         This command purges mentions, embeds, files / attachments, and role mentions."""
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         await self.do_removal(
             ctx,

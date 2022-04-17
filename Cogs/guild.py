@@ -69,7 +69,7 @@ class DiscordCmds(commands.Cog, name="discord"):
         async def convert(self, interaction, argument):
             try:
                 return await super().convert(interaction, argument)
-            except:
+            except Exception:
                 members = [
                     member
                     for member in interaction.guild.members
@@ -121,7 +121,7 @@ class DiscordCmds(commands.Cog, name="discord"):
                     try:
                         await message.add_reaction("🎃")
                         await asyncio.sleep(1)
-                    except:
+                    except Exception:
                         pass
             if self.spooky_re.search(message.content.lower()):
                 if retry_after:
@@ -132,7 +132,7 @@ class DiscordCmds(commands.Cog, name="discord"):
                     try:
                         await message.add_reaction("👻")
                         await asyncio.sleep(1)
-                    except:
+                    except Exception:
                         pass
 
     @commands.Cog.listener()
@@ -149,7 +149,7 @@ class DiscordCmds(commands.Cog, name="discord"):
                 message.created_at,
                 message.attachments,
             )
-        except:
+        except Exception:
             pass
 
     @commands.Cog.listener()
@@ -212,7 +212,7 @@ class DiscordCmds(commands.Cog, name="discord"):
                 content="This command is reaching its life expectancy. This command will no longer work after april 30th",
                 embed=embed,
             )
-        except:
+        except Exception:
             await ctx.send("Nothing has been recently deleted.")
 
     @commands.command(aliases=["es"], usage="`tp!es`")
@@ -253,7 +253,7 @@ class DiscordCmds(commands.Cog, name="discord"):
                 content="This command is reaching its life expectancy. This command will no longer work after april 30th",
                 embed=embed,
             )
-        except:
+        except Exception:
             await ctx.send("Nothing has been recently edited.")
 
     @commands.command(usage="`tp!listemoji true/false`")
@@ -271,7 +271,7 @@ class DiscordCmds(commands.Cog, name="discord"):
 
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         description = f"Emojis for {ctx.guild.name}"
         if not ids:
@@ -338,8 +338,8 @@ class DiscordCmds(commands.Cog, name="discord"):
     #            except (discord.HTTPException, discord.errors.Forbidden, ):
     #                pass
 
-    @app_commands.command(description="Get anyone in Discord's avatar")
-    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 3, key=lambda i: (i.guild_id, i.user.id))
     async def avatar(
         self,
         interaction: discord.Interaction,
@@ -347,12 +347,20 @@ class DiscordCmds(commands.Cog, name="discord"):
         user: Union[discord.User, discord.Member] = None,
         ephemeral: bool = False,
     ):
+        """Get anyones avatar within Discord.
+
+        Args:
+            interaction (discord.Interaction): _description_
+            user (Union[discord.User, discord.Member], optional): Any userID or user tag. Defaults to None.
+            ephemeral (bool, optional): Weather to make the result of the command visable to only you or not. Defaults to False.
+        """
+        await interaction.response.defer(ephemeral=True, thinking=True)
         user = user or interaction.user
         embed = discord.Embed(
             title="User Icon", colour=EMBED_COLOUR, description=f"{user}'s avatar is:"
         )
         embed.set_image(url=user.avatar)
-        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     @permissions.has_permissions(manage_roles=True)
@@ -657,19 +665,14 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.command(help="Check if a user has voted or not!")
     async def checkvote(self, ctx, user: Union[discord.Member, discord.User] = None):
         """Check if you or someone else has voted for AGB in the last 12 hours"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
         user = user or ctx.author
         async with aiohttp.ClientSession() as s:
             async with s.get(
-                f"https://top.gg/api/bots/723726581864071178/check?userid={user.id}",
+                f"https://top.gg/api/bots/723726581864071178/check?userId={user.id}",
                 headers={"Authorization": TOP_GG_TOKEN},
             ) as r:
-                pain = await r.json()
-                if pain["voted"] == 1:
+                idkwhattocallthis = await r.json()
+                if idkwhattocallthis["voted"] == 1:
                     voted = True
                 else:
                     voted = False
@@ -883,7 +886,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 value=f"**Name**:`{ctx.guild.owner}`\n**ID**:`{ctx.guild.owner.id}`",
                 inline=False,
             )
-        except:
+        except Exception:
             embed.add_field(
                 name="Owner/ID",
                 value=f"**Name**:`Unable to fetch.`\n**ID**:`Unable to fetch.`",
@@ -898,16 +901,23 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         embed.set_footer(text=f" {ctx.author}", icon_url=ctx.author.avatar)
         await ctx.send(embed=embed)
 
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.command()
-    @app_commands.describe(user="any user within the server")
-    async def ui(self, interaction, user: discord.User = None):
-        """Get user information"""
+    async def userinfo(
+        self, interaction, user: discord.User = None, ephemeral: bool = True
+    ):
+        """Get user info on anyone in Discord
+
+        Args:
+            user (discord.User, optional): The user you want to get info on. Defaults to None.
+            ephemeral (bool, optional): Weather to set the message as only visible to you or not. Defaults to True.
+
+        """
+        await interaction.response.defer(ephemeral=ephemeral, thinking=True)
         chunked = []
         for guild in self.bot.guilds:
             if guild.chunked:
                 chunked.append(guild)
-        first = await interaction.response.send_message("Fetching...", ephemeral=True)
         discord_version = discord.__version__
         user = user or interaction.user
 
@@ -965,7 +975,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
         banner = await self.bot.fetch_user(user.id)
         if user.bot:
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 "Bots don't have any *useful* information!", ephemeral=True
             )
 
@@ -980,7 +990,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 value=f"{embed_space}{houseCheck()}{earlySupporter()}{boosterCheck()}",
                 inline=True,
             )
-        except:
+        except Exception:
             pass
 
         if isinstance(user, discord.Member):
@@ -1035,23 +1045,26 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             if banner.banner:
                 try:
                     embed.set_image(url=banner.banner)
-                except:
+                except Exception:
                     pass
                 else:
                     pass
         embed.set_footer(
             text=f"lunardev.group | Discord.py {discord_version} | Python 3.9.5"
         )
-        await first.edit_message(
+        await interaction.followup.send(
             content=f"Basic info about **`{user.id} / {user.name}`**", embed=embed
         )
 
-    @app_commands.command(name="ask", description="Ask a general question")
-    @app_commands.describe(
-        question="The question you want to ask",
-        ephemeral="whether or not to send the message so either you or everyone else can see it",
-    )
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 3, key=lambda i: (i.guild_id, i.user.id))
     async def ask(self, interaction, *, question: str, ephemeral: bool = True):
+        """Ask a general question
+
+        Args:
+            question (str): the question you want answered
+            ephemeral (bool, optional): Weather to make the result of the command visable to only you or not. Defaults to True.
+        """
         await interaction.response.defer(ephemeral=ephemeral, thinking=True)
         api_key = config.WolframAlpha
         url = "http://api.wolframalpha.com/v2/query?"
@@ -1074,15 +1087,18 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
 
         await interaction.followup.send(default.box(message))
 
-    @app_commands.command(name="image", description="Get an image from wolfram alpha")
-    @app_commands.describe(
-        thing="The thing you want to get an image of",
-        ephemeral="whether or not to send the message so either you or everyone else can see it",
-    )
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 3, key=lambda i: (i.guild_id, i.user.id))
     async def image(self, interaction, *, thing: str, ephemeral: bool = True):
+        """Get an image from wolfram Alpha
+
+        Args:
+            thing (str): The thing you want an image of
+            ephemeral (bool, optional): Weather to make the result of the command visable to only you or not. Defaults to True.
+        """
         api_key = config.WolframAlpha
         if not api_key:
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 "No API key set for Wolfram Alpha. Get one at http://products.wolframalpha.com/api/"
             )
         await interaction.response.defer(ephemeral=ephemeral, thinking=True)
@@ -1111,12 +1127,14 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             except Exception as e:
                 await interaction.followup.send(f"Oops, there was a problem: {e}")
 
-    @app_commands.command(name="solve", description="ask a math question")
-    @app_commands.describe(
-        query="Solve a math problem",
-        ephemeral="whether or not to send the message so either you or everyone else can see it",
-    )
+    @app_commands.command()
     async def solve(self, interaction, *, query: str, ephemeral: bool = True):
+        """Solve any math problem
+
+        Args:
+            query (str): The math question you want solved
+            ephemeral (bool, optional): Weather to make the result of the command visable to only you or not. Defaults to True.
+        """
         api_key = config.WolframAlpha
         url = f"http://api.wolframalpha.com/v2/query"
         params = {

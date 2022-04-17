@@ -108,7 +108,7 @@ def log(text: str):
     Parameters
     ----------
     text : `str`
-        The text to log.
+            The text to log.
     """
     with open(f"logs.txt", "a+", encoding="utf-8") as log_file:
         log_file.write(f"[{date()}] {text}\n")
@@ -166,11 +166,11 @@ def date(clock=True):
     Parameters
     ----------
     clock : `bool`, optional
-        Set to :code:`False` to not show the time.
+            Set to :code:`False` to not show the time.
     Returns
     -------
     `str`
-        The date and time.
+            The date and time.
     """
     date = datetime.datetime.utcnow()
     date = date.strftime("%a %d %b %Y")
@@ -192,7 +192,7 @@ def actionmessage(case, mass=False):
     if mass is True:
         output = f"**{case}** the IDs/Users"
 
-    return f"Alright it's been done, I've {output} <:doge:752674874681458748>"
+    return f"Alright it's been done, I've {output} <:doge:964087593648132146>"
 
 
 async def type_message(
@@ -218,7 +218,7 @@ def error(text: str) -> str:
     Returns
     -------
     str
-        The new message.
+            The new message.
     """
     return "\N{NO ENTRY SIGN} {}".format(text)
 
@@ -228,7 +228,7 @@ def warning(text: str) -> str:
     Returns
     -------
     str
-        The new message.
+            The new message.
     """
     return "\N{WARNING SIGN}\N{VARIATION SELECTOR-16} {}".format(text)
 
@@ -238,7 +238,7 @@ def info(text: str) -> str:
     Returns
     -------
     str
-        The new message.
+            The new message.
     """
     return "\N{INFORMATION SOURCE}\N{VARIATION SELECTOR-16} {}".format(text)
 
@@ -248,7 +248,7 @@ def question(text: str) -> str:
     Returns
     -------
     str
-        The new message.
+            The new message.
     """
     return "\N{BLACK QUESTION MARK ORNAMENT}\N{VARIATION SELECTOR-16} {}".format(text)
 
@@ -259,13 +259,13 @@ def bold(text: str, escape_formatting: bool = True) -> str:
     Parameters
     ----------
     text : str
-        The text to be marked up.
+            The text to be marked up.
     escape_formatting : `bool`, optional
-        Set to :code:`False` to not escape markdown formatting in the text.
+            Set to :code:`False` to not escape markdown formatting in the text.
     Returns
     -------
     str
-        The marked up text.
+            The marked up text.
     """
     text = escape(text, formatting=escape_formatting)
     return "**{}**".format(text)
@@ -276,13 +276,13 @@ def box(text: str, lang: str = "") -> str:
     Parameters
     ----------
     text : str
-        The text to be marked up.
+            The text to be marked up.
     lang : `str`, optional
-        The syntax highlighting language for the codeblock.
+            The syntax highlighting language for the codeblock.
     Returns
     -------
     str
-        The marked up text.
+            The marked up text.
     """
     ret = "```{}\n{}\n```".format(lang, text)
     return ret
@@ -293,11 +293,11 @@ def inline(text: str) -> str:
     Parameters
     ----------
     text : str
-        The text to be marked up.
+            The text to be marked up.
     Returns
     -------
     str
-        The marked up text.
+            The marked up text.
     """
     if "`" in text:
         return "``{}``".format(text)
@@ -311,13 +311,13 @@ def italics(text: str, escape_formatting: bool = True) -> str:
     Parameters
     ----------
     text : str
-        The text to be marked up.
+            The text to be marked up.
     escape_formatting : `bool`, optional
-        Set to :code:`False` to not escape markdown formatting in the text.
+            Set to :code:`False` to not escape markdown formatting in the text.
     Returns
     -------
     str
-        The marked up text.
+            The marked up text.
     """
     text = escape(text, formatting=escape_formatting)
     return "*{}*".format(text)
@@ -331,13 +331,13 @@ def bordered(*columns: Sequence[str], ascii_border: bool = False) -> str:
     Parameters
     ----------
     *columns : `sequence` of `str`
-        The columns of text, each being a list of lines in that column.
+            The columns of text, each being a list of lines in that column.
     ascii_border : bool
-        Whether or not the border should be pure ASCII.
+            Whether or not the border should be pure ASCII.
     Returns
     -------
     str
-        The bordered text.
+            The bordered text.
     """
     borders = {
         "TL": "+" if ascii_border else "┌",  # Top-left
@@ -402,28 +402,28 @@ def pagify(
     Parameters
     ----------
     text : str
-        The content to pagify and send.
+            The content to pagify and send.
     delims : `sequence` of `str`, optional
-        Characters where page breaks will occur. If no delimiters are found
-        in a page, the page will break after ``page_length`` characters.
-        By default this only contains the newline.
+            Characters where page breaks will occur. If no delimiters are found
+            in a page, the page will break after ``page_length`` characters.
+            By default this only contains the newline.
     Other Parameters
     ----------------
     priority : `bool`
-        Set to :code:`True` to choose the page break delimiter based on the
-        order of ``delims``. Otherwise, the page will always break at the
-        last possible delimiter.
+            Set to :code:`True` to choose the page break delimiter based on the
+            order of ``delims``. Otherwise, the page will always break at the
+            last possible delimiter.
     escape_mass_mentions : `bool`
-        If :code:`True`, any mass mentions (here or everyone) will be
-        silenced.
+            If :code:`True`, any mass mentions (here or everyone) will be
+            silenced.
     shorten_by : `int`
-        How much to shorten each page by. Defaults to 8.
+            How much to shorten each page by. Defaults to 8.
     page_length : `int`
-        The maximum length of each page. Defaults to 2000.
+            The maximum length of each page. Defaults to 2000.
     Yields
     ------
     `str`
-        Pages of the given text.
+            Pages of the given text.
     """
     in_text = text
     page_length -= shorten_by
@@ -460,13 +460,13 @@ def strikethrough(text: str, escape_formatting: bool = True) -> str:
     Parameters
     ----------
     text : str
-        The text to be marked up.
+            The text to be marked up.
     escape_formatting : `bool`, optional
-        Set to :code:`False` to not escape markdown formatting in the text.
+            Set to :code:`False` to not escape markdown formatting in the text.
     Returns
     -------
     str
-        The marked up text.
+            The marked up text.
     """
     text = escape(text, formatting=escape_formatting)
     return "~~{}~~".format(text)
@@ -478,13 +478,13 @@ def underline(text: str, escape_formatting: bool = True) -> str:
     Parameters
     ----------
     text : str
-        The text to be marked up.
+            The text to be marked up.
     escape_formatting : `bool`, optional
-        Set to :code:`False` to not escape markdown formatting in the text.
+            Set to :code:`False` to not escape markdown formatting in the text.
     Returns
     -------
     str
-        The marked up text.
+            The marked up text.
     """
     text = escape(text, formatting=escape_formatting)
     return "__{}__".format(text)
@@ -495,11 +495,11 @@ def quote(text: str) -> str:
     Parameters
     ----------
     text : str
-        The text to be marked up.
+            The text to be marked up.
     Returns
     -------
     str
-        The marked up text.
+            The marked up text.
     """
     return textwrap.indent(text, "> ", lambda l: True)
 
@@ -509,15 +509,15 @@ def escape(text: str, *, mass_mentions: bool = False, formatting: bool = False) 
     Parameters
     ----------
     text : str
-        The text to be escaped.
+            The text to be escaped.
     mass_mentions : `bool`, optional
-        Set to :code:`True` to escape mass mentions in the text.
+            Set to :code:`True` to escape mass mentions in the text.
     formatting : `bool`, optional
-        Set to :code:`True` to escape any markdown formatting in the text.
+            Set to :code:`True` to escape any markdown formatting in the text.
     Returns
     -------
     str
-        The escaped text.
+            The escaped text.
     """
     if mass_mentions:
         text = text.replace("@everyone", "@\u200beveryone")
@@ -540,15 +540,15 @@ def text_to_file(
     Parameters
     ----------
     text: str
-        The text to put in your file.
+            The text to put in your file.
     filename: str
-        The name of the file sent. Defaults to ``file.txt``.
+            The name of the file sent. Defaults to ``file.txt``.
     spoiler: bool
-        Whether the attachment is a spoiler. Defaults to ``False``.
+            Whether the attachment is a spoiler. Defaults to ``False``.
     Returns
     -------
     discord.File
-        The file containing your text.
+            The file containing your text.
     """
     file = BytesIO(text.encode(encoding))
     return discord.File(file, filename, spoiler=spoiler)
@@ -576,9 +576,9 @@ async def prettyResults(
 def bytesto(bytes, to, bsize=1024):
     """convert bytes to megabytes, etc.
     sample code:
-        print('mb= ' + str(bytesto(314575262000000, 'm')))
+            print('mb= ' + str(bytesto(314575262000000, 'm')))
     sample output:
-        mb= 300002347.946
+            mb= 300002347.946
     """
 
     a = {"k": 1, "m": 2, "g": 3, "t": 4, "p": 5, "e": 6}

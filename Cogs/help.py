@@ -152,7 +152,7 @@ class FormattedHelp(commands.HelpCommand):
 
             if self.context.channel.is_nsfw():
                 description = f"""For help on individual commands, use `tp!help <command>`.\n\n**{random.choice(emojis.rainbow_emojis)} {info_cog.qualified_name.capitalize()}**\n{info_names}\n\n**{random.choice(emojis.rainbow_emojis)} {economy_cog.qualified_name.capitalize()}**\n{economy_names}\n\n**{random.choice(emojis.rainbow_emojis)} {fun_cog.qualified_name.capitalize()}**\n{fun_names}\n\n**{random.choice(emojis.rainbow_emojis)} {guild_cog.qualified_name.capitalize()}**
-                {guild_names}\n\n**{random.choice(emojis.rainbow_emojis)} {mod_cog.qualified_name.capitalize()}**\n{mod_names}\n\n{random.choice(emojis.rainbow_emojis)} **{nsfw_cog.qualified_name.capitalize()}**\n{nsfw_names}\nalso, there are nsfw slash commands. make sure AGB has permission to register them in your server."""
+				{guild_names}\n\n**{random.choice(emojis.rainbow_emojis)} {mod_cog.qualified_name.capitalize()}**\n{mod_names}\n\n{random.choice(emojis.rainbow_emojis)} **{nsfw_cog.qualified_name.capitalize()}**\n{nsfw_names}\nalso, there are nsfw slash commands. make sure AGB has permission to register them in your server."""
 
                 embed = discord.Embed(
                     color=EMBED_COLOUR,
@@ -291,7 +291,7 @@ async def setup(bot):
 #         if interaction.user == self.ctx.author:
 #             return True
 #         else:
-#             await interaction.response.send_message(f"You cannot interact with someone else's command!{random.choice(emojis.rainbow_emojis)}", ephemeral=True)
+#             await interaction.followup.send(f"You cannot interact with someone else's command!{random.choice(emojis.rainbow_emojis)}", ephemeral=True)
 
 
 # class FormattedHelp(commands.HelpCommand):

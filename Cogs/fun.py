@@ -28,7 +28,7 @@ try:
     import cairosvg
 
     svg_convert = "cairo"
-except:
+except Exception:
     pass
 
 
@@ -527,7 +527,7 @@ class Fun(commands.Cog, name="fun"):
 
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         if user != ctx.author:
             async with aiohttp.ClientSession() as session:
@@ -768,7 +768,7 @@ class Fun(commands.Cog, name="fun"):
                     try:
                         await ctx.send(line)
                         await asyncio.sleep(1.5)
-                    except:
+                    except Exception:
                         pass
 
     @commands.guild_only()
@@ -1098,11 +1098,11 @@ class Fun(commands.Cog, name="fun"):
     async def covid(self, ctx, country_code="Global"):
         """Covid stats. Provide a country via it's ISO code.
         Common codes:
-                US: United States
-                GB: Great Britan,
-                CN: China,
-                FR: France,
-                DE: Germany
+                        US: United States
+                        GB: Great Britan,
+                        CN: China,
+                        FR: France,
+                        DE: Germany
         https://countrycode.org/"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
@@ -1597,6 +1597,7 @@ class Fun(commands.Cog, name="fun"):
         description="Sends you the dankest of the dank memes from reddit"
     )
     async def meme(self, interaction, ephemeral: bool = False):
+        await interaction.response.defer(ephemeral=True, thinking=True)
         subs = ["dankmemes", "memes", "ComedyCemetery"]
         subreddit = await self.reddit.subreddit(random.choice(subs))
         all_subs = []
@@ -1607,19 +1608,19 @@ class Fun(commands.Cog, name="fun"):
         name = random_sub.title
         url = random_sub.url
         if "https://v" in url:
-            return await interaction.response.send_message(url)
+            return await interaction.followup.send(url)
         elif "https://streamable.com/" in url:
             return
         elif "https://i.imgur.com/" in url:
-            return await interaction.response.send_message(url)
+            return await interaction.followup.send(url)
         elif "https://gfycat.com/" in url:
-            return await interaction.response.send_message(url)
+            return await interaction.followup.send(url)
         elif "https://imgflip.com/gif/" in url:
-            return await interaction.response.send_message(url)
+            return await interaction.followup.send(url)
         elif "https://youtu.be/" in url:
-            return await interaction.response.send_message(url)
+            return await interaction.followup.send(url)
         elif "https://youtube.com/" in url:
-            return await interaction.response.send_message(url)
+            return await interaction.followup.send(url)
         embed = discord.Embed(
             title=name,
             url=url,
@@ -1628,7 +1629,7 @@ class Fun(commands.Cog, name="fun"):
         )
         embed.set_image(url=url)
         embed.set_footer(text=f"{interaction.user}", icon_url=interaction.user.avatar)
-        await interaction.response.send_message(
+        await interaction.followup.send(
             content="Alright, have this meme.", embed=embed, ephemeral=ephemeral
         )
 

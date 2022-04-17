@@ -7,8 +7,12 @@ import nekos
 from discord.ext import commands
 from index import EMBED_COLOUR, config, cursor_n, mydb_n
 from Manager.commandManager import cmd
-from utils import permissions
-from utils.checks import NotVoted
+from utils import permissions, default
+from utils.checks import NotVoted, check_voter, voter_only
+
+
+owners = default.get("config.json").owners
+config = default.get("config.json")
 
 
 class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
@@ -75,6 +79,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         return url
 
     @commands.command(aliases=["post", "ap"], usage="`tp!ap #channel`")
+    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=5, type=commands.BucketType.user
     )
@@ -105,7 +110,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
 
         try:
             await Server.fetch_member(ctx.author.id)
-        except:
+        except Exception:
             await ctx.send(
                 f"You are not in the support server. Please join the support server to use this command.\n{config.Server}"
             )
@@ -136,7 +141,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 )
                 try:
                     await channel.edit(overwrites=overwrites)
-                except:
+                except Exception:
                     await ctx.send(
                         f"I don't have permission to edit {channel.mention} to make sure I can post there. The channel has been added to the database regardless, if I never post there, you will have to manually edit the channel permissions to allow me to post there."
                     )
@@ -202,6 +207,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=5, type=commands.BucketType.user
     )
+    @voter_only()
     @permissions.has_permissions(manage_channels=True)
     async def autopost_remove(self, ctx):
         """Remove the auto hentai posting channel."""
@@ -234,6 +240,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
     @commands.is_nsfw()
+    @voter_only()
     @commands.guild_only()
     async def spank(self, ctx, *, user: discord.Member):
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
@@ -293,14 +300,23 @@ This command has been converted to slash commands.
 The slash commands are global, and if you cant see any of the slash commands, AGB does not have the permissions to set them up.
 Please reinvite AGB with `tp!invite` or use the integrated invite button (see screenshot).
 If you need help, please join the support server - {config.Server}\nPress `/` on your keyboard to see the commands, it should look something like this - (see screenshot)
-                       """,
+					   """,
             files=[discord.File("slashcmds.png"), discord.File("integratedinvite.png")],
         )
 
     # # @permissions.dynamic_ownerbypass_cooldown(rate=1, per=2, type=commands.BucketType.user)
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def slashclassic(self, interaction: discord.Interaction) -> None:
+        """Classic hentai"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
+
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -319,11 +335,20 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def trap(self, interaction: discord.Interaction) -> None:
+        """chicks with dicks"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
+
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -342,34 +367,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
-    async def boobs(self, interaction: discord.Interaction) -> None:
-        cursor_n.execute(
-            f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
-        )
-        udb = cursor_n.fetchall()
-
-        usedCommands = ""
-        if int(udb[0][1]) >= 0:
-            usedCommands += f"{udb[0][1]}"
-        embed = discord.Embed(
-            title="Enjoy",
-            url="https://lunardev.group/",
-            description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate})",
-            colour=EMBED_COLOUR,
-        )
-        embed.set_image(url=nekos.img("boobs"))
-        embed.set_footer(
-            text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def pussy(self, interaction: discord.Interaction) -> None:
+        """coochie gifs"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -388,11 +398,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def hentai(self, interaction: discord.Interaction) -> None:
+        """hentai"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -411,11 +429,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def neko(self, interaction: discord.Interaction) -> None:
+        """Lewd catgirls"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -434,11 +460,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        # await interaction.response.send_message(embed=embed, ephemeral=True)
+        # await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def lesbian(self, interaction: discord.Interaction) -> None:
+        """Does this really need to be explained"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -457,11 +491,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def tits(self, interaction: discord.Interaction) -> None:
+        """Boob pictures"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -480,11 +522,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
     @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def wallpaper(self, interaction: discord.Interaction) -> None:
+        """Anime wallpapers, contains lewd things."""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -503,11 +553,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def anal(self, interaction: discord.Interaction) -> None:
+        """butt stuff"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -526,11 +584,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def feet(self, interaction: discord.Interaction) -> None:
+        """What do you think"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -549,11 +615,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def holo(self, interaction: discord.Interaction) -> None:
+        """holo live streamer porn"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         url = await self.get_hentai_lunar("hololive")
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
@@ -573,11 +647,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def kemo(self, interaction: discord.Interaction) -> None:
+        """kemonomimi; fox girls/cat girls/animal girls"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         url = await self.get_hentai_lunar("neko")
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
@@ -597,11 +679,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def pwg(self, interaction: discord.Interaction) -> None:
+        """Pussy wank gifs"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         url = await self.get_hentai_lunar("panties")
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
@@ -621,11 +711,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def blow(self, interaction: discord.Interaction) -> None:
+        """Blowjob hentai gifs"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -644,11 +742,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def thighs(self, interaction: discord.Interaction) -> None:
+        """thigh pictures"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         url = await self.get_hentai_lunar("thighs")
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
@@ -668,11 +774,19 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command()
-    @app_commands.checks.cooldown(2, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.checks.cooldown(2, 3, key=lambda i: (i.guild_id, i.user.id))
     async def boobs(self, interaction: discord.Interaction) -> None:
+        """Booba gifs"""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        check_vote = await check_voter(interaction.user.id)
+        if not check_vote:
+            await interaction.followup.send(
+                f"{interaction.user.mention} You have not voted yet! Vote **[here]({config.Vote})**"
+            )
+            return
         cursor_n.execute(
             f"SELECT * FROM public.users WHERE userid = '{interaction.user.id}'"
         )
@@ -691,7 +805,7 @@ If you need help, please join the support server - {config.Server}\nPress `/` on
         embed.set_footer(
             text=f"lunardev.group\nYou've used {usedCommands} commands so far!",
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 async def setup(bot):

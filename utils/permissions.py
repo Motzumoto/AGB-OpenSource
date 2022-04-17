@@ -1,5 +1,5 @@
 import discord
-import datetime
+from discord import app_commands
 from datetime import timedelta
 from discord.ext import commands
 from index import logger
@@ -16,10 +16,11 @@ def is_owner(ctx):
 
 async def is_owner_slash(interaction):
     """Checks if the interaction user is one of the owners"""
+    await interaction.response.defer(ephemeral=True, thinking=True)
     if interaction.user.id in owners:
         return True
     else:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "You are not one of the owners of this bot. You can't use this command.",
             ephemeral=True,
         )
@@ -35,6 +36,20 @@ async def check_permissions(ctx, perms, *, check=all):
     return check(
         getattr(resolved, name, None) == value for name, value in perms.items()
     )
+
+
+async def slash_check_permissions(
+    interaction: discord.Interaction, perms, *, check=all
+):
+    """Checks if author has permissions to a permission"""
+
+    if interaction.user.id in owners:
+        return True
+    else:
+        pass
+    resolved = interaction.channel.permissions_for(interaction.user)
+    check(getattr(resolved, name, None) == value for name, value in perms.items())
+    return
 
 
 def dynamic_ownerbypass_cooldown(rate: int, per: float, type):
@@ -59,37 +74,101 @@ def has_permissions(*, check=all, **perms):
     return commands.check(pred)
 
 
-async def check_priv(ctx, member):
+def slash_has_permissions(*, check=all, **perms):
+    """discord.app_commands method to check if author has permissions"""
+
+    async def pred(interaction):
+        if interaction.user.id in owners:
+            return True
+        else:
+            return await slash_check_permissions(interaction, perms, check=check)
+
+    return app_commands.check(pred)
+
+
+async def slash_check_priv(interaction: discord.Interaction, member: discord.Member):
     """Custom (weird) way to check permissions when handling moderation commands"""
-    if ctx.author.id in owners:
-        return True
     embed = discord.Embed(
-        title="Permission Denied", color=0xFF0000, description="no lol are u dumb"
+        title="Permission Denied", color=0xFF0000, description="No lol."
     )
     embed2 = discord.Embed(
         title="Permission Denied",
         color=0xFF0000,
-        description=f"u really must be stupid to try to {ctx.command.name} urself",
+        description=f"You can't {interaction.command.name} yourself.",
     )
     embed3 = discord.Embed(
         title="Permission Denied",
         color=0xFF0000,
-        description=f"ur a bit of an ass arent u, im not gonna let u {ctx.command.name} my owner",
+        description=f"I'm not going to let you {interaction.command.name} my owner.",
     )
     embed4 = discord.Embed(
         title="Permission Denied",
         color=0xFF0000,
-        description=f"u cant {ctx.command.name} the owner, dumbass",
+        description=f"You can't {interaction.command.name} the owner of this server.",
     )
     embed5 = discord.Embed(
         title="Permission Denied",
         color=0xFF0000,
-        description=f"u cant {ctx.command.name} someone who has the same perms as u",
+        description=f"You can't {interaction.command.name} someone who has the same permissions as you.",
     )
     embed6 = discord.Embed(
         title="Permission Denied",
         color=0xFF0000,
-        description=f"u really thought u could {ctx.command.name} someone higher than u? pathetic",
+        description=f"You can't {interaction.command.name} due to the role hierarchy.",
+    )
+    # Self checks
+    if member.id == interaction.client.user.id:
+        return await interaction.followup.send(embed=embed)
+    if member == interaction.user:
+        return await interaction.followup.send(embed=embed2)
+
+    # Check if user bypasses
+    if interaction.user.id == interaction.guild.owner.id:
+        return False
+
+    # Now permission check
+    if member.id in owners:
+        if interaction.user.id not in owners:
+            return await interaction.followup.send(embed=embed3)
+        else:
+            pass
+    if member.id == interaction.guild.owner.id:
+        return await interaction.followup.send(embed=embed4)
+    if interaction.user.top_role == member.top_role:
+        return await interaction.followup.send(embed=embed5)
+    if interaction.user.top_role < member.top_role:
+        return await interaction.followup.send(embed=embed6)
+
+
+async def check_priv(ctx, member):
+    """Custom (weird) way to check permissions when handling moderation commands"""
+    embed = discord.Embed(
+        title="Permission Denied", color=0xFF0000, description="No lol."
+    )
+    embed2 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"You can't {ctx.command.name} yourself.",
+    )
+    embed3 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"I'm not going to let you {ctx.command.name} my owner.",
+    )
+    embed4 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"You can't {ctx.command.name} the owner of this server.",
+    )
+    embed5 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"You can't {ctx.command.name} someone who has the same permissions as you.",
+    )
+    embed6 = discord.Embed(
+        title="Permission Denied",
+        color=0xFF0000,
+        description=f"You can't {ctx.command.name} due to the role hierarchy.",
     )
     try:
         # Self checks

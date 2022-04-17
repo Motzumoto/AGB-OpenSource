@@ -50,11 +50,11 @@ def filter_urls(to_filter: str) -> str:
     Parameters
     ----------
     to_filter : str
-        The string to filter.
+            The string to filter.
     Returns
     -------
     str
-        The sanitized string.
+            The sanitized string.
     """
     return URL_RE.sub("[SANITIZED URL]", to_filter)
 
@@ -66,11 +66,11 @@ def filter_invites(to_filter: str) -> str:
     Parameters
     ----------
     to_filter : str
-        The string to filter.
+            The string to filter.
     Returns
     -------
     str
-        The sanitized string.
+            The sanitized string.
     """
     return INVITE_URL_RE.sub("[SANITIZED INVITE]", to_filter)
 
@@ -81,11 +81,11 @@ def filter_mass_mentions(to_filter: str) -> str:
     Parameters
     ----------
     to_filter : str
-        The string to filter.
+            The string to filter.
     Returns
     -------
     str
-        The sanitized string.
+            The sanitized string.
     """
     return MASS_MENTION_RE.sub("@\u200b", to_filter)
 
@@ -98,11 +98,11 @@ def filter_various_mentions(to_filter: str) -> str:
     Parameters
     ----------
     to_filter : str
-        The string to filter.
+            The string to filter.
     Returns
     -------
     str
-        The sanitized string.
+            The sanitized string.
     """
     return OTHER_MENTION_RE.sub(r"\1\\\2\3", to_filter)
 
@@ -113,11 +113,11 @@ def normalize_smartquotes(to_normalize: str) -> str:
     Parameters
     ----------
     to_normalize : str
-        The string to normalize.
+            The string to normalize.
     Returns
     -------
     str
-        The normalized string.
+            The normalized string.
     """
 
     def replacement_for(obj):
@@ -132,11 +132,11 @@ def escape_spoilers(content: str) -> str:
     Parameters
     ----------
     content : str
-        The string to escape.
+            The string to escape.
     Returns
     -------
     str
-        The escaped string.
+            The escaped string.
     """
     return SPOILER_CONTENT_RE.sub(r"\\\g<OPEN>\g<SPOILERED>\\\g<CLOSE>", content)
 
@@ -147,10 +147,10 @@ def escape_spoilers_and_mass_mentions(content: str) -> str:
     Parameters
     ----------
     content : str
-        The string to escape.
+            The string to escape.
     Returns
     -------
     str
-        The escaped string.
+            The escaped string.
     """
     return escape_spoilers(filter_mass_mentions(content))

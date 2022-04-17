@@ -55,14 +55,14 @@ class events(commands.Cog):
         try:
             await self.bot.load_extension("jishaku")
             log(f"Loaded JSK.")
-        except:
+        except Exception:
             pass
         for guild in self.bot.guilds:
             try:
                 cursor_n.execute(
                     f"SELECT * FROM public.commands WHERE guild = '{guild.id}'"
                 )
-            except:
+            except Exception:
                 pass
             cmd_rows = cursor_n.rowcount
             if cmd_rows == 0:
@@ -75,7 +75,7 @@ class events(commands.Cog):
                 cursor_n.execute(
                     f"SELECT * FROM public.guilds WHERE guildID = '{guild.id}'"
                 )
-            except:
+            except Exception:
                 pass
             row_count = cursor_n.rowcount
             if row_count == 0:
@@ -181,7 +181,7 @@ class events(commands.Cog):
                 f"UPDATE public.users SET usedcmds = '{row[0][1] + 1}' WHERE userid = '{ctx.author.id}'"
             )
             # log(f"Updated userCmds for {ctx.author.id} -> {row[0][3]}")
-        except:
+        except Exception:
             pass
 
     # @commands.Cog.listener(name="on_command")
@@ -210,7 +210,7 @@ class events(commands.Cog):
             cursor_n.execute(
                 f"SELECT * FROM public.users WHERE userid = '{ctx.author.id}'"
             )
-        except:
+        except Exception:
             pass
         automod_rows = cursor_n.rowcount
         if automod_rows == 0:
@@ -229,7 +229,7 @@ class events(commands.Cog):
             cursor_n.execute(
                 f"SELECT * FROM public.blacklist WHERE userid = '{ctx.author.id}'"
             )
-        except:
+        except Exception:
             pass
         bl_rows = cursor_n.rowcount
         if bl_rows == 0:
@@ -248,7 +248,7 @@ class events(commands.Cog):
             cursor_n.execute(
                 f"SELECT * FROM public.badges WHERE userid = '{ctx.author.id}'"
             )
-        except:
+        except Exception:
             pass
         badges_rows = cursor_n.rowcount
         if badges_rows == 0:
@@ -264,7 +264,7 @@ class events(commands.Cog):
             cursor_n.execute(
                 f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
             )
-        except:
+        except Exception:
             pass
         eco_rows = cursor_n.rowcount
         if eco_rows == 0:
@@ -309,7 +309,7 @@ class events(commands.Cog):
                 name=f":( forced to leave a server, heres their info:",
                 value=f"Server name: `{guild.name}`\n ID `{guild.id}`\n Member Count: `{guild.member_count}`.",
             )
-        except:
+        except Exception:
             embed.add_field(
                 name=f"This is a false error. Completely ignore this", value="NaN"
             )
@@ -372,7 +372,7 @@ class events(commands.Cog):
             cursor_n.execute(
                 f"SELECT * FROM public.commands WHERE guild = '{guild.id}'"
             )
-        except:
+        except Exception:
             pass
         cmd_rows = cursor_n.rowcount
         if cmd_rows == 0:
@@ -396,7 +396,7 @@ class events(commands.Cog):
                         cursor_n.execute(
                             f"SELECT * FROM public.users WHERE userid = '{member.id}'"
                         )
-                    except:
+                    except Exception:
                         pass
                     automod_rows = cursor_n.rowcount
                     if automod_rows == 0:

@@ -65,7 +65,7 @@ class autoposting(commands.Cog, name="ap"):
         async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
             async with s.get(
                 f"https://lunardev.group/api/nsfw/{random.choice(other_stuff)}",
-                json={"user": "ID"},
+                json={"user": "683530527239962627"},
             ) as r:
                 j = await r.json()
                 url = j["url"]

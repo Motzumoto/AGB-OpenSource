@@ -137,34 +137,47 @@ class Information(commands.Cog, name="info"):
         except KeyError:
             await ctx.send(embed=self.error_message(location))
 
-    @app_commands.command(description="Convert Fahrenheit to Celcius")
-    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 3, key=lambda i: (i.guild_id, i.user.id))
     async def f2c(self, interaction, *, temp: str, ephemeral: bool = False):
+        """Convert Fahrenheit to Celsius
+
+        Args:
+            temp (str): The temperature to convert
+            ephemeral (bool, optional): Weather to make the result of the command visable to only you or not. Defaults to False.
+        """
+        await interaction.response.defer(ephemeral=True, thinking=True)
         if temp is None:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "Please send a valid temperature.", ephemeral=True
             )
             return
 
         temp = float(temp)
         cel = (temp - 32) * (5 / 9)
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"{temp}°F is {round(cel, 2)}°C", ephemeral=ephemeral
         )
 
-    @app_commands.command(description="Convert Celcius to Fahrenheit")
-    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 3, key=lambda i: (i.guild_id, i.user.id))
     async def c2f(self, interaction, *, temp: str, ephemeral: bool = False):
-        """Convert Celcius to Fahrenheit"""
+        """Convert Celsius to Fahrenheit
+
+        Args:
+            temp (str): the temperature to convert
+            ephemeral (bool, optional): Weather to make the result of the command visable to only you or not. Defaults to False.
+        """
+        await interaction.response.defer(ephemeral=True, thinking=True)
         if temp is None:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "Please send a valid temperature.", ephemeral=True
             )
             return
 
         temp = float(temp)
         fah = (temp * (9 / 5)) + 32
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"{temp}°C is {round(fah, 2)}°F", ephemeral=ephemeral
         )
 
@@ -213,9 +226,15 @@ class Information(commands.Cog, name="info"):
         except Exception as err:
             await ctx.send(err)
 
-    @app_commands.command(description="ping the bot")
-    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 3, key=lambda i: (i.guild_id, i.user.id))
     async def ping(self, interaction, ephemeral: bool = False):
+        """Ping the bot
+
+        Args:
+            ephemeral (bool, optional): Weather to make the result of the command visable to only you or not. Defaults to False.
+        """
+        await interaction.response.defer(ephemeral=True, thinking=True)
         embed = discord.Embed(color=EMBED_COLOUR)
         embed.set_author(
             name=self.bot.user.name,
@@ -225,7 +244,7 @@ class Information(commands.Cog, name="info"):
             name="Ping", value=f"{round(self.bot.latency * 1000)}ms", inline=True
         )
         embed.set_thumbnail(url=interaction.user.avatar)
-        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     @commands.command(usage="`tp!todo`")
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
@@ -278,9 +297,15 @@ class Information(commands.Cog, name="info"):
         )
         await ctx.send(embed=embed)
 
-    @app_commands.command(description="Invite me to your server")
-    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 3, key=lambda i: (i.guild_id, i.user.id))
     async def invite(self, interaction, ephemeral: bool = False):
+        """Get an invite to the bot
+
+        Args:
+            ephemeral (bool, optional): Weather to make the result of the command visable to only you or not. Defaults to False.
+        """
+        await interaction.response.defer(ephemeral=True, thinking=True)
         embed = discord.Embed(color=EMBED_COLOUR)
         embed.set_author(
             name=self.bot.user.name,
@@ -303,7 +328,7 @@ class Information(commands.Cog, name="info"):
             inline=False,
         )
         embed.set_thumbnail(url=interaction.user.avatar)
-        await interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=ephemeral)
 
     # @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     # @commands.command(usage="`tp!source`")
@@ -317,22 +342,17 @@ class Information(commands.Cog, name="info"):
     #                     value=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate})", inline=False)
     #     await ctx.send(embed=embed)
 
-    @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
-    @commands.command(aliases=["info", "stats", "status"], usage="`tp!about`")
-    @commands.bot_has_permissions(embed_links=True)
-    async def About(self, ctx):
-        """About the bot"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
-
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 3, key=lambda i: (i.guild_id, i.user.id))
+    async def stats(self, interaction, ephemeral: bool = False):
+        """Get some information about the bot"""
+        await interaction.response.defer(ephemeral=ephemeral, thinking=True)
         discord_version = discord.__version__
+        amount_of_app_cmds = await self.bot.tree.fetch_commands()
         chunked = []
         for guild in self.bot.guilds:
             if guild.chunked:
                 chunked.append(guild)
-        msg = await ctx.send("Fetching...")
         ramUsage = self.process.memory_full_info().rss / 1024**2
         intervals = (
             ("w", 604800),  # 60 * 60 * 24 * 7
@@ -369,7 +389,7 @@ class Information(commands.Cog, name="info"):
                             return "❌ API Error"
                         else:
                             return "❌ API Error"
-                except:
+                except Exception:
                     return "❌ API Error"
 
         async def lunar_api_cores(self):
@@ -387,7 +407,7 @@ class Information(commands.Cog, name="info"):
                             return "❌ API Error"
                         else:
                             return "❌ API Error"
-                except:
+                except Exception:
                     return "❌ API Error"
 
         async def lunar_api_files(self):
@@ -405,7 +425,7 @@ class Information(commands.Cog, name="info"):
                             return "❌ API Error"
                         else:
                             return "❌ API Error"
-                except:
+                except Exception:
                     return "❌ API Error"
 
         async def lunar_system_uptime(self):
@@ -423,7 +443,7 @@ class Information(commands.Cog, name="info"):
                             return "❌ API Error"
                         else:
                             return "❌ API Error"
-                except:
+                except Exception:
                     return "❌ API Error"
 
         async def line_count(self):
@@ -461,23 +481,22 @@ class Information(commands.Cog, name="info"):
         cpu_box = default.draw_box(round(cpu), ":blue_square:", ":black_large_square:")
         ramlol = round(ramUsage) // 10
         ram_box = default.draw_box(ramlol, ":blue_square:", ":black_large_square:")
-        GUILD_MODAL = f"""{len(ctx.bot.guilds)} Guilds are seen,\n{default.commify(len(self.bot.users))} users."""
+        GUILD_MODAL = f"""{len(self.bot.guilds)} Guilds are seen,\n{default.commify(len(self.bot.users))} users."""
         PERFORMANCE_MODAL = f"""
-        `RAM Usage: {ramUsage:.2f}MB / 1GB scale`
-        {ram_box}
-        `CPU Usage: {cpu}%`
-        {cpu_box}"""
+		`RAM Usage: {ramUsage:.2f}MB / 1GB scale`
+		{ram_box}
+		`CPU Usage: {cpu}%`
+		{cpu_box}"""
         API_UPTIME = await lunar_api_stats(self)
-        BOT_INFO = f"""Latency: {round(self.bot.latency * 1000, 2)}ms\nLoaded CMDs: {len([x.name for x in self.bot.commands])}\nMade: <t:1592620263:R>\n{await line_count(self)}\nUptime: {default.uptime(start_time=self.bot.launch_time)}"""
+        BOT_INFO = f"""Latency: {round(self.bot.latency * 1000, 2)}ms\nLoaded CMDs: {len([x.name for x in self.bot.commands])} and {len(amount_of_app_cmds)} slash commands\nMade: <t:1592620263:R>\n{await line_count(self)}\nUptime: {default.uptime(start_time=self.bot.launch_time)}"""
         API_INFO = f"""API Uptime: {API_UPTIME}\nCPU Cores: {await lunar_api_cores(self)}\nTotal Images: {await lunar_api_files(self)}"""
         SYS_INFO = f"""System Uptime: {await lunar_system_uptime(self)}\nCPU Cores: {await lunar_api_cores(self)}"""
 
         embed = discord.Embed(
             color=EMBED_COLOUR,
             description=f"[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate})",
-            timestamp=ctx.message.created_at,
         )
-        embed.set_thumbnail(url=ctx.bot.user.avatar)
+        embed.set_thumbnail(url=self.bot.user.avatar)
         embed.add_field(
             name="Performance Overview", value=PERFORMANCE_MODAL, inline=False
         )
@@ -504,8 +523,8 @@ class Information(commands.Cog, name="info"):
         embed.set_footer(
             text=f"Made with ❤️ by the Lunar Development team.\nLibrary used: Discord.py{discord_version}"
         )
-        await msg.edit(
-            content=f"ℹ About **{ctx.bot.user}** | **{self.config.version}**",
+        await interaction.followup.send(
+            content=f"ℹ About **{self.bot.user}** | **{self.config.version}**",
             embed=embed,
         )
 
@@ -529,12 +548,12 @@ class Information(commands.Cog, name="info"):
                 f.write(data + "\n")
                 #        await asyncio.sleep(5)
                 continue
-        except:
+        except Exception:
             pass
         f.close()
         try:
             await ctx.send(file=discord.File(f"{str(filename)}.txt"))
-        except:
+        except Exception:
             pass
         os.remove(f"{filename}.txt")
 
@@ -550,7 +569,7 @@ class Information(commands.Cog, name="info"):
         # if message.
         try:
             await ctx.message.delete()
-        except:
+        except Exception:
             pass
         await ctx.send(message)
 
@@ -618,12 +637,12 @@ class Information(commands.Cog, name="info"):
 
         try:
             user_balance = f"${int(usereco[0][1]):,}"
-        except:
+        except Exception:
             user_balance = "$0"
             pass
         try:
             user_bank = f"${int(usereco[0][2]):,}"
-        except:
+        except Exception:
             user_bank = "$0"
             pass
         mydb_n.commit()
@@ -652,7 +671,7 @@ class Information(commands.Cog, name="info"):
                 and userdb[0][6] == "false"
             ):
                 badges += ""
-        except:
+        except Exception:
             badges += ""
             pass
 
@@ -668,14 +687,14 @@ class Information(commands.Cog, name="info"):
         # **Profile Info**\nBadges: {badges}\n\n
         title = f"{usr.name}#{usr.discriminator}"
         description = f"""{badges}\n\n**💰 Economy Info**
-        `Balance`: **{user_balance}**
-        `Bank`: **{user_bank}**
-        
-        **📜 Misc Info**
-        `Commands Used`: **{usedCommands}**
-        
-        **<:users:770650885705302036> Overview**
-        `User Bio`\n{udb[0][2]}"""
+		`Balance`: **{user_balance}**
+		`Bank`: **{user_bank}**
+		
+		**📜 Misc Info**
+		`Commands Used`: **{usedCommands}**
+		
+		**<:users:770650885705302036> Overview**
+		`User Bio`\n{udb[0][2]}"""
 
         embed = discord.Embed(title=title, color=EMBED_COLOUR, description=description)
         embed.set_thumbnail(url=usr.avatar)
@@ -734,14 +753,14 @@ class Information(commands.Cog, name="info"):
                 title="Here's the timestamp you asked for",
                 color=EMBED_COLOUR,
                 description=f"""
-                Short Time: <t:{uts}:t> | \\<t:{uts}:t>
-                Long Time: <t:{uts}:T> | \\<t:{uts}:T>
-                Short Date: <t:{uts}:d> | \\<t:{uts}:d>
-                Long Date: <t:{uts}:D> | \\<t:{uts}:D>
-                Short Date/Time: <t:{uts}:f> | \\<t:{uts}:f>
-                Long Date/Time: <t:{uts}:F> | \\<t:{uts}:F>
-                Relative Time: <t:{uts}:R> | \\<t:{uts}:R>
-                """,
+				Short Time: <t:{uts}:t> | \\<t:{uts}:t>
+				Long Time: <t:{uts}:T> | \\<t:{uts}:T>
+				Short Date: <t:{uts}:d> | \\<t:{uts}:d>
+				Long Date: <t:{uts}:D> | \\<t:{uts}:D>
+				Short Date/Time: <t:{uts}:f> | \\<t:{uts}:f>
+				Long Date/Time: <t:{uts}:F> | \\<t:{uts}:F>
+				Relative Time: <t:{uts}:R> | \\<t:{uts}:R>
+				""",
             ),
         )
 

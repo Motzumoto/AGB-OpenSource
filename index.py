@@ -4,7 +4,7 @@ import os
 import asyncio
 import random
 from discord.ext import commands
-from discord import Interaction, app_commands
+from discord import app_commands
 
 
 import Manager.database
@@ -16,7 +16,6 @@ from datetime import datetime
 from utils import default, permissions
 from colorama import Fore, Style, init
 import logging
-
 
 try:
     import uvloop  # type: ignore
@@ -40,7 +39,7 @@ config = default.get("config.json")
 emojis = default.get("emojis.json")
 db_config = default.get("db_config.json")
 
-EMBED_COLOUR = 0xB54176
+EMBED_COLOUR = 0x2F3136
 
 embed_space = "\u200b "
 suggestion_yes = "<:checked:825049250110767114>"
@@ -67,11 +66,12 @@ slash_errors = (
 
 
 async def create_slash_embed(self, interaction, error):
+    await interaction.response.defer(ephemeral=True, thinking=True)
     embed = discord.Embed(title="Error", colour=0xFF0000)
     embed.add_field(name="Author", value=interaction.user.mention)
     embed.add_field(name="Error", value=error)
     embed.set_author(name=interaction.user, icon_url=interaction.user.avatar)
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 def msgtracking(user):
@@ -94,7 +94,7 @@ async def update_command_usages(self, interaction):
             f"UPDATE public.users SET usedcmds = '{row[0][1] + 1}' WHERE userid = '{interaction.user.id}'"
         )
         # logger.info(f"Updated userCmds for {ctx.author.id} -> {row[0][3]}")
-    except:
+    except Exception:
         pass
 
 
@@ -113,15 +113,14 @@ class MyCustomTree(app_commands.CommandTree):
             )
             await update_command_usages(self, interaction)
 
-    async def on_error(self, interaction, command, error):
-        if isinstance(error, app_commands.CommandNotFound):
+    async def on_error(self, interaction, error):
+        await interaction.response.defer(thinking=True)
+        if isinstance(error, discord.errors.InteractionResponded):
             return
-        elif isinstance(error, app_commands.CheckFailure):
+        elif isinstance(error, app_commands.CommandNotFound):
             return
         elif isinstance(error, slash_errors):
             await create_slash_embed(self, interaction, error)
-            return
-        elif isinstance(error, discord.InteractionResponded):
             return
         elif isinstance(error, app_commands.CommandInvokeError):
             return
@@ -177,7 +176,7 @@ class Bot(commands.AutoShardedBot):
                 cursor_n.execute(
                     f"SELECT prefix FROM public.guilds WHERE guildId = '{msg.guild.id}'"
                 )
-            except:
+            except Exception:
                 pass
             result = cursor_n.fetchall()
             for row in result:
@@ -209,7 +208,7 @@ class Bot(commands.AutoShardedBot):
                             else:
                                 await msg.channel.send(embed=embed)
                                 return
-                except:
+                except Exception:
                     await msg.channel.send(
                         f"**Hi, My name is AGB!**\nIf you like me and want to know more information about me, please enable embed permissions in your server settings so I can show you more information!\nIf you don't know how, please join the support server and ask for help!\n{config.Server}"
                     )
