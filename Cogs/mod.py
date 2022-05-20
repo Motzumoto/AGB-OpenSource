@@ -394,7 +394,6 @@ class Moderator(commands.Cog, name="mod"):
                     "I couldn't update my nickname, the prefix has changed though."
                 )
 
-
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @commands.hybrid_command()
     @commands.guild_only()

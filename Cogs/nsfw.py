@@ -14,7 +14,6 @@ import aiohttp
 import asyncio
 import json
 from discord.ext import commands
-from discord import app_commands
 
 import discord
 
@@ -24,7 +23,6 @@ from Manager.commandManager import cmd
 from utils import permissions, default, imports
 from utils.checks import voter_only
 from Cogs.Utils import Translator
-from utils import constants as sub
 
 from utils.default import bold, inline
 
@@ -754,7 +752,6 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 # raise nsfw channel required
                 raise commands.NSFWChannelRequired(ctx.channel)
         await ctx.send(embed=embed, ephemeral=True)
-
 
 
 async def setup(bot):

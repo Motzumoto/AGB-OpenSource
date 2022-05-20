@@ -1,32 +1,20 @@
 import asyncio
-import concurrent
 import importlib
 import io
-import datetime
-from datetime import timedelta
 import os
 import re
 import subprocess
 import textwrap
 import traceback
 from contextlib import redirect_stdout
-from subprocess import check_output
 from typing import Union
 
 import aiohttp
 import discord
 import nekos
-import psycopg
-import speedtest
-from discord import app_commands
 from discord.ext import commands
-from index import EMBED_COLOUR, cursor_n, delay, logger, mydb_n
-from Manager.database import pool
-from Manager.logger import formatColor
-from matplotlib.pyplot import contour
-from psycopg import cursor
+from index import EMBED_COLOUR, cursor_n, delay
 from utils import default, http, permissions
-from utils.default import log
 
 from .Utils import *
 
@@ -179,7 +167,6 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member, guild=None):
-        me = self.bot.get_user(101118549958877184)
         guild = member.guild
         embed = discord.Embed(title="User Joined", colour=discord.Colour.green())
         embed.add_field(

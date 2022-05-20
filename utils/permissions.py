@@ -1,8 +1,6 @@
 import discord
 from discord import app_commands
-from datetime import timedelta
 from discord.ext import commands
-from index import logger
 
 from utils import default
 

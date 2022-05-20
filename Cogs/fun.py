@@ -783,7 +783,6 @@ class Fun(commands.Cog, name="fun"):
                     except Exception:
                         pass
 
-
     @permissions.dynamic_ownerbypass_cooldown(1, 2, type=commands.BucketType.user)
     @commands.command(hidden=True)
     @commands.check(permissions.is_owner)
@@ -1848,7 +1847,6 @@ class Fun(commands.Cog, name="fun"):
                 f"📚 Definitions for **{result['word']}**```fix\n{definition}```",
                 ephemeral=True,
             )
-
 
     @commands.command()
     @permissions.dynamic_ownerbypass_cooldown(1, 2, type=commands.BucketType.user)

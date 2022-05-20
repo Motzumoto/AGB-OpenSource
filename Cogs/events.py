@@ -1,7 +1,6 @@
 import asyncio
 import random
 from datetime import datetime
-import aiohttp
 import cronitor
 
 import discord
@@ -401,7 +400,6 @@ class events(commands.Cog):
                         log(
                             f"New user detected: {formatColor(member.id, 'green')} | Added to database!"
                         )
-
 
 
 async def setup(bot):
