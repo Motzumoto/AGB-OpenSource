@@ -1,5 +1,4 @@
 import asyncio
-from itertools import count
 import random
 from datetime import datetime
 import aiohttp
@@ -7,9 +6,8 @@ import cronitor
 
 import discord
 from discord.ext import commands, tasks
-from httpx import RequestNotRead
 from index import cursor_n, mydb_n, logger, msgtracking
-from utils import default
+from utils import imports
 from utils.default import add_one, log
 from Manager.logger import formatColor
 
@@ -17,8 +15,8 @@ from Manager.logger import formatColor
 class events(commands.Cog):
     def __init__(self, bot: commands.Bot, *args, **kwargs):
         self.bot = bot
-        self.config = default.get("config.json")
-        self.db_config = default.get("db_config.json")
+        self.config = imports.get("config.json")
+        self.db_config = imports.get("db_config.json")
         self.presence_loop.start()
         self.update_stats.start()
         self.post_status.start()
@@ -93,51 +91,23 @@ class events(commands.Cog):
                 activity=discord.Game(name="Happy birthday Motz!")
             )
             return
-        statuses = [
-            f"tp!help | {len(self.bot.guilds)} Servers",
-            f"tp!help | {len(self.bot.commands)} commands!",
-            "tp!help | tp!support",
-            "You can toggle commands now! | tp!toggle command",
-            "ElysianVRC is cool: https://discord.gg/yCfKu7D3GD",
-            "*badoop* hey look, i joined your vc",
-            "*gets the rare discord ringtone*, im better than all of you",
-            "today's weather is looking pretty weather-like",
-            "ikea is cool",
-            "i upgraded from windows 10 to doors",
-            "gamers take showers? i don't think so!",
-            "lets watch anime together, that would be cute",
-            "tp!help | your mom lol.",
-            "who invented grass, it's tasty",
-            "i mistook salt for sugar, and put it in my coffee",
-            "The dog goes meow, the motz goes THERES AN ERROR",
-            "this status is so poggers",
-            "ITS SENTIENT",
-            "i drink rainwater from the walmart parking lot",
-            "im a good bot, give me attention (please?)",
-            "meow, im a bot? i think not! meow",
-            "lets hold hands before marriage",
-            "vote for me on top.gg, i love the attention",
-            "im feeling a bit like a plastic bag",
-            "if ur too tall, just be shorter",
-            "dont be broke, just have money :)",
-            "go, commit a sin",
-            "go, commit a crime",
-            "im committing crimes rn (and code)",
-            "stupid idiot. (get roasted)",
-            "i am a bot, and i am a bot",
-            "I miss you cookie.",
-            "Yo mamma (Laugh at this)",
-            "We're really trying to be funny",
-            "im gonna eat plastic :>",
-            "Dm me the word tomato",
-            "ok, kitten",
-        ]
-        # Goodbye Cookie 2012 - 06/24/2021
-        await self.bot.change_presence(
-            activity=discord.Activity(
-                type=discord.ActivityType.playing, name=random.choice(statuses)
+
+        cursor_n.execute(f"SELECT * FROM public.status")
+        row_count = cursor_n.rowcount
+        status_id = random.randint(0, row_count)
+
+        cursor_n.execute(f"SELECT * FROM public.status WHERE id = {status_id}")
+        for row in cursor_n.fetchall():
+            server_count = row[1].replace("{server_count}", str(len(self.bot.guilds)))
+            status = server_count.replace(
+                "{command_count}", str(len(self.bot.commands))
             )
-        )
+
+            await self.bot.change_presence(
+                activity=discord.Activity(
+                    type=discord.ActivityType.playing, name=status
+                )
+            )
 
     @commands.Cog.listener(name="on_message")
     async def add(self, message):
@@ -160,14 +130,14 @@ class events(commands.Cog):
     @tasks.loop(count=None, minutes=15)
     async def update_stats(self):
         await self.bot.wait_until_ready()
-        update_guild_count = self.bot.get_channel(948926912296804353)
-        update_user_count = self.bot.get_channel(948927596018675772)
+        update_guild_count = self.bot.get_channel(968617760756203531)
+        update_user_count = self.bot.get_channel(968617853886550056)
         await update_guild_count.edit(name=f"Server Count: {len(self.bot.guilds)}")
         await update_user_count.edit(name=f"User Count: {len(self.bot.users)}")
 
     ### DO NOT PUT THIS IN MERGED EVENT, IT WILL ONLY WORK IN ITS OWN SEPERATE EVENT. **I DO NOT KNOW WHY :D**
     ### DO NOT PUT THIS IN MERGED EVENT, IT WILL ONLY WORK IN ITS OWN SEPERATE EVENT. **I DO NOT KNOW WHY :D**
-    ### XOXOXO, KISSES ~ FIFI
+    ### XOXOXO, KISSES ~ WinterFe
     @commands.Cog.listener(name="on_command")
     async def command_usage_updater(self, ctx):
         await self.bot.wait_until_ready()
@@ -189,7 +159,7 @@ class events(commands.Cog):
     #     await self.bot.wait_until_ready()
 
     #     if ctx.author.id in self.config.owners:
-    #         await ctx.command.reset_cooldown(ctx)
+    #         await
     #     else:
     #         pass
 
@@ -225,6 +195,8 @@ class events(commands.Cog):
     @commands.Cog.listener(name="on_command")
     async def blacklist_check(self, ctx):
         await self.bot.wait_until_ready()
+        if ctx.author.bot:
+            return
         try:
             cursor_n.execute(
                 f"SELECT * FROM public.blacklist WHERE userid = '{ctx.author.id}'"
@@ -237,13 +209,15 @@ class events(commands.Cog):
                 f"INSERT INTO public.blacklist (userid, blacklisted) VALUES ('{ctx.author.id}', 'false')"
             )
             mydb_n.commit()
-            logger.debug(
+            log(
                 f"No blacklist entry detected for: {ctx.author.id} / {ctx.author} | Added to database!"
             )
 
     @commands.Cog.listener(name="on_command")
     async def badge(self, ctx):
         await self.bot.wait_until_ready()
+        if ctx.author.bot:
+            return
         try:
             cursor_n.execute(
                 f"SELECT * FROM public.badges WHERE userid = '{ctx.author.id}'"
@@ -260,6 +234,8 @@ class events(commands.Cog):
     @commands.Cog.listener(name="on_command")
     async def eco(self, ctx):
         await self.bot.wait_until_ready()
+        if ctx.author.bot:
+            return
         try:
             cursor_n.execute(
                 f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
@@ -272,21 +248,42 @@ class events(commands.Cog):
                 f"INSERT INTO public.usereco (userid, balance, bank) VALUES ('{ctx.author.id}', '1000', '500')"
             )
             mydb_n.commit()
-            logger.debug(
+            log(
                 f"No economy entry detected for: {ctx.author.id} / {ctx.author} | Added to database!"
             )
+
+    @commands.Cog.listener(name="on_command")
+    async def remove_admin_command_uses(self, ctx):
+        """Deletes the invoked command that comes from admin.py"""
+        await self.bot.wait_until_ready()
+        if ctx.author.bot:
+            return
+        # check the command to see if it comes from admin.py
+        if ctx.command.cog_name == "admin":
+            try:
+                await ctx.message.delete()
+            except:
+                pass
 
     @commands.Cog.listener(name="on_command")
     async def logger_shit(self, ctx):
         await self.bot.wait_until_ready()
         if msgtracking(ctx.author.id):
+            # check if it was a dm
+            if ctx.guild == None:
+                return
             if not ctx.guild.chunked:
-                await ctx.guild.chunk()
+                try:
+                    await ctx.guild.chunk()
+                except:
+                    pass
 
             if ctx.author.bot:
                 return
             else:
                 pass
+            if ctx.interaction is not None:
+                return
             if ctx.author.id in self.config.owners:
                 log(
                     f"{formatColor('[DEV]', 'bold_red')} {formatColor(ctx.author, 'red')} used command {formatColor(ctx.message.clean_content, 'grey')}"
@@ -310,9 +307,6 @@ class events(commands.Cog):
                 value=f"Server name: `{guild.name}`\n ID `{guild.id}`\n Member Count: `{guild.member_count}`.",
             )
         except Exception:
-            embed.add_field(
-                name=f"This is a false error. Completely ignore this", value="NaN"
-            )
             return
         embed.set_thumbnail(url=self.bot.user.avatar)
         channel = self.bot.get_channel(769080397669072939)
@@ -407,6 +401,7 @@ class events(commands.Cog):
                         log(
                             f"New user detected: {formatColor(member.id, 'green')} | Added to database!"
                         )
+
 
 
 async def setup(bot):

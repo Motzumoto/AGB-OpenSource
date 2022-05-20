@@ -1,9 +1,16 @@
 import aiohttp
 import discord
-from discord import app_commands
 from discord.ext import commands
 
+from typing import Optional
+
+import discord
+from typing import List, Optional
+from discord.ext import commands
+
+
 from utils import default
+from utils.default import log
 
 owners = default.get("config.json").owners
 config = default.get("config.json")
@@ -52,7 +59,9 @@ async def send_embed(ctx, embed):
     If this all fails: https://youtu.be/dQw4w9WgXcQ
     """
     try:
-        await ctx.send(embed=embed)
+        await ctx.send(
+            embed=embed,
+        )
     except discord.errors.Forbidden:
         try:
             await ctx.send(
@@ -77,11 +86,24 @@ def has_guild_permissions(*, check=all, **perms):
 
 
 class NotVoted(commands.CheckFailure):
-    pass
+    """Exception raised when an operation does not work without a user voting
+
+    This inherits from :exc:`CheckFailure`
+    """
+
+    def __init__(self, message: Optional[str] = None) -> None:
+        super().__init__(
+            message
+            or "You need to vote to use this command, vote [here](https://top.gg/bot/723726581864071178/vote)"
+        )
 
 
-class SlashNotVoted(app_commands.CheckFailure):
-    pass
+class MusicGone(commands.CheckFailure):
+    def __init__(self, message: Optional[str] = None) -> None:
+        super().__init__(
+            message
+            or "Music is unavailable!\nThe music system is currently unavailable. The devs are working hard on fixing it!"
+        )
 
 
 async def check_voter(user_id):
@@ -94,8 +116,10 @@ async def check_voter(user_id):
         ) as r:
             vote = await r.json()
             if vote["voted"] == 1:
+                log(f"{user_id} voted")
                 return True
             else:
+                log(f"{user_id} not voted")
                 return False
 
 
@@ -105,22 +129,12 @@ def voter_only():
             return True
         check_vote = await check_voter(ctx.author.id)
         if not check_vote:
-            raise NotVoted
+            raise NotVoted(
+                "You need to vote to use this command, vote [here](https://top.gg/bot/723726581864071178/vote)"
+            )
         return True
 
     return commands.check(predicate)
-
-
-def slash_voter_only():
-    async def predicate(interaction):
-        # if interaction.user.id in owners:
-        #     return True
-        check_vote = await check_voter(interaction.user.id)
-        if not check_vote:
-            raise SlashNotVoted
-        return True
-
-    return app_commands.check(predicate)
 
 
 # These do not take channel overrides into account
@@ -166,3 +180,39 @@ def is_in_guilds(*guild_ids):
         return guild.id in guild_ids
 
     return commands.check(predicate)
+
+
+class Paginator(discord.ui.View):
+    def __init__(self, ctx: commands.Context, embeds: List[discord.Embed]):
+        super().__init__(timeout=None)
+        self.ctx = ctx
+        self.embeds = embeds
+        self.current = 0
+
+    async def edit(self, msg, pos):
+        em = self.embeds[pos]
+        em.set_footer(text=f"Page: {pos+1}/{len(self.embeds)}")
+        await msg.edit(embed=em)
+
+    @discord.ui.button(emoji="◀️", style=discord.ButtonStyle.blurple)
+    async def bac(self, b, i):
+        if self.current == 0:
+            return
+        await self.edit(i.message, self.current - 1)
+        self.current -= 1
+
+    @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.blurple)
+    async def stap(self, b, i):
+        await i.message.delete()
+
+    @discord.ui.button(emoji="▶️", style=discord.ButtonStyle.blurple)
+    async def nex(self, b, i):
+        if self.current + 1 == len(self.embeds):
+            return
+        await self.edit(i.message, self.current + 1)
+        self.current += 1
+
+    async def interaction_check(self, interaction):
+        if interaction.user == self.ctx.author:
+            return True
+        await interaction.response.send_message("Not your command", ephemeral=True)

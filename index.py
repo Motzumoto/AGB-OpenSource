@@ -13,9 +13,10 @@ from Manager.logger import formatColor
 
 from datetime import datetime
 
-from utils import default, permissions
+from utils import imports, permissions
 from colorama import Fore, Style, init
 import logging
+
 
 try:
     import uvloop  # type: ignore
@@ -35,9 +36,9 @@ logging.basicConfig(
 )
 
 
-config = default.get("config.json")
-emojis = default.get("emojis.json")
-db_config = default.get("db_config.json")
+config = imports.get("config.json")
+emojis = imports.get("emojis.json")
+db_config = imports.get("db_config.json")
 
 EMBED_COLOUR = 0x2F3136
 
@@ -51,8 +52,8 @@ Website = "https://lunardev.group"
 Server = "https://discord.gg/cNRNeaX"
 Vote = "https://top.gg/bot/723726581864071178/vote"
 Invite = "https://discord.com/api/oauth2/authorize?client_id=723726581864071178&permissions=2083908950&scope=bot"
-BID = "157421"
-CHAT_API_KEY = ""
+BID = "notforyou"
+CHAT_API_KEY = "notforyou"
 
 mydb_n = Manager.database.db2
 cursor_n = Manager.database.csr2
@@ -75,8 +76,11 @@ async def create_slash_embed(self, interaction, error):
 
 
 def msgtracking(user):
-    cursor_n.execute(f"SELECT * FROM users WHERE userid = '{user}'")
-    row = cursor_n.fetchall()[0][4]
+    try:
+        cursor_n.execute(f"SELECT * FROM users WHERE userid = '{user}'")
+        row = cursor_n.fetchall()[0][4]
+    except Exception:
+        return True
     if row is True:
         return True
     else:
@@ -105,25 +109,11 @@ class MyCustomTree(app_commands.CommandTree):
             logger.info(
                 f"{formatColor('[DEV]', 'bold_red')} {formatColor(interaction.user, 'red')} used command {formatColor(interaction.command.name, 'grey')}"
             )
-            await update_command_usages(self, interaction)
             return
         else:
             logger.info(
                 f"{formatColor(interaction.user.id, 'grey')} used command {formatColor(interaction.command.name, 'grey')}"
             )
-            await update_command_usages(self, interaction)
-
-    async def on_error(self, interaction, error):
-        await interaction.response.defer(thinking=True)
-        if isinstance(error, discord.errors.InteractionResponded):
-            return
-        elif isinstance(error, app_commands.CommandNotFound):
-            return
-        elif isinstance(error, slash_errors):
-            await create_slash_embed(self, interaction, error)
-            return
-        elif isinstance(error, app_commands.CommandInvokeError):
-            return
 
 
 class Bot(commands.AutoShardedBot):
@@ -183,7 +173,7 @@ class Bot(commands.AutoShardedBot):
                 try:
                     embed = discord.Embed(
                         title="Hi! My name is AGB!",
-                        url=f"{Website}",
+                        url=Website,
                         colour=EMBED_COLOUR,
                         description=f"If you like me, please take a look at the links below!\n[Add me]({config.Invite}) | [Support Server]({config.Server}) | [Vote]({config.Vote})",
                         timestamp=msg.created_at,

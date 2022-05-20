@@ -1,9 +1,9 @@
 import psycopg
 import asyncio
 import asyncpg
-from utils import default
+from utils import imports
 
-config = default.get("db_config.json")
+config = imports.get("db_config.json")
 
 db2 = psycopg.connect(
     dbname=config.database,

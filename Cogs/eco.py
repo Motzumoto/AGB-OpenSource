@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 from index import config, cursor_n, cursor_n, mydb_n, mydb_n, EMBED_COLOUR
 from Manager.commandManager import cmd
-from utils import default, permissions
+from utils import imports, permissions
 
 
 class Economy(commands.Cog, name="economy"):
@@ -15,7 +15,7 @@ class Economy(commands.Cog, name="economy"):
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = default.get("config.json")
+        self.config = imports.get("config.json")
         self.tax_rate = 0
         self.tax_collector = None
         self.yes_responses = {
@@ -29,7 +29,7 @@ class Economy(commands.Cog, name="economy"):
             "naw": False,
         }
 
-    @commands.command(usage="`tp!bank`")
+    @commands.command()
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=5, type=commands.BucketType.user
     )
@@ -37,8 +37,7 @@ class Economy(commands.Cog, name="economy"):
         """Check your bank"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -60,14 +59,15 @@ class Economy(commands.Cog, name="economy"):
         )
         embed.set_footer(text="tp!bank withdraw|deposit amount")
         embed.set_thumbnail(url=ctx.author.avatar)
-        await ctx.send(embed=embed)
+        await ctx.send(
+            embed=embed,
+        )
         mydb_n.commit()
 
     @commands.group(
-        aliases=["dep"],
+        alias=["dep"],
         invoke_without_command=True,
         case_insensitive=True,
-        usage="`tp!deposit amount|all`",
     )
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=5, type=commands.BucketType.user
@@ -75,8 +75,7 @@ class Economy(commands.Cog, name="economy"):
     async def deposit(self, ctx, amount=0):
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -92,11 +91,11 @@ class Economy(commands.Cog, name="economy"):
 
             if amount <= 0:
                 await ctx.send("Please deposit an amount greater than **0**!")
-                ctx.command.reset_cooldown(ctx)
+
                 return
             if amount > bal:
                 await ctx.send("You don't have that much to deposit. smh")
-                ctx.command.reset_cooldown(ctx)
+
                 return
 
             embed = discord.Embed(
@@ -114,10 +113,12 @@ class Economy(commands.Cog, name="economy"):
             cursor_n.execute(
                 f"UPDATE public.usereco SET balance = '{bal - amount}' WHERE userid = '{ctx.author.id}'"
             )
-            await ctx.send(embed=embed)
+            await ctx.send(
+                embed=embed,
+            )
             mydb_n.commit()
 
-    @deposit.command(name="all", usage="`tp!deposit all`")
+    @deposit.command(name="all")
     async def dep_all(self, ctx):
         cursor_n.execute(
             f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
@@ -139,13 +140,14 @@ class Economy(commands.Cog, name="economy"):
             name="Successful Deposit",
             value=f"You have deposited **${int(row[0][1]):,}** into your bank",
         )
-        await ctx.send(embed=embed)
+        await ctx.send(
+            embed=embed,
+        )
         mydb_n.commit()
 
     @commands.group(
-        aliases=["with"],
+        alias=["with"],
         invoke_without_command=True,
-        usage="`tp!withdraw amount|all`",
     )
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=5, type=commands.BucketType.user
@@ -153,8 +155,7 @@ class Economy(commands.Cog, name="economy"):
     async def withdraw(self, ctx, amount=0):
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -171,11 +172,11 @@ class Economy(commands.Cog, name="economy"):
             mydb_n.commit()
             if amount <= 0:
                 await ctx.send("Please withdraw an amount greater than **0**!")
-                ctx.command.reset_cooldown(ctx)
+
                 return
             if amount > bank_bal:
                 await ctx.send("You don't have that much in your bank. smh")
-                ctx.command.reset_cooldown(ctx)
+
                 return
 
             embed = discord.Embed(
@@ -194,9 +195,11 @@ class Economy(commands.Cog, name="economy"):
                 f"UPDATE public.usereco SET bank = '{bank_bal - amount}' WHERE userid = '{ctx.author.id}'"
             )
             mydb_n.commit()
-            await ctx.send(embed=embed)
+            await ctx.send(
+                embed=embed,
+            )
 
-    @withdraw.command(name="all", usage="`tp!withdraw all`")
+    @withdraw.command(name="all")
     async def with_all(self, ctx):
         cursor_n.execute(
             f"SELECT * FROM public.usereco WHERE \"userid\" = '{ctx.author.id}'"
@@ -218,18 +221,19 @@ class Economy(commands.Cog, name="economy"):
             name="Successful Withdrawal",
             value=f"You have withdrawn **${int(row[0][2]):,}** from your bank!",
         )
-        await ctx.send(embed=embed)
+        await ctx.send(
+            embed=embed,
+        )
         mydb_n.commit()
 
-    @commands.command(aliases=["steal"], usage="`tp!rob @user`")
+    @commands.command(alias=["steal"])
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=30, type=commands.BucketType.user
     )
     async def rob(self, ctx, user: Union[discord.Member, discord.User] = None):
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -239,11 +243,11 @@ class Economy(commands.Cog, name="economy"):
         usr = user
         if usr is None:
             await ctx.send("Please mention a user to rob. smh.")
-            ctx.command.reset_cooldown(ctx)
+
             return
         if usr.id == ctx.author.id:
             await ctx.send("You can't rob yourself, idiot.")
-            ctx.command.reset_cooldown(ctx)
+
             return
 
         cursor_n.execute(f"SELECT * FROM public.usereco WHERE \"userid\" = '{usr.id}'")
@@ -253,7 +257,7 @@ class Economy(commands.Cog, name="economy"):
             await ctx.send(
                 f"You can't rob **{usr.display_name}**. \nThey don't have any money in their wallet!"
             )
-            ctx.command.reset_cooldown(ctx)
+
             return
 
         chance = random.randint(45, 100)
@@ -288,7 +292,9 @@ class Economy(commands.Cog, name="economy"):
                 f"UPDATE public.usereco SET balance = '{row3[0][1] - rob_amount}' WHERE userid = '{usr.id}'"
             )
             mydb_n.commit()
-            await ctx.send(embed=embed)
+            await ctx.send(
+                embed=embed,
+            )
         else:
             embed2 = discord.Embed(color=EMBED_COLOUR)
             embed2.add_field(
@@ -297,7 +303,7 @@ class Economy(commands.Cog, name="economy"):
             )
             await ctx.send(embed=embed2)
 
-    @commands.command(usage="`tp!pay @user <amount> [note]`")
+    @commands.command()
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=10, type=commands.BucketType.user
     )
@@ -310,23 +316,22 @@ class Economy(commands.Cog, name="economy"):
     ):
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
         )
         return
 
-        await ctx.channel.trigger_typing()
+        await ctx.channel.typing()()
 
         if user is None:
             await ctx.send("Please mention a user to pay.")
-            ctx.command.reset_cooldown(ctx)
+
             return
         elif user.id == ctx.author.id:
             await ctx.send("You can't pay yourself.")
-            ctx.command.reset_cooldown(ctx)
+
             return
 
         def yes_check(m):
@@ -352,7 +357,7 @@ class Economy(commands.Cog, name="economy"):
                 await ctx.send(
                     f"You don't have enough to pay - you only have ${total}."
                 )
-                ctx.command.reset_cooldown(ctx)
+
                 return
 
             else:  # If they do have enough money in total, tell them it is possible but they need to do a bank transfer.
@@ -373,7 +378,7 @@ class Economy(commands.Cog, name="economy"):
                     await ctx.send(
                         f"Took too long to respond. If you still want to transfer, you can still do `tp!dep {to_transfer}`."
                     )
-                    ctx.command.reset_cooldown(ctx)
+
                     return
 
                 else:
@@ -455,7 +460,7 @@ class Economy(commands.Cog, name="economy"):
                     f"You just paid {str(user)} ${taxed_amount}, with a tax rate of {int(tax_info[0][1] * 100)}%."
                 )
 
-    @commands.command(aliases=["job"], usage="`tp!work`")
+    @commands.command(alias=["job"])
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=900, type=commands.BucketType.user
     )
@@ -463,8 +468,7 @@ class Economy(commands.Cog, name="economy"):
         """Work for your shitty 9-5 job for a small wage"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -484,7 +488,7 @@ class Economy(commands.Cog, name="economy"):
         mydb_n.commit()
         await ctx.send(f"You finshed work and earned **${int(earned):,}**")
 
-    @commands.command(usage="`tp!beg`")
+    @commands.command()
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=30, type=commands.BucketType.user
     )
@@ -492,8 +496,7 @@ class Economy(commands.Cog, name="economy"):
         """Beg for money like a homeless man"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -520,7 +523,7 @@ class Economy(commands.Cog, name="economy"):
                 f"You spent the entire day begging hopelessly, but nobody gave you anything! Better luck next time loser."
             )
 
-    @commands.command(aliases=["bal", "$"], usage="`tp!balance`")
+    @commands.command(alias=["bal", "$"])
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=2, type=commands.BucketType.user
     )
@@ -528,8 +531,7 @@ class Economy(commands.Cog, name="economy"):
         """Check your balance to see how much more money you can spend before you have to sell your organs"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -555,10 +557,12 @@ class Economy(commands.Cog, name="economy"):
             inline=True,
         )
         embed.set_thumbnail(url=usr.avatar)
-        await ctx.send(embed=embed)
+        await ctx.send(
+            embed=embed,
+        )
         mydb_n.commit()
 
-    @commands.command(usage="`tp!daily`")
+    @commands.command()
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=10, type=commands.BucketType.user
     )
@@ -566,8 +570,7 @@ class Economy(commands.Cog, name="economy"):
         """Get a decent amount of money from the air just cause"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -625,16 +628,15 @@ class Economy(commands.Cog, name="economy"):
                 f"You have already claimed your daily today.\nYou can claim your next daily on: **{nextDate}** ({final}h)"
             )
 
-    @commands.command(aliases=["msearch"], usage="`tp!search`")
+    @commands.command(alias=["msearch"])
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=10, type=commands.BucketType.user
     )
-    async def search(self, ctx, place=None):
+    async def search(self, ctx, place: str = None):
         """Search for money in various places"""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -670,9 +672,11 @@ class Economy(commands.Cog, name="economy"):
             color=EMBED_COLOUR,
         )
         embed.set_thumbnail(url=ctx.author.avatar)
-        await ctx.send(embed=embed)
+        await ctx.send(
+            embed=embed,
+        )
 
-    @commands.command(aliases=["slot", "smachine"], usage="tp!slots amount")
+    @commands.command(alias=["slot", "smachine"])
     @permissions.dynamic_ownerbypass_cooldown(
         rate=1, per=3.2, type=commands.BucketType.user
     )
@@ -680,8 +684,7 @@ class Economy(commands.Cog, name="economy"):
         """Play a game of slots, earn some or lose some."""
         cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
         if cmdEnabled:
-            await ctx.send(":x: This command has been disabled!")
-            return
+            return await ctx.send(":x: This command has been disabled!")
 
         await ctx.send(
             "This command has been encountering an errors as of late, please try again later."
@@ -705,17 +708,17 @@ class Economy(commands.Cog, name="economy"):
 
         if amount > bal:
             await ctx.send("You don't have that much money.")
-            ctx.command.reset_cooldown(ctx)
+
             return
 
         if amount <= 9:
             await ctx.send("Please specify a number greater than 10 :>")
-            ctx.command.reset_cooldown(ctx)
+
             return
 
         if amount > 15000:
             await ctx.send("You cannot bet more than **$15,000** on slots!")
-            ctx.command.reset_cooldown(ctx)
+
             return
 
         slots = ["🍇", "🍉", "🍊", "🍎", "🎰", "🍍"]
