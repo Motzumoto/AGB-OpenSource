@@ -1,19 +1,32 @@
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands, menus
-from index import EMBED_COLOUR, config, emojis
+from index import colors, config, emojis
+
+if TYPE_CHECKING:
+    from index import Bot
 
 
 class Help(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: Bot):
+        self.bot: Bot = bot
         bot.help_command = FormattedHelp()
         self.bot._original_help_command = bot.help_command
 
 
 async def cog_unload(self):
     self.bot.help_command = self.bot._original_help_command
+
+
+async def cog_check(self, ctx):
+    """A local check which applies to all commands in this cog."""
+    if not ctx.guild:
+        raise commands.NoPrivateMessage
+    return True
 
 
 class HelpMenu(menus.ListPageSource):
@@ -29,6 +42,11 @@ class FormattedHelp(commands.HelpCommand):
         super().__init__(
             command_attrs={"usage": "`tp!help (command/category)`", "hidden": True}
         )
+
+    async def cog_check(self, ctx):
+        """A local check which applies to all commands in this cog."""
+        if not ctx.guild:
+            return await ctx.send("This command can only be used in a server.")
 
     def get_command_signature(self, command):
         return (
@@ -53,7 +71,7 @@ class FormattedHelp(commands.HelpCommand):
         e = discord.Embed(
             title=f"Help - {command.qualified_name} {random.choice(emojis.rainbow_emojis)}",
             description=f"{command.help}\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
-            color=EMBED_COLOUR,
+            color=colors.prim,
         )
         e.add_field(
             name="Usage", value=self.get_command_signature(command).replace("*", "")
@@ -68,7 +86,7 @@ class FormattedHelp(commands.HelpCommand):
         e = discord.Embed(
             title=f"Help - {group.qualified_name} {random.choice(emojis.rainbow_emojis)}",
             description=f"{group.help}\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
-            color=EMBED_COLOUR,
+            color=colors.prim,
         )
         e.set_footer(
             text=f"{self.context.bot.user.name} by Motzumoto, iPlay G, and WinterFe"
@@ -78,7 +96,7 @@ class FormattedHelp(commands.HelpCommand):
             e = discord.Embed(
                 title=f"Help - {command.qualified_name} {random.choice(emojis.rainbow_emojis)}",
                 description=f"{command.help}\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
-                color=EMBED_COLOUR,
+                color=colors.prim,
             )
             e.add_field(
                 name="Usage", value=self.get_command_signature(command).replace("*", "")
@@ -95,7 +113,7 @@ class FormattedHelp(commands.HelpCommand):
         e = discord.Embed(
             title=f"Help - {cog.qualified_name} {random.choice(emojis.rainbow_emojis)}",
             description=getattr(cog, "__doc__", None),
-            color=EMBED_COLOUR,
+            color=colors.prim,
         )
         e.set_footer(
             text=f"{self.context.bot.user.name} by Motzumoto, iPlay G, and WinterFe"
@@ -107,7 +125,7 @@ class FormattedHelp(commands.HelpCommand):
             e = discord.Embed(
                 title=f"Help - {command.qualified_name} {random.choice(emojis.rainbow_emojis)}",
                 description=f"{command.help}\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate})  ",
-                color=EMBED_COLOUR,
+                color=colors.prim,
             )
             if command.usage:
                 e.add_field(
@@ -123,6 +141,11 @@ class FormattedHelp(commands.HelpCommand):
         await menu.start(ctx)
 
     async def send_bot_help(self, mapping):
+        # check if we're in a DM
+        if self.context.guild is None:
+            fuck_off = "This command can only be used in a server."
+            await self.get_destination().send(fuck_off)
+            return
         nsfw_channels = (
             ", ".join(
                 [c.mention for c in self.context.guild.text_channels if c.is_nsfw()]
@@ -140,7 +163,7 @@ class FormattedHelp(commands.HelpCommand):
             info_q = [c.name for c in info_commands if not c.hidden]
             info_names = "".join(f"`{name}`, " for name in info_q)
 
-            economy_cog = self.context.bot.get_cog("economy")
+            economy_cog = self.context.bot.get_cog("Help")
             economy_commands = economy_cog.get_commands()
             economy_q = [c.name for c in economy_commands if not c.hidden]
             economy_names = "".join(f"`{name}`, " for name in economy_q)
@@ -167,20 +190,20 @@ class FormattedHelp(commands.HelpCommand):
 
             if self.context.channel.is_nsfw():
                 description = f"""For help on individual commands, use `tp!help <command>`.\n\n**{random.choice(emojis.rainbow_emojis)} {info_cog.qualified_name.capitalize()}**\n{info_names}\n\n**{random.choice(emojis.rainbow_emojis)} {economy_cog.qualified_name.capitalize()}**\n{economy_names}\n\n**{random.choice(emojis.rainbow_emojis)} {fun_cog.qualified_name.capitalize()}**\n{fun_names}\n\n**{random.choice(emojis.rainbow_emojis)} {guild_cog.qualified_name.capitalize()}**
-				{guild_names}\n\n**{random.choice(emojis.rainbow_emojis)} {mod_cog.qualified_name.capitalize()}**\n{mod_names}\n\n{random.choice(emojis.rainbow_emojis)} **{music_cog.qualified_name.capitalize()}**\n{music_names}\n\n**{nsfw_cog.qualified_name.capitalize()}**\n{nsfw_names}\nalso, there are nsfw slash commands. make sure AGB has permission to register them in your server."""
+				{guild_names}\n\n**{random.choice(emojis.rainbow_emojis)} {mod_cog.qualified_name.capitalize()}**\n{mod_names}\n\n{random.choice(emojis.rainbow_emojis)} **{music_cog.qualified_name.capitalize()}**\n{music_names}\n\n{random.choice(emojis.rainbow_emojis)} **{nsfw_cog.qualified_name.capitalize()}**\n{nsfw_names}\nalso, there are nsfw slash commands. make sure AGB has permission to register them in your server."""
 
                 embed = discord.Embed(
-                    color=EMBED_COLOUR,
+                    color=colors.prim,
                     description=f"{description}\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
                 )
                 embed.set_footer(
                     text="If there is anything that you would like to see / changed, run 𝐭𝐩!𝐬𝐮𝐠𝐠𝐞𝐬𝐭 with your suggestion!\nAlso check out our server host!"
                 )
             else:
-                description = f"""**{random.choice(emojis.rainbow_emojis)} {info_cog.qualified_name.capitalize()}**\n{info_names}\n\n**{random.choice(emojis.rainbow_emojis)} {economy_cog.qualified_name.capitalize()}**\n{economy_names}\n\n**{random.choice(emojis.rainbow_emojis)} {fun_cog.qualified_name.capitalize()}**\n{fun_names}\n\n**{random.choice(emojis.rainbow_emojis)} {guild_cog.qualified_name.capitalize()}**\n{guild_names}\n\n**{random.choice(emojis.rainbow_emojis)} {mod_cog.qualified_name.capitalize()}**\n{mod_names}\n\n{random.choice(emojis.rainbow_emojis)}** {music_cog.qualified_name.capitalize()}**\n{music_names}\n\n**{nsfw_cog.qualified_name.capitalize()}**\nNsfw commands are hidden. To see them run tp!help in any of these NSFW channels.\n{nsfw_channels}"""
+                description = f"""**{random.choice(emojis.rainbow_emojis)} {info_cog.qualified_name.capitalize()}**\n{info_names}\n\n**{random.choice(emojis.rainbow_emojis)} {economy_cog.qualified_name.capitalize()}**\n{economy_names}\n\n**{random.choice(emojis.rainbow_emojis)} {fun_cog.qualified_name.capitalize()}**\n{fun_names}\n\n**{random.choice(emojis.rainbow_emojis)} {guild_cog.qualified_name.capitalize()}**\n{guild_names}\n\n**{random.choice(emojis.rainbow_emojis)} {mod_cog.qualified_name.capitalize()}**\n{mod_names}\n\n{random.choice(emojis.rainbow_emojis)}**{music_cog.qualified_name.capitalize()}**\n{music_names}\n\n{random.choice(emojis.rainbow_emojis)}**{nsfw_cog.qualified_name.capitalize()}**\nNsfw commands are hidden. To see them run tp!help in any of these NSFW channels.\n{nsfw_channels}"""
 
                 embed = discord.Embed(
-                    color=EMBED_COLOUR,
+                    color=colors.prim,
                     description=f"{description}\n[Add me]({config.Invite}) | [Support]({config.Server}) | [Vote]({config.Vote}) | [Donate]({config.Donate}) ",
                 )
                 embed.set_footer(
@@ -205,14 +228,14 @@ class FormattedHelp(commands.HelpCommand):
 
         #         embed_description += f"**{random.choice(emojis.rainbow_emojis)} {cog.qualified_name.capitalize() or 'No Category'}**\n{qualified_names[:-2]}\n\n"
 
-        # embed = discord.Embed(color=EMBED_COLOUR, description=f"For help on individual commands, use `tp!help <command>`.\n\n{embed_description}")
+        # embed = discord.Embed(color=colors.prim, description=f"For help on individual commands, use `tp!help <command>`.\n\n{embed_description}")
         # embed.add_field(name='Support Server', value=f"[Click Me]({config.Server})")
         # embed.set_footer(text="If there is anything that you would like to see / changed, run 𝐭𝐩!𝐬𝐮𝐠𝐠𝐞𝐬𝐭 with your suggestion!")
         # embed.set_thumbnail(url=self.context.bot.user.avatar)
         # await self.get_destination().send(embed=embed)
 
 
-async def setup(bot):
+async def setup(bot: Bot) -> None:
     await bot.add_cog(Help(bot))
     bot.get_command("help").hidden = True
 
@@ -316,19 +339,19 @@ async def setup(bot):
 #         return f"tp!{command.qualified_name} {' '.join([f'({arg})' for arg in command.clean_params])}"
 
 #     def get_cog_embed(self, cog):
-#         embed = Embed(title=cog.qualified_name, color=EMBED_COLOUR)
+#         embed = Embed(title=cog.qualified_name, color=colors.prim)
 #         if hasattr(cog, 'description'):
 #             embed.description = cog.description
 #         return embed
 
 #     async def send_error_message(self, error):
-#         embed = Embed(title=error, color=EMBED_COLOUR)
+#         embed = Embed(title=error, color=colors.prim)
 #         await self.get_destination().send(embed=embed)
 
 #     def get_command_embed(self, command):
 #         ctx = self.context
 #         embed = Embed(title=command.qualified_name,
-#                       description=command.description, color=EMBED_COLOUR)
+#                       description=command.description, color=colors.prim)
 #         embed.add_field(name="Usage", value=self.get_usage(command))
 #         return embed
 
@@ -336,7 +359,7 @@ async def setup(bot):
 #         return getattr(command, 'nsfw', False) and not self.context.channel.is_nsfw()
 
 #     async def nsfw_warn(self):
-#         await self.context.send(embed=Embed(title=f"You can only view NSFW commands in an NSFW channel!{random.choice(emojis.rainbow_emojis)}", color=EMBED_COLOUR), delete_after=10)
+#         await self.context.send(embed=Embed(title=f"You can only view NSFW commands in an NSFW channel!{random.choice(emojis.rainbow_emojis)}", color=colors.prim), delete_after=10)
 
 #     async def send_command_help(self, command):
 #         if self.nsfw(command):
@@ -371,11 +394,11 @@ async def setup(bot):
 #             if len(commands) != 0:
 #                 if not getattr(cog, 'hidden', False) and not self.nsfw(cog):
 #                     embed = Embed(title=cog.qualified_name if cog else "\u200b", description="\n".join([self.get_usage(
-#                         command) for command in mapping[cog] if not getattr(command, 'hidden', False) and not self.nsfw(command)]), color=EMBED_COLOUR)
+#                         command) for command in mapping[cog] if not getattr(command, 'hidden', False) and not self.nsfw(command)]), color=colors.prim)
 #                     units.append(Unit(embed=embed))
 
 #         embed = Embed(title=f"AGB Commands{random.choice(emojis.rainbow_emojis)}",
-#                     description="AGB can offer you a ton of useful and fun commands to use!", color=EMBED_COLOUR)
+#                     description="AGB can offer you a ton of useful and fun commands to use!", color=colors.prim)
 #         embed.set_image(
 #             url='https://cdn.discordapp.com/avatars/723726581864071178/5e7d167dbf17ebc4137b2ed3fa2a698f.png?size=1024')
 #         await self.context.send(embed=embed, view=Paginator(self.context, *units))

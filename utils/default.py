@@ -1,8 +1,9 @@
 import asyncio
+import contextlib
 import datetime
-import requests
 import itertools
 import json
+import logging
 import textwrap
 import time
 import traceback
@@ -11,12 +12,14 @@ from io import BytesIO
 from typing import Iterator, Sequence
 
 import discord
+import requests
 import timeago as timesince
-
+from Cogs.Utils import Translator
 from colorama import Fore, Style
-import logging
 
 from . import common_filters
+
+_ = Translator("Nsfw", __file__)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -27,7 +30,7 @@ logging.basicConfig(
 
 
 def uptime(start_time):
-    delta_uptime = datetime.datetime.utcnow() - start_time
+    delta_uptime = datetime.datetime.now(datetime.timezone.utc) - start_time
     hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
     minutes, seconds = divmod(remainder, 60)
     days, hours = divmod(hours, 24)
@@ -39,8 +42,8 @@ def config(filename: str = "config"):
     try:
         with open(f"{filename}.json", encoding="utf-8") as data:
             return json.load(data)
-    except FileNotFoundError:
-        raise FileNotFoundError("config.json file wasn't found")
+    except FileNotFoundError as e:
+        raise FileNotFoundError("config.json file wasn't found") from e
 
 
 def emoji_config(filename: str = "emojis"):
@@ -48,11 +51,8 @@ def emoji_config(filename: str = "emojis"):
     try:
         with open(f"{filename}.json", encoding="utf-8") as emogee:
             return json.load(emogee)
-    except FileNotFoundError:
-        raise FileNotFoundError("emojis.json file wasn't found")
-
-
-# create a function to translate a message to another language
+    except FileNotFoundError as e:
+        raise FileNotFoundError("emojis.json file wasn't found") from e
 
 
 def draw_box(usage, active, inactive):
@@ -72,8 +72,8 @@ def db_conf(filename: str = "db_config"):
     try:
         with open(f"{filename}.json", encoding="utf-8") as dabase:
             return json.load(dabase)
-    except FileNotFoundError:
-        raise FileNotFoundError("db_config.json file wasn't found")
+    except FileNotFoundError as e:
+        raise FileNotFoundError("db_config.json file wasn't found") from e
 
 
 def pycode(text: str, escape_formatting: bool = True) -> str:
@@ -91,10 +91,10 @@ def get(file):
             return json.load(
                 data, object_hook=lambda d: namedtuple("X", d.keys())(*d.values())
             )
-    except AttributeError:
-        raise AttributeError("Unknown argument")
-    except FileNotFoundError:
-        raise FileNotFoundError("JSON file wasn't found")
+    except AttributeError as e:
+        raise AttributeError("Unknown argument") from e
+    except FileNotFoundError as e:
+        raise FileNotFoundError("JSON file wasn't found") from e
 
 
 def traceback_maker(err, advance: bool = True):
@@ -128,9 +128,7 @@ def download(url, name):
 
 
 def ascii_art(word):
-    url = f"https://artii.herokuapp.com/make?text={word}"
-    response = requests.get(url)
-    return response.text
+    return f"{word}".encode("ascii", "ignore").decode("ascii")
 
 
 def addcommas(number):
@@ -169,7 +167,7 @@ def date(clock=True):
     `str`
             The date and time.
     """
-    date = datetime.datetime.utcnow()
+    date = datetime.datetime.now(datetime.timezone.utc)
     date = date.strftime("%a %d %b %Y")
     if clock:
         date = f"{date} " + time.strftime("%H:%M:%S")
@@ -200,14 +198,10 @@ async def type_message(
     of the text (to simulate typing speed), then send the message.
     """
     content = common_filters.filter_urls(content)
-    try:
+    with contextlib.suppress(discord.HTTPException):
         async with destination.typing():
             await asyncio.sleep(len(content) * 0.05)
             return await destination.send(content=content, **kwargs)
-    except discord.HTTPException:
-        # Not allowed to send messages to this destination (or, sending the
-        # message failed)
-        pass
 
 
 def error(text: str) -> str:
@@ -381,7 +375,7 @@ def bordered(*columns: Sequence[str], ascii_border: bool = False) -> str:
 
 def pagify(
     text: str,
-    delims: Sequence[str] = ["\n"],
+    delims: Sequence[str] = None,
     *,
     priority: bool = False,
     escape_mass_mentions: bool = True,
@@ -418,6 +412,8 @@ def pagify(
     `str`
             Pages of the given text.
     """
+    if delims is None:
+        delims = ["\n"]
     in_text = text
     page_length -= shorten_by
     while len(in_text) > page_length:

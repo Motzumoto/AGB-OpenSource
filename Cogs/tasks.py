@@ -1,14 +1,18 @@
-import aiohttp
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import discordlists
 from discord.ext import commands, tasks
 from utils import imports
-import nekos
-import random
+
+if TYPE_CHECKING:
+    from index import Bot
 
 
 class Tasks(commands.Cog, name="task"):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: Bot):
+        self.bot: Bot = bot
         self.modules = [
             "nsfw_neko_gif",
             "anal",
@@ -27,42 +31,15 @@ class Tasks(commands.Cog, name="task"):
         # self.fear_apiUrl = "https://fearvps.tk/api/users/edit"
         # self.fear_api.start()
         self.config = imports.get("config.json")
-        try:
-            self.api = discordlists.Client(self.bot)
-            self.api.set_auth("top.gg", self.config.topgg)
-            self.api.set_auth("fateslist.xyz", self.config.fates)
-            self.api.set_auth("blist.xyz", self.config.blist)
-            self.api.set_auth("discordlist.space", self.config.discordlist)
-            self.api.set_auth("discord.bots.gg", self.config.discordbots)
-            self.api.set_auth("bots.discordlabs.org", self.config.discordlabs)
-            self.api.start_loop()
-        except:
-            pass
+        self.api = discordlists.Client(self.bot)
+        self.api.set_auth("top.gg", self.config.topgg)
+        self.api.set_auth("fateslist.xyz", self.config.fates)
+        self.api.set_auth("blist.xyz", self.config.blist)
+        self.api.set_auth("discordlist.space", self.config.discordlist)
+        self.api.set_auth("discord.bots.gg", self.config.discordbots)
+        self.api.set_auth("bots.discordlabs.org", self.config.discordlabs)
+        self.api.start_loop()
         self.start_chunking.start()
-
-    async def get_hentai_img(self):
-        if random.randint(1, 2) == 1:
-            url = nekos.img(random.choice(self.modules))
-        else:
-            other_stuff = [
-                "ass",
-                "hentai",
-                "thighs",
-                "gif",
-                "panties",
-                "boobs",
-                "ahegao",
-                "yuri",
-                "cum",
-                "jpg",
-            ]
-            async with aiohttp.ClientSession() as s:
-                async with s.get(
-                    f"https://api.dbot.dev/images/nsfw/{random.choice(other_stuff)}"
-                ) as r:
-                    j = await r.json()
-                    url = j["url"]
-        return url
 
     @tasks.loop(count=None, minutes=20)
     async def start_chunking(self):
@@ -106,5 +83,5 @@ class Tasks(commands.Cog, name="task"):
         self.start_chunking.stop()
 
 
-async def setup(bot):
+async def setup(bot: Bot) -> None:
     await bot.add_cog(Tasks(bot))

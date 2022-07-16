@@ -1,15 +1,21 @@
+import contextlib
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils import default
+from utils import imports
 
-owners = default.config()["owners"]
+owners = imports.config()["owners"]
+mcstaff = imports.config()["mcstaff"]
 
 
 def is_owner(ctx):
     """Checks if the author is one of the owners"""
     return ctx.author.id in owners
+
+
+def is_mcstaff(ctx):
+    return ctx.author.id in mcstaff
 
 
 async def is_owner_slash(interaction):
@@ -129,7 +135,7 @@ async def slash_check_priv(interaction: discord.Interaction, member: discord.Mem
         return await interaction.followup.send(embed=embed6)
 
 
-async def check_priv(ctx, member):
+async def check_priv(ctx, member, ephemeral=bool):
     """Custom (weird) way to check permissions when handling moderation commands"""
     embed = discord.Embed(
         title="Permission Denied", color=0xFF0000, description="No lol."
@@ -159,12 +165,12 @@ async def check_priv(ctx, member):
         color=0xFF0000,
         description=f"You can't {ctx.command.name} due to the role hierarchy.",
     )
-    try:
+    with contextlib.suppress(Exception):
         # Self checks
         if member.id == ctx.bot.user.id:
-            return await ctx.send(embed=embed)
+            return await ctx.send(embed=embed, ephmeral=ephemeral)
         if member == ctx.author:
-            return await ctx.send(embed=embed2)
+            return await ctx.send(embed=embed2, ephmeral=ephemeral)
 
         # Check if user bypasses
         if ctx.author.id == ctx.guild.owner.id:
@@ -172,15 +178,13 @@ async def check_priv(ctx, member):
 
         # Now permission check
         if member.id in owners and ctx.author.id not in owners:
-            return await ctx.send(embed=embed3)
+            return await ctx.send(embed=embed3, ephmeral=ephemeral)
         if member.id == ctx.guild.owner.id:
-            return await ctx.send(embed=embed4)
+            return await ctx.send(embed=embed4, ephmeral=ephemeral)
         if ctx.author.top_role == member.top_role:
-            return await ctx.send(embed=embed5)
+            return await ctx.send(embed=embed5, ephmeral=ephemeral)
         if ctx.author.top_role < member.top_role:
-            return await ctx.send(embed=embed6)
-    except Exception:
-        pass
+            return await ctx.send(embed=embed6, ephmeral=ephemeral)
 
 
 def can_send(ctx):

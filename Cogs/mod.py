@@ -1,18 +1,24 @@
+from __future__ import annotations
+
 import argparse
-import datetime
 import asyncio
+import contextlib
+import datetime
 import json
 import os
 import random
 import re
 from collections import Counter
-from typing import Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import discord
 from discord.ext import commands
-from index import EMBED_COLOUR, Website, config, delay, cursor_n, mydb_n
-from utils import checks, default, permissions, imports
-from Manager.commandManager import cmd
+from index import Website, colors, config, delay
+from sentry_sdk import capture_exception
+from utils import checks, default, imports, permissions
+
+if TYPE_CHECKING:
+    from index import Bot
 
 
 def can_execute_action(ctx, user, target):
@@ -27,7 +33,7 @@ class MemberNotFound(Exception):
     pass
 
 
-# edited from RoboDanny (i had a plan to use this but i just dont remember
+# edited from RoboDanny (i had a plan to use this but i just don't remember
 # for what)
 
 
@@ -110,7 +116,7 @@ class MemberConverter(commands.MemberConverter):
     async def convert(self, ctx, argument):
         try:
             return await super().convert(ctx, argument)
-        except commands.BadArgument:
+        except commands.BadArgument as e:
             members = [
                 member
                 for member in ctx.guild.members
@@ -121,7 +127,7 @@ class MemberConverter(commands.MemberConverter):
             else:
                 raise commands.BadArgument(
                     f"{len(members)} members found, please be more specific."
-                )
+                ) from e
 
 
 class ActionReason(commands.Converter):
@@ -141,7 +147,7 @@ def safe_reason_append(base, to_append):
     return base if len(appended) > 512 else appended
 
 
-# i also had a plan to use this but i dont remember for what
+# i also had a plan to use this but i don't remember for what
 
 
 class CooldownByContent(commands.CooldownMapping):
@@ -176,39 +182,28 @@ def can_mute():
 class Moderator(commands.Cog, name="mod"):
     """Commands for moderators to keep your server safe"""
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: Bot):
+        self.bot: Bot = bot
         self.last_messages = {}
         self.config = imports.get("config.json")
-        try:
-            self.bot.command_prefix = self.get_prefix
-        except Exception:
-            pass
-        self.default_prefix = "tp!"
         blist = []
         self.blacklist = blist
         self.prefixes = None
 
-    def get_prefix(self, bot, message):
-        prefix = None
-        try:
-            cursor_n.execute(
-                f"SELECT prefix FROM public.guilds WHERE guildId = '{message.guild.id}'"
-            )
-        except Exception:
-            pass
-        try:
-            for row in cursor_n.fetchall():
-                self.prefixes = row[0]
-            prefix = (
-                self.prefixes
-                if getattr(message, "guild", None)
-                else self.default_prefix
-            )
-            mydb_n.commit()
-        except Exception:
-            pass
-        return prefix
+    def cog_load(self) -> None:
+        self.bot.command_prefix = self.get_prefix  # type: ignore
+
+    async def get_prefix(self, _: Bot, message: discord.Message) -> str:
+        if not message.guild:
+            return self.bot.default_prefix
+
+        db_guild = self.bot.db.get_guild(
+            message.guild.id
+        ) or await self.bot.db.fetch_guild(message.guild.id)
+        if not db_guild or not db_guild.prefix:
+            return self.bot.default_prefix
+
+        return db_guild.prefix or self.bot.default_prefix
 
     async def create_embed(self, ctx, error):
         embed = discord.Embed(
@@ -222,41 +217,44 @@ class Moderator(commands.Cog, name="mod"):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.guild is not None:
-            return
-        if message.author == self.bot.user:
-            return
-        if message.author.id in self.blacklist:
-            return
+        guild = self.bot.get_guild(975810661709922334)
+        me = guild.get_role(975810988370710528)
+        if message.guild is None:
+            if message.author == self.bot.user:
+                return
+            if message.author.id in self.blacklist:
+                return
             # if message.author.id in self.config.owners:
             #     return
-        if message.author.id != self.bot.user:
-            if message.content.startswith("tp!"):
-                return
-            embed = discord.Embed(colour=EMBED_COLOUR)
-            embed.add_field(
-                name=f"DM - From {message.author} ({message.author.id})",
-                value=f"{message.content}",
-            )
-            embed.set_footer(
-                text=f"tp!dm {message.author.id} ",
-                icon_url=message.author.avatar,
-            )
-            channel = self.bot.get_channel(730651628302106718)
-            if message.author.bot:
-                return
-            files = []
-            for attachment in message.attachments:
-                files.append(await attachment.to_file())
-            if files:
-                await channel.send(
-                    content=f"File - from {message.author} ({message.author.id})",
-                    files=files,
+            if message.author.id != self.bot.user:
+                if message.content.startswith("tp!"):
+                    return
+                embed = discord.Embed(colour=colors.prim)
+                embed.add_field(
+                    name=f"DM - From {message.author} ({message.author.id})",
+                    value=f"{message.content}",
                 )
-            try:
-                await channel.send(embed=embed)
-            except Exception:
-                pass
+                embed.set_footer(
+                    text=f"tp!dm {message.author.id} ",
+                    icon_url=message.author.avatar,
+                )
+                channel = self.bot.get_channel(986079167944749057)
+                if message.author.bot:
+                    return
+                files = []
+                for attachment in message.attachments:
+                    files.append(await attachment.to_file())
+                if files:
+                    await channel.send(
+                        content=f"File - from {message.author} ({message.author.id})",
+                        files=files,
+                    )
+                with contextlib.suppress(Exception):
+                    await channel.send(
+                        content=me.mention,
+                        embed=embed,
+                        allowed_mentions=discord.AllowedMentions(roles=True),
+                    )
 
     @commands.hybrid_command()
     @commands.guild_only()
@@ -273,42 +271,27 @@ class Moderator(commands.Cog, name="mod"):
         #     return
         # mydb_n.commit() LEAVE THIS COMMENTED OUT
 
-        command = self.bot.get_command(command)
+        bot_command = self.bot.get_command(command)
 
-        if command is None:
+        if bot_command is None:
             await ctx.send("I can't find a command with that name!", ephemeral=True)
-        elif ctx.command == command or command == "help":
+        elif bot_command.name in (ctx.command.name, "help"):
             await ctx.send("You cannot disable this command.", ephemeral=True)
         else:
-            # commandsEnabled[str(ctx.guild.id)][command.name] = not commandsEnabled[
-            #     str(ctx.guild.id)
-            # ][command.name]
-            try:
-                cursor_n.execute(
-                    f"SELECT {command} FROM public.commands WHERE guild = '{ctx.guild.id}'"
-                )
-            except Exception:
+            db_command = self.bot.db.get_command(
+                bot_command.name
+            ) or await self.bot.db.fetch_command(bot_command.name)
+            if db_command is None:
                 await ctx.send(
                     "Command can not be found or can not be toggled.", ephemeral=True
                 )
                 return
-            cmdRow = cursor_n.fetchall()
 
             # True = command disabled; false = enabled
-            cmdBool = bool
-            cmdBool = cmdRow[0][0] == "true"
-            ternary = "enabled" if cmdBool else "disabled"
+            command_state: Optional[bool] = db_command.state_in(ctx.guild.id) or False
 
-            if ternary == "enabled":
-                cursor_n.execute(
-                    f"UPDATE public.commands SET {command.name} = 'false' WHERE guild = '{ctx.guild.id}'"
-                )
-            else:
-                cursor_n.execute(
-                    f"UPDATE public.commands SET {command.name} = 'true' WHERE guild = '{ctx.guild.id}'"
-                )
-
-            mydb_n.commit()
+            ternary = "enabled" if command_state else "disabled"
+            await db_command.modify(ctx.guild.id, not command_state)
 
             embed = discord.Embed(
                 title="Command Toggled",
@@ -334,13 +317,8 @@ class Moderator(commands.Cog, name="mod"):
     @commands.hybrid_command()
     async def kick(self, ctx, member: discord.Member, *, reason: str = None):
         """Kicks a user from the current server."""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
-
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         if await permissions.check_priv(ctx, member):
             return
         await member.kick(reason=default.responsible(ctx.author, reason))
@@ -352,11 +330,9 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.has_permissions(manage_channels=True)
     async def setprefix(self, ctx, new: str = None):
         """Set a custom prefix for the server"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
         no_prefix = discord.Embed(
-            title="Please put a prefix you want.", colour=EMBED_COLOUR
+            title="Please put a prefix you want.", colour=colors.prim
         )
         if not new:
             return await ctx.send(embed=no_prefix)
@@ -369,20 +345,208 @@ class Moderator(commands.Cog, name="mod"):
             #     json.dump(self.prefixes, f, indent=4)
             new_prefix = discord.Embed(
                 description=f"The new prefix is `{new}`",
-                color=EMBED_COLOUR,
+                color=colors.prim,
                 timestamp=ctx.message.created_at,
             )
             await ctx.send(embed=new_prefix)
             try:
                 await ctx.guild.me.edit(nick=f"[{new}] {self.bot.user.name}")
-                cursor_n.execute(
-                    f"UPDATE public.guilds SET prefix = '{new}' WHERE guildId = '{ctx.guild.id}'"
-                )
-                mydb_n.commit()
+                db_guild = self.bot.db.get_guild(
+                    ctx.guild.id
+                ) or await self.bot.db.fetch_guild(ctx.guild.id)
+                if not db_guild:
+                    db_guild = await self.bot.db.add_guild(ctx.guild.id)
+
+                await db_guild.modify(prefix=new)
             except discord.errors.Forbidden:
                 await ctx.send(
                     "I couldn't update my nickname, the prefix has changed though."
                 )
+
+    # @commands.hybrid_command(usage="`tp!slashremove yes/no`")
+    # @permissions.has_permissions(manage_guild=True)
+    # @commands.bot_has_permissions(use_slash_commands=True, manage_guild=True)
+    # async def slashremove(self, ctx, confirm=False):
+    #     """Removes all slash commands registered by AGB"""
+    #     if not confirm:
+    #         await ctx.send(
+    #             "Are you sure you want to unregister the example slash commands in this guild? "
+    #             f"Run `{ctx.prefix}slashremove yes` to confirm."
+    #         )
+    #         return
+    #     wait = await ctx.send("Setting up...")
+    #     async with ctx.channel.typing():
+    #         raw = await self.bot.http.get_guild_commands(self.bot.user.id, ctx.guild.id)
+    #         for x in raw:
+    #             await self.bot.http.delete_guild_command(
+    #                 self.bot.user.id, ctx.guild.id, x["id"]
+    #             )
+    #         await wait.edit(content="Done!")
+
+    # @commands.hybrid_command(usage="`tp!slashsetup yes/no`")
+    # @permissions.has_permissions(manage_guild=True)
+    # @commands.bot_has_permissions(use_slash_commands=True, manage_guild=True)
+    # async def slashsetup(self, ctx, confirm=False):
+    #     """Sets up NSFW slash commands for your server."""
+    #     if not confirm:
+    #         await ctx.send(
+    #             "Are you sure you want to register the example slash commands in this guild? "
+    #             "Do not do this if they are already registered.\n"
+    #             f"Run `{ctx.prefix}slashsetup yes` to confirm."
+    #         )
+    #         return
+    #     wait = await ctx.send("Setting up...")
+    #     async with ctx.channel.typing():
+    #         try:
+    #             payload1 = {
+    #                 "name": "boobs",
+    #                 "type": 1,
+    #                 "description": "Boobs"}
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload1)
+
+    #             payload2 = {
+    #                 "name": "thighs",
+    #                 "type": 1,
+    #                 "description": "Thighs"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload2)
+    #             payload3 = {
+    #                 "name": "blow",
+    #                 "type": 1,
+    #                 "description": "blow job"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload3)
+    #             payload4 = {
+    #                 "name": "pwg",
+    #                 "type": 1,
+    #                 "description": "pussy wank gif"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload4)
+    #             payload5 = {
+    #                 "name": "kemo",
+    #                 "type": 1,
+    #                 "description": "lewd kemo"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload5)
+    #             payload6 = {
+    #                 "name": "holo",
+    #                 "type": 1,
+    #                 "description": "Lewd Holo live avatars"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload6)
+    #             payload7 = {
+    #                 "name": "feet",
+    #                 "type": 1,
+    #                 "description": "Feet."}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload7)
+    #             payload8 = {
+    #                 "name": "anal",
+    #                 "type": 1,
+    #                 "description": "Anal"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload8)
+    #             payload9 = {
+    #                 "name": "wallpaper",
+    #                 "type": 1,
+    #                 "description": "Nsfw wallpaper"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload9)
+    #             payload10 = {
+    #                 "name": "tits",
+    #                 "type": 1,
+    #                 "description": "Titties"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload10)
+    #             payload11 = {
+    #                 "name": "lesbian",
+    #                 "type": 1,
+    #                 "description": "Lesbian"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload11)
+    #             payload12 = {
+    #                 "name": "neko",
+    #                 "type": 1,
+    #                 "description": "Neko"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload12)
+    #             payload13 = {
+    #                 "name": "hentai",
+    #                 "type": 1,
+    #                 "description": "Hentai"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload13)
+    #             payload14 = {
+    #                 "name": "pussy",
+    #                 "type": 1,
+    #                 "description": "Pussy"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload14)
+    #             payload15 = {
+    #                 "name": "trap",
+    #                 "type": 1,
+    #                 "description": "Trap"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload15)
+    #             payload16 = {
+    #                 "name": "slashclassic",
+    #                 "type": 1,
+    #                 "description": "Classic hentai"}
+
+    #             await self.bot.http.upsert_global_command(
+    #                 self.bot.user.id, payload16)
+    #         except Exception:
+    #             pass
+
+    #     await wait.edit(
+    #         content=f"Registered the following slash commands:\n{payload1['name']}, {payload2['name']}, {payload3['name']}, {payload4['name']}, {payload5['name']}, {payload6['name']}, {payload7['name']}, {payload8['name']}, {payload9['name']}, {payload10['name']}, {payload11['name']}, {payload12['name']}, {payload13['name']}, {payload14['name']}, {payload15['name']}, {payload16['name']}"
+    #     )
+
+    # @slashsetup.error
+    # async def slashsetup_error(self, ctx, error):
+    #     if isinstance(error, commands.MissingPermissions):
+    #         embed = discord.Embed(
+    #             title="Error Caught!",
+    #             color=0xFF0000,
+    #             description=f"Please join the support server for help **[here]({config.Server})**.",
+    #         )
+    #         embed.set_thumbnail(url=self.bot.user.avatar)
+    #         await ctx.send(content="This command will be converted to slash commands before April 30th.", embed=embed)
+    #         return
+    #     elif isinstance(error, commands.CommandInvokeError):
+    #         embed = discord.Embed(
+    #             title="Error Caught!",
+    #             color=0xFF0000,
+    #             description=f"This command is complex in terms of setting up, please join the support server for **[help]({config.Server})**.",
+    #         )
+    #         embed.set_thumbnail(url=self.bot.user.avatar)
+    #         await ctx.send(content="This command will be converted to slash commands before April 30th.", embed=embed)
+    #         return
+    #     elif isinstance(error, commands.MissingRequiredArgument):
+    #         self.create_embed(ctx, error)
+    #         return
+    #     elif isinstance(error, commands.BotMissingPermissions):
+    #         await self.create_embed(ctx, error)
+    #         return
+    #     elif isinstance(error, discord.errors.Forbidden):
+    #         await self.create_embed(ctx, error)
+    #         return
+    # nice
 
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @commands.hybrid_command()
@@ -390,12 +554,10 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.has_permissions(manage_roles=True)
     async def addrole(self, ctx, user: discord.Member, *, role: discord.Role):
         """Adds a role to a user"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
         try:
             await user.add_roles(role)
-        except:
+        except Exception:
             await ctx.send("I couldn't add that role to that user.")
             return
         await ctx.send(
@@ -412,13 +574,9 @@ class Moderator(commands.Cog, name="mod"):
     @commands.bot_has_permissions(embed_links=True, manage_roles=True)
     async def removerole(self, ctx, user: discord.Member, *, role: discord.Role):
         """Removes a role from a user"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         await user.remove_roles(role)
         await ctx.send(
             f"Aight, removed {role.name} from {user.mention}",
@@ -433,8 +591,6 @@ class Moderator(commands.Cog, name="mod"):
     @commands.hybrid_command()
     async def deleterole(self, ctx, *, role: str):
         """Delete a role from the server."""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
         role = discord.utils.get(ctx.guild.roles, name=role)
         if role is None:
@@ -448,8 +604,6 @@ class Moderator(commands.Cog, name="mod"):
     @commands.guild_only()
     async def perms(self, ctx):
         """Tells you what permissions the bot has."""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
         perms = "\n".join(
             [
@@ -480,9 +634,6 @@ class Moderator(commands.Cog, name="mod"):
     @commands.guild_only()
     async def rainbow(self, ctx):
         """Creates a bunch of color roles for your server."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            return await ctx.send(":x: This command has been disabled!")
 
         def check(m):
             return m.author.id == ctx.author.id
@@ -522,10 +673,7 @@ class Moderator(commands.Cog, name="mod"):
     @commands.hybrid_command()
     @commands.guild_only()
     async def removerainbow(self, ctx):
-        """Remove all the rainbow roles in your server so you dont have to do it manually."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            return await ctx.send(":x: This command has been disabled!")
+        """Remove all the rainbow roles in your server so you don't have to do it manually."""
 
         def check(m):
             return m.author.id == ctx.author.id and ctx.message.content
@@ -562,13 +710,9 @@ class Moderator(commands.Cog, name="mod"):
     @commands.bot_has_permissions(embed_links=True, manage_nicknames=True)
     async def nickname(self, ctx, member: discord.Member, *, name: str = None):
         """Nicknames a user from the current server."""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
 
         try:
             await member.edit(
@@ -578,7 +722,8 @@ class Moderator(commands.Cog, name="mod"):
             if name is None:
                 message = f"Reset **{member.name}'s** nickname"
             await ctx.send(message)
-        except Exception:
+        except Exception as e:
+            capture_exception(e)
             await ctx.send(
                 "I don't have the permission to change that user's nickname."
             )
@@ -591,13 +736,9 @@ class Moderator(commands.Cog, name="mod"):
     async def toggleslow(self, ctx, time: int = 0):
         """
         Slow the chat."""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         if time < 0 or time > 21600:
             await ctx.send(
                 "Invalid time specified! Time must be between 0 and 21600 (inclusive)"
@@ -629,8 +770,6 @@ class Moderator(commands.Cog, name="mod"):
     @commands.bot_has_permissions(embed_links=True, manage_nicknames=True)
     async def hoist(self, ctx):
         """Changes users names that are hoisting themselves (Ignores Bots)"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
         chars = [
             "!",
@@ -680,7 +819,8 @@ class Moderator(commands.Cog, name="mod"):
                                 await member.edit(nick="No Hoisting")
                                 await asyncio.sleep(random.randint(1, 5))
                                 temp["numbers"] = temp.get("numbers", 0) + 1
-                            except Exception:
+                            except Exception as e:
+                                capture_exception(e)
                                 failed += 1
         stats = "\n".join([f"`{char}` - `{amount}`" for char, amount in temp.items()])
         await initial.edit(
@@ -696,8 +836,6 @@ class Moderator(commands.Cog, name="mod"):
     @commands.bot_has_permissions(embed_links=True, manage_nicknames=True)
     async def reset_names(self, ctx):
         """Tries to reset all members nicknames in the current server (Ignores bots)"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
         inital = await ctx.send(
             "Reseting all nicknames. This'll take some time so please be patient!"
@@ -711,8 +849,8 @@ class Moderator(commands.Cog, name="mod"):
                     await member.edit(nick=None)
                     await asyncio.sleep(random.randint(1, 5))
                     count += 1
-                except Exception:
-                    pass
+                except Exception as e:
+                    capture_exception(e)
         await inital.edit(content=f"{count} nicknames have been reset.")
 
     @commands.hybrid_command()
@@ -721,8 +859,6 @@ class Moderator(commands.Cog, name="mod"):
     @commands.bot_has_permissions(embed_links=True, ban_members=True)
     async def bans(self, ctx):
         """Shows the servers bans with the ban reason"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
         filename = f"{ctx.guild.id}"
         with open(f"{str(filename)}.txt", "a", encoding="utf-8") as f:
@@ -735,7 +871,8 @@ class Moderator(commands.Cog, name="mod"):
                 content="Sorry if this took a while to send, but here is all of this servers bans!",
                 file=discord.File(f"{str(filename)}.txt"),
             )
-        except Exception:
+        except Exception as e:
+            capture_exception(e)
             await ctx.send(
                 "I couldn't send the file of this servers bans for whatever reason"
             )
@@ -750,13 +887,12 @@ class Moderator(commands.Cog, name="mod"):
     )
     async def banreason(self, ctx, user: discord.User):
         """Shows the ban reason for a user in the current server"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
         # itterate through the bans and find the one that matches the user
         async for entry in ctx.guild.bans():
             if entry.user.id == user.id:
                 await ctx.send(f"{user.mention} has been banned for: `{entry.reason}`")
+                return
         else:
             await ctx.send(f"{user.mention} is not banned in this server.")
 
@@ -775,32 +911,28 @@ class Moderator(commands.Cog, name="mod"):
         """
         Bans a member from the server.
         """
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         if await permissions.check_priv(ctx, member):
             return
         if reason is None:
             reason = f"Action done by {ctx.author} (ID: {ctx.author.id})"
         ban_msg = await ctx.send(
-            f"<:banHammer:875376602651959357> {ctx.author.mention} banned {member}"
+            f"<:LD_banHammer:875376602651959357> {ctx.author.mention} banned {member}"
         )
-        try:
+        with contextlib.suppress(Exception):
             await member.send(f"You were banned in **{ctx.guild.name}**\n**{reason}**.")
-        except Exception:
-            pass
         try:
             await ctx.guild.ban(member, reason=reason)
         except Exception as e:
+            capture_exception(e)
             await ban_msg.edit(content=f"Error{e}")
+            return
         await ban_msg.edit(
             embed=discord.Embed(
-                color=EMBED_COLOUR,
-                description=f"<a:Banned1:872972866092662794><a:Banned2:872972848354983947><a:Banned3:872972787877314601> **{member}** has been banned: reason {reason}",
+                color=colors.prim,
+                description=f"<a:LD_Banned1:872972866092662794><a:LD_Banned2:872972848354983947><a:LD_Banned3:872972787877314601> **{member}** has been banned: reason {reason}",
             ),
         )
 
@@ -820,13 +952,9 @@ class Moderator(commands.Cog, name="mod"):
         """
         Silently bans a member from the server, the user will not get a dm.
         """
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         # check if the command was used as a slash command
         if ctx.interaction is None:
             if await permissions.check_priv(ctx, member):
@@ -836,11 +964,12 @@ class Moderator(commands.Cog, name="mod"):
         if reason is None:
             reason = f"Action done by {ctx.author} (ID: {ctx.author.id})"
         ban_msg = await ctx.author.send(
-            f"<:banHammer:875376602651959357> {ctx.author.mention} banned {member}"
+            f"<:LD_banHammer:875376602651959357> {ctx.author.mention} banned {member}"
         )
         try:
             await ctx.guild.ban(member, reason=reason)
         except Exception as e:
+            capture_exception(e)
             await ban_msg.edit(content=f"Couldn't ban {member}, Error\n{e}")
             return
         await ban_msg.edit(content="Done.")
@@ -854,14 +983,10 @@ class Moderator(commands.Cog, name="mod"):
         self, ctx, members: commands.Greedy[MemberID], *, reason: ActionReason = None
     ):
         """Ban multiple members at once."""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
 
         banned_members = 0
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         if not members:
             if len(members) >= 1:
                 return await ctx.send(
@@ -877,13 +1002,11 @@ class Moderator(commands.Cog, name="mod"):
                 for member in members:
                     if await permissions.check_priv(ctx, member):
                         return
-                    try:
+                    with contextlib.suppress(Exception):
                         if reason is None:
                             reason = (
                                 f"Action done by {ctx.author} (ID: {ctx.author.id})"
                             )
-                    except Exception:
-                        pass
                     await ctx.guild.ban(member, reason=reason)
                     banned_members += 1
                 await m.edit(content=f"I successfully banned {banned_members} people!")
@@ -900,9 +1023,6 @@ class Moderator(commands.Cog, name="mod"):
         You can pass either the ID of the banned member or the Name#Discrim
         combination of the member. Typically the ID is easiest to use.
         """
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
-
         if await permissions.check_priv(ctx, member):
             return
 
@@ -926,8 +1046,6 @@ class Moderator(commands.Cog, name="mod"):
         You can pass an optional reason to be shown in the audit log.
         You must have Ban Members permissions.
         """
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
         unbanned = 0
         if reason is None:
             reason = f"reason: {ctx.author} (ID: {ctx.author.id})"
@@ -945,9 +1063,6 @@ class Moderator(commands.Cog, name="mod"):
         """Soft bans a member from the server.
         To use this command you must have Kick and Ban Members permissions.
         """
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
-
         if await permissions.check_priv(ctx, member):
             return
 
@@ -965,9 +1080,6 @@ class Moderator(commands.Cog, name="mod"):
     @commands.bot_has_permissions(embed_links=True, manage_emojis=True)
     async def stealemoji(self, ctx, emote: discord.PartialEmoji):
         """Clones any emote to the current server"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
-
         await ctx.guild.create_custom_emoji(
             name=emote.name,
             image=await emote.read(),
@@ -980,16 +1092,11 @@ class Moderator(commands.Cog, name="mod"):
     @commands.guild_only()
     async def find(self, ctx):
         """Finds a user within your search term"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
-
         if ctx.invoked_subcommand is None:
             await ctx.send_help(str(ctx.command))
             return
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         if ctx.invoked_subcommand is None:
             await ctx.send_help(str(ctx.command))
 
@@ -1067,15 +1174,13 @@ class Moderator(commands.Cog, name="mod"):
     @commands.hybrid_group()
     async def channel(self, ctx):
         """Group command for channel related things"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
-
         if ctx.invoked_subcommand is None:
             await ctx.send_help(str(ctx.command))
             return
 
     @channel.command(name="create")
     @permissions.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(embed_links=True, manage_channels=True)
     async def create(self, ctx, channel: str):
         """Create a channel
 
@@ -1083,31 +1188,45 @@ class Moderator(commands.Cog, name="mod"):
             channel (str): channel name
         """
         if channel in [i.name for i in ctx.guild.channels]:
-            return await ctx.send(f"{channel} already exists!")
+            return await ctx.send(f"{channel} already exists!", ephemeral=True)
         # check if the channel name is below 100 characters
         if len(channel) > 100:
             return await ctx.send(
-                "Channel name is too long! Please make it under 100 characters."
+                "Channel name is too long! Please make it under 100 characters.",
+                ephemeral=True,
             )
         await ctx.guild.create_text_channel(channel)
-        await ctx.send(f"{channel} has been created!")
+        await ctx.send(f"{channel} has been created!", ephemeral=True)
 
     @channel.command(name="delete")
     @permissions.has_permissions(manage_channels=True)
-    async def delete(self, ctx, channel: discord.TextChannel):
+    @commands.bot_has_permissions(embed_links=True, manage_channels=True)
+    async def delete(
+        self, ctx, channel: Union[discord.TextChannel, discord.VoiceChannel]
+    ):
         """Delete a channel
 
         Args:
-            channel (discord.TextChannel): the channel to delete
+            channel: the channel to delete
         """
-        if channel.name not in [i.name for i in ctx.guild.channels]:
-            return await ctx.send(f"{channel.name} doesn't exist!")
-        await channel.delete()
-        await ctx.send(f"{channel.name} has been deleted!")
+        try:
+            await channel.delete()
+            await ctx.send("Channel deleted!", ephemeral=True)
+        except Exception:
+            await ctx.send(
+                "I was unable to perform this action! Please check my permissions.",
+                ephemeral=True,
+            )
 
     @channel.command()
     @permissions.has_permissions(manage_channels=True)
-    async def rename(self, ctx, channel: discord.TextChannel, new_name: str):
+    @commands.bot_has_permissions(embed_links=True, manage_channels=True)
+    async def rename(
+        self,
+        ctx,
+        channel: Union[discord.TextChannel, discord.VoiceChannel],
+        new_name: str,
+    ):
         """Rename a channel
 
         Args:
@@ -1115,14 +1234,17 @@ class Moderator(commands.Cog, name="mod"):
             new_name (str): the new name for the channel
         """
         if channel.name not in [i.name for i in ctx.guild.channels]:
-            return await ctx.send(f"{channel.name} doesn't exist!")
+            return await ctx.send(f"{channel.name} doesn't exist!", ephemeral=True)
         if len(new_name) > 100:
-            return await ctx.send("Channel name is too long!")
+            return await ctx.send("Channel name is too long!", ephemeral=True)
         await channel.edit(name=new_name)
-        await ctx.send(f"{channel.name} has been renamed to: `{new_name}`!")
+        await ctx.send(
+            f"{channel.name} has been renamed to: `{new_name}`!", ephemeral=True
+        )
 
     @channel.group()
     @permissions.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(embed_links=True, manage_channels=True)
     async def edit(self, ctx):
         """Edit a channel
 
@@ -1133,8 +1255,51 @@ class Moderator(commands.Cog, name="mod"):
             await ctx.send_help(str(ctx.command))
             return
 
+    @edit.command(name="userlimit")
+    @permissions.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(embed_links=True, manage_channels=True)
+    async def userlimit(self, ctx, channel: discord.VoiceChannel, limit: str):
+        """Set the user limit of a voice channel
+
+        Args:
+            channel (discord.VoiceChannel): the channel to edit
+            limit (int/str): the new user limit
+        """
+        if limit.isdigit():
+            if int(limit) > 99:
+                return await ctx.send("User limit cannot be over 99!", ephemeral=True)
+            if channel.user_limit == limit:
+                return await ctx.send(
+                    "User limit is already set to that!", ephemeral=True
+                )
+            try:
+                await channel.edit(user_limit=limit)
+                await ctx.send(
+                    f"User limit has been set to: `{limit}`!", ephemeral=True
+                )
+            except Exception as e:
+                await ctx.send(
+                    f"I was unable to perform this action! Please check my permissions and look at the error below!\n{default.pycode(e)}",
+                    ephemeral=True,
+                )
+
+        else:
+            no_user_limit = ["0", "none", "no", "n", "off", "false"]
+            if limit in no_user_limit:
+                try:
+                    await channel.edit(user_limit=None)
+                    await ctx.send(
+                        "User limit has been set to: `None`!", ephemeral=True
+                    )
+                except Exception as e:
+                    return await ctx.send(
+                        f"I was unable to perform this action! Please check my permissions and look at the error below!\n{default.pycode(e)}",
+                        ephemeral=True,
+                    )
+
     @edit.command()
     @permissions.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(embed_links=True, manage_channels=True)
     async def topic(self, ctx, channel: discord.TextChannel, *, topic: str):
         """edit the topic of a channel
 
@@ -1143,14 +1308,18 @@ class Moderator(commands.Cog, name="mod"):
             topic (str): the new topic for the channel
         """
         if channel.name not in [i.name for i in ctx.guild.channels]:
-            return await ctx.send(f"{channel.name} doesn't exist!")
+            return await ctx.send(f"{channel.name} doesn't exist!", ephemeral=True)
         if len(topic) > 1024:
             return await ctx.send("Topic is too long!")
         await channel.edit(topic=topic)
-        await ctx.send(f"{channel.name}'s topic has been changed to: `{topic}`!")
+        await ctx.send(
+            f"{channel.name}'s topic has been changed to: `{topic}`!",
+            ephemeral=True,
+        )
 
     @edit.command()
     @permissions.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(embed_links=True, manage_channels=True)
     async def description(self, ctx, channel: discord.TextChannel, *, description: str):
         """edit the description of a channel
 
@@ -1160,12 +1329,36 @@ class Moderator(commands.Cog, name="mod"):
 
         """
         if channel.name not in [i.name for i in ctx.guild.channels]:
-            return await ctx.send(f"{channel.name} doesn't exist!")
+            return await ctx.send(f"{channel.name} doesn't exist!", ephemeral=True)
         if len(description) > 1024:
-            return await ctx.send("Description is too long!")
+            return await ctx.send("Description is too long!", ephemeral=True)
         await channel.edit(description=description)
         await ctx.send(
-            f"{channel.name}'s description has been changed to: `{description}`!"
+            f"{channel.name}'s description has been changed to: `{description}`!",
+            ephemeral=True,
+        )
+
+    @edit.command()
+    @permissions.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(embed_links=True, manage_channels=True)
+    async def nsfw(
+        self, ctx, channel: Union[discord.TextChannel, discord.VoiceChannel], nsfw: bool
+    ):
+        """Make a channel NSFW or not
+
+        Args:
+            ctx (_type_): _description_
+            channel (discord.TextChannel): the channel to edit
+            nsfw (bool): set the channel to be NSFW or not. True/False
+        """
+        if channel is None:
+            return await ctx.send("Specify a channel!", ephemeral=True)
+        if channel.name not in [i.name for i in ctx.guild.channels]:
+            return await ctx.send(f"{channel.name} doesn't exist!", ephemeral=True)
+        await channel.edit(nsfw=nsfw)
+        await ctx.send(
+            f"{channel.name}'s NSFW status has been changed to: `{nsfw}`!",
+            ephemeral=True,
         )
 
     @commands.guild_only()
@@ -1175,9 +1368,6 @@ class Moderator(commands.Cog, name="mod"):
     @commands.hybrid_group()
     async def role(self, ctx):
         """A group command for role related commands"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
-
         if ctx.invoked_subcommand is None:
             await ctx.send_help(str(ctx.command))
             return
@@ -1193,20 +1383,23 @@ class Moderator(commands.Cog, name="mod"):
         mentionable: bool = False,
         hex: str = None,
     ):
+        # sourcery skip: avoid-builtin-shadow
         """Creates a role with any name, permissions, hoistable, mentionable, and color
         Example: `tp!role create bruh 8 True True ff0000`
         Look at a permission calculator for more info on permissions: https://finitereality.github.io/permissions-calculator/
         Args:
             name (str): the name of the role
-            permissions (str): the permissions for the role
+            permissions (str or int): the permissions for the role
             hoist (bool, optional): set the role to be hoisted. Defaults to False.
             mentionable (bool, optional): set the role to be mentionable. Defaults to False.
             hex (int, optional): the color to set the role. Defaults to None.
         """
+        none_list = ["none", "0", "no", "false", "f", "n", "nothing", "null", "nil"]
         if name is None:
             await ctx.send(":x: You need to give a name for the role!")
             return
-
+        if permissions in none_list:
+            permissions = None
         if permissions is None:
             permissions = discord.Permissions.none()
 
@@ -1232,7 +1425,8 @@ class Moderator(commands.Cog, name="mod"):
             reason=f"{ctx.author} used role create",
         )
         await ctx.send(
-            f"Alright, I've created {name} with the following overrides: Permission Value:{permissions.value} Hex:{hex} Hoist:{hoist} Mentionable:{mentionable}"
+            f"Alright, I've created {name} with the following overrides: Permission Value:{permissions.value} Hex:{hex} Hoist:{hoist} Mentionable:{mentionable}",
+            ephemeral=True,
         )
 
     @role.command()
@@ -1248,15 +1442,17 @@ class Moderator(commands.Cog, name="mod"):
         # check if a role with the name exists
         if role.name in [i.name for i in ctx.guild.roles]:
             if len([i for i in ctx.guild.roles if i.name == role.name]) > 1:
-                return await ctx.send("There are roles with the same name!")
+                return await ctx.send(
+                    "There are roles with the same name!", ephemeral=True
+                )
             await role.delete()
-            await ctx.send("Role deleted!")
+            await ctx.send("Role deleted!", ephemeral=True)
 
     @role.command()
     @permissions.has_permissions(manage_roles=True)
     async def forcedel(self, ctx, role: discord.Role):
         await role.delete(reason=f"{ctx.author} used role forcedel")
-        await ctx.send(f"I've successfully deleted {role.name}!")
+        await ctx.send(f"I've successfully deleted {role.name}!", ephemeral=True)
 
     @role.command()
     @permissions.has_permissions(manage_roles=True)
@@ -1266,16 +1462,15 @@ class Moderator(commands.Cog, name="mod"):
         role: discord.Role,
         name: str,
         permissions: str or int = None,
-        hoist: bool = False,
-        mentionable: bool = False,
+        hoist: bool = None,
+        mentionable: bool = None,
         hex: str or int or hex = None,
     ):
+        # sourcery skip: avoid-builtin-shadow
         """Edit any role to add new permissions, make it hoisted, mentionable, and a new color
         Example: `tp!role edit role_name new_name permission_value hoist:True/False mentionable:True/False hex:number`
         **Hint** True and False are case sensitive.
-
         Args:
-            ctx (_type_): _description_
             role (str): the role to edit
             name (str): the new name for the role
             permissions (int, optional): permission value to give the role. Defaults to None.
@@ -1288,15 +1483,14 @@ class Moderator(commands.Cog, name="mod"):
             return
 
         if hex is not None:
-            try:
+            with contextlib.suppress(Exception):
                 hex = int(hex, 16)
-            except:
-                pass
         else:
-            hex = 0
+            # get the current color hex int
+            hex = role.color.value
 
         if permissions is None:
-            permissions = discord.Permissions.none()
+            permissions = role.permissions
 
         elif permissions is not int:
             if permissions == "all":
@@ -1304,12 +1498,14 @@ class Moderator(commands.Cog, name="mod"):
             else:
                 try:
                     permissions = discord.Permissions(int(permissions))
-                except:
+                except Exception:
                     await ctx.send(
                         "Look at a permission calculator for more info on permissions: https://finitereality.github.io/permissions-calculator/\nWhen you get the permissions that you want, copy the number on the very top of the page. Should look something like this",
                         file=discord.File("permissions.png"),
                     )
                     return
+        hoist = role.hoist if hoist is None else hoist
+        mentionable = role.mentionable if mentionable is None else mentionable
         try:
             await role.edit(
                 name=name,
@@ -1320,10 +1516,14 @@ class Moderator(commands.Cog, name="mod"):
                 reason=f"{ctx.author} used role edit",
             )
             await ctx.send(
-                f"Alright, I've edited {role.name} with the following overrides: Permission Value:{permissions.value} Hex:{hex} Hoist:{hoist} Mentionable:{mentionable}"
+                f"Alright, I've edited {role.name} with the following overrides: Permission Value:{permissions.value} Hex:{hex} Hoist:{hoist} Mentionable:{mentionable}",
+                ephemeral=True,
             )
         except Exception as e:
-            await ctx.send(f"I couldn't edit the role because of this error!:\n{e}")
+            capture_exception(e)
+            await ctx.send(
+                f"I couldn't edit the role because of this error!:\n{e}", ephemeral=True
+            )
 
     @commands.hybrid_command()
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
@@ -1351,14 +1551,8 @@ class Moderator(commands.Cog, name="mod"):
         self, ctx, channel: discord.TextChannel = None, ephemeral: bool = False
     ):
         """Deletes a channel and clones it for you to quickly delete all the messages inside of it"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
-            return await ctx.send(":x: This command has been disabled!")
-
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         embed = discord.Embed(title="Channel Nuked", color=0x00FF00)
         embed.set_image(url="https://media.giphy.com/media/HhTXt43pk1I1W/giphy.gif")
         if channel is None:
@@ -1401,18 +1595,14 @@ class Moderator(commands.Cog, name="mod"):
         )
         try:
             await deleted_channel.delete(reason=f"{ctx.author} used nuke")
-        except:
+        except Exception:
             return await ctx.send(
                 f"Couldn't delete {deleted_channel.name}. Give me the permissions to do so."
             )
-        try:
+        with contextlib.suppress(Exception):
             await new_channel.send(embed=embed, delete_after=30)
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             await ctx.send("Channel nuked!", delete_after=5)
-        except Exception:
-            pass
 
     @commands.hybrid_command()
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
@@ -1423,9 +1613,6 @@ class Moderator(commands.Cog, name="mod"):
     )
     async def mutesetup(self, ctx):
         """Sets up the muted role for the server"""
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
-
         init = await ctx.send("Setting up the muted role...")
         await asyncio.sleep(1.5)
         muted_role = next(
@@ -1497,6 +1684,7 @@ class Moderator(commands.Cog, name="mod"):
         try:
             await member.timeout(datetime.timedelta(seconds=time), reason=reason)
         except Exception as e:
+            capture_exception(e)
             # say that the bot needs moderate_members permissions
             await ctx.send(
                 f"I couldn't mute {member.mention}! Please make sure I have the `Timeout Members` permission!\nHere's the error: {e}",
@@ -1538,6 +1726,7 @@ class Moderator(commands.Cog, name="mod"):
                 await member.timeout(None, reason=reason)
                 await ctx.send(f"{member.mention} has been unmuted.")
             except Exception as e:
+                capture_exception(e)
                 await ctx.send(
                     f"I couldn't unmute {member.mention}! Please make sure I have the `Timeout Members` permission!\nHere's the error: {e}",
                     ephemeral=True,
@@ -1555,10 +1744,6 @@ class Moderator(commands.Cog, name="mod"):
     # @commands.bot_has_permissions(embed_links=True, manage_roles=True)
     # async def server_setup(self, ctx):
     #     """Sets up the server for you, makes basic roles, channels, and syncs permissions."""
-    #     cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-    #     if cmdEnabled:
-    #         await ctx.send(":x: This command has been disabled!")
-    #         return
     #     #a list of the new roles with their permissions
     #     new_roles = [
     #         "Muted",
@@ -1690,9 +1875,6 @@ class Moderator(commands.Cog, name="mod"):
         detailing which users got removed and how many messages got removed.
         `tp!purge all` removes 30 messages.
         """
-        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
-            return await ctx.send(":x: This command has been disabled!")
-
         if ctx.invoked_subcommand is None:
             # assume we're purging all messages and invoke purge all
             num = int(num) if num is not None else 30
@@ -1741,10 +1923,8 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def all(self, ctx, search=30):
         """Removes all messages."""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         await self.do_removal(ctx, search, lambda e: True)
 
     @purge.command()
@@ -1752,10 +1932,8 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def embeds(self, ctx, search=100):
         """Removes messages that have embeds in them."""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         await self.do_removal(ctx, search, lambda e: len(e.embeds))
 
     @purge.command()
@@ -1770,10 +1948,9 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def images(self, ctx, search=100):
         """Removes messages that have embeds or attachments."""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
+
         await self.do_removal(
             ctx, search, lambda e: len(e.embeds) or len(e.attachments)
         )
@@ -1783,10 +1960,8 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def mentions(self, ctx, search=30):
         """Removes messages that have user mentions."""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         await self.do_removal(ctx, search, lambda e: len(e.mentions))
 
     @purge.command()
@@ -1794,10 +1969,8 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def user(self, ctx, member: MemberConverter, search=100):
         """Removes all messages by the member."""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         await self.do_removal(ctx, search, lambda e: e.author == member)
 
     @purge.command()
@@ -1805,10 +1978,8 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def startswith(self, ctx, *, substr: str):
         """Removes all messages that start with a keyword"""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
 
         await self.do_removal(ctx, 100, lambda e: e.content.startswith(substr))
 
@@ -1819,22 +1990,18 @@ class Moderator(commands.Cog, name="mod"):
         """Removes all messages containing a substring.
         The substring must be at least 2 characters long.
         """
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         await self.do_removal(ctx, 100, lambda e: substr in e.content)
 
     @purge.command(name="bot", aliases=["bots"])
     @commands.guild_only()
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
-    async def bot(self, ctx, prefix=None, search=300):
+    async def _bot(self, ctx, prefix=None, search=300):
         """Removes a bot user's messages and messages with their optional prefix.
         Example: `tp!purge bots <the bots prefix[this is optional]> <amount[this is also optional]>`"""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
 
         getprefix = prefix or self.config.prefix
 
@@ -1852,10 +2019,8 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def emoji(self, ctx, search=100):
         """Removes all messages containing custom emoji."""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         custom_emoji = re.compile(r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>")
 
         def predicate(m):
@@ -1868,11 +2033,8 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def reactions(self, ctx, search=100):
         """Removes all reactions from messages that have them."""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
-
         if search > 2000:
             return await ctx.send(f"Too many messages to search for ({search}/2000)")
 
@@ -1890,10 +2052,8 @@ class Moderator(commands.Cog, name="mod"):
     async def annoying(self, ctx, search=250, prefix=None):
         """Removes annoying messages.
         This command purges mentions, embeds, files / attachments, and role mentions."""
-        try:
+        with contextlib.suppress(Exception):
             await ctx.message.delete()
-        except Exception:
-            pass
         await self.do_removal(
             ctx,
             search,
@@ -1912,5 +2072,5 @@ class Moderator(commands.Cog, name="mod"):
         await self.do_removal(ctx, search, predicate)
 
 
-async def setup(bot):
+async def setup(bot: Bot) -> None:
     await bot.add_cog(Moderator(bot))

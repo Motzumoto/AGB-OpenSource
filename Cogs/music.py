@@ -1,24 +1,34 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+import aiohttp
 import discord
 import DiscordUtils
+import contextlib
 import humanfriendly
-
+from datetime import timezone
 from discord.ext import commands
-from index import EMBED_COLOUR
-from .Utils import success_embed
-from datetime import datetime
-import aiohttp
 from DiscordUtils.Music import MusicPlayer
+from index import colors
+from sentry_sdk import capture_exception
 from utils import permissions
-from utils.checks import Paginator, voter_only
+from utils.checks import Paginator
+
+from .Utils import success_embed
 
 music_ = DiscordUtils.Music()
+
+if TYPE_CHECKING:
+    from index import Bot
 
 
 class music(commands.Cog):
     """Jam to some awesome tunes! 🎶"""
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: Bot):
+        self.bot: Bot = bot
         self.skip_votes = {}
         self.session = aiohttp.ClientSession()
 
@@ -35,8 +45,8 @@ class music(commands.Cog):
             discord.Embed(
                 title=song.title,
                 url=song.url,
-                color=EMBED_COLOUR,
-                timestamp=datetime.utcnow(),
+                color=colors.prim,
+                timestamp=datetime.now(timezone.utc),
                 description=f"""
 **Duration:** {humanfriendly.format_timespan(song.duration)}
 **Channel:** [{song.channel}]({song.channel_url})
@@ -53,14 +63,12 @@ class music(commands.Cog):
         )
 
     @commands.command(aliases=["connect"])
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 5, commands.BucketType.user)
     async def join(self, ctx: commands.Context):
         """Make AGB join the voice channel"""
         if not ctx.author.voice:
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if ctx.guild.me.voice and len(ctx.guild.me.voice.channel.members) > 1:
-
             return await ctx.reply("Someone else is already using the bot :c")
         # check if the song link is a spotify link
         if "open.spotify.com" in ctx.message.content:
@@ -68,40 +76,36 @@ class music(commands.Cog):
         try:
             await ctx.author.voice.channel.connect()
             await ctx.message.add_reaction("✅")
-            await ctx.guild.me.edit(deafen=True)
         except Exception as e:
-
+            capture_exception(e)
             return await ctx.reply(
                 f"I wasn't able to connect to your voice channel.\nPlease make sure I have enough permissions.\nError: {e}"
             )
+        try:
+            await ctx.guild.me.edit(deafen=True)
+        except Exception:
+            return
 
     @commands.command(
         aliases=["dc", "disconnect"],
     )
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 5, commands.BucketType.user)
     async def leave(self, ctx: commands.Context):
         """Make AGB leave the voice channel"""
         if not ctx.author.voice:
-
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if not ctx.guild.me.voice:
-
             return await ctx.reply("I am not in a voice channel")
         if ctx.author.voice.channel != ctx.guild.me.voice.channel:
-
             return await ctx.reply(self.error_msg("not_in_same_vc"))
         if player := music_.get_player(guild_id=ctx.guild.id):
-            try:
+            with contextlib.suppress(Exception):
                 await player.stop()
                 await player.delete()
-            except Exception:
-                pass
         await ctx.voice_client.disconnect()
         await ctx.message.add_reaction("👋")
 
     @commands.command(aliases=["p"])
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 10, commands.BucketType.user)
     async def play(self, ctx, *, song_=None):
         """Play a song"""
@@ -112,7 +116,6 @@ class music(commands.Cog):
                 f"Correct Usage: `{ctx.clean_prefix}play <song/url>`\nExample: `{ctx.clean_prefix}play Rick Roll`"
             )
         if not ctx.author.voice:
-
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if not ctx.guild.me.voice:
             await ctx.invoke(self.bot.get_command("join"))
@@ -126,7 +129,8 @@ class music(commands.Cog):
                 await player.queue(song_, search=True)
             song = await player.play()
             await ctx.send(embed=self.now_playing_embed(ctx, song))
-            await ctx.guild.me.edit(deafen=True)
+            with contextlib.suppress(Exception):
+                await ctx.guild.me.edit(deafen=True)
         else:
             try:
                 song = await player.queue(song_, search=True, bettersearch=True)
@@ -136,7 +140,7 @@ class music(commands.Cog):
                 embed=discord.Embed(
                     title=song.title,
                     url=song.url,
-                    color=EMBED_COLOUR,
+                    color=colors.prim,
                     description=f"""
 **Duration:** {humanfriendly.format_timespan(song.duration)}
 **Channel:** [{song.channel}]({song.channel_url})
@@ -155,7 +159,6 @@ class music(commands.Cog):
             )
 
     @commands.command(aliases=["np"])
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 10, commands.BucketType.user)
     async def nowplaying(self, ctx):
         """Get the current song playing"""
@@ -168,22 +171,17 @@ class music(commands.Cog):
         await ctx.reply(embed=self.now_playing_embed(ctx, song))
 
     @commands.command()
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 10, commands.BucketType.user)
     async def pause(self, ctx):
         """Pause the current song"""
         if not ctx.author.voice:
-
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if not ctx.guild.me.voice:
-
             return await ctx.reply("I am not playing any songs")
         if ctx.author.voice.channel != ctx.guild.me.voice.channel:
-
             return await ctx.reply(self.error_msg("not_in_same_vc"))
         player = music_.get_player(guild_id=ctx.guild.id)
         if not player:
-
             return await ctx.reply("I am not playing any songs")
         try:
             await player.pause()
@@ -192,22 +190,17 @@ class music(commands.Cog):
         await ctx.message.add_reaction("⏸️")
 
     @commands.command()
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 10, commands.BucketType.user)
     async def resume(self, ctx):
         """Resume the current song"""
         if not ctx.author.voice:
-
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if not ctx.guild.me.voice:
-
             return await ctx.reply("I am not in a voice channel")
         if ctx.author.voice.channel != ctx.guild.me.voice.channel:
-
             return await ctx.reply(self.error_msg("not_in_same_vc"))
         player = music_.get_player(guild_id=ctx.guild.id)
         if not player:
-
             return await ctx.reply("I am not playing any songs")
         try:
             await player.resume()
@@ -216,22 +209,17 @@ class music(commands.Cog):
         await ctx.message.add_reaction("▶️")
 
     @commands.command()
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 10, commands.BucketType.user)
     async def stop(self, ctx):
         """Stop the current song"""
         if not ctx.author.voice:
-
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if not ctx.guild.me.voice:
-
             return await ctx.reply("I am not in a voice channel")
         if ctx.author.voice.channel != ctx.guild.me.voice.channel:
-
             return await ctx.reply(self.error_msg("not_in_same_vc"))
         player = music_.get_player(guild_id=ctx.guild.id)
         if not player:
-
             return await ctx.reply("I am not playing any songs")
         try:
             await player.stop()
@@ -240,22 +228,17 @@ class music(commands.Cog):
         await ctx.message.add_reaction("⏹️")
 
     @commands.command()
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 10, commands.BucketType.user)
     async def loop(self, ctx):
         """Toggle looping the current song"""
         if not ctx.author.voice:
-
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if not ctx.guild.me.voice:
-
             return await ctx.reply("I am not in a voice channel")
         if ctx.author.voice.channel != ctx.guild.me.voice.channel:
-
             return await ctx.reply(self.error_msg("not_in_same_vc"))
         player = music_.get_player(guild_id=ctx.guild.id)
         if not player:
-
             return await ctx.reply(
                 "There is no music playing, please queue some songs."
             )
@@ -269,21 +252,16 @@ class music(commands.Cog):
             await ctx.reply("🔁 Loop disabled.")
 
     @commands.command(aliases=["q"])
-    @voter_only()
     async def queue(self, ctx):
         """Show the current queue"""
         if not ctx.author.voice:
-
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if not ctx.guild.me.voice:
-
             return await ctx.reply("I am not in a voice channel")
         if ctx.author.voice.channel != ctx.guild.me.voice.channel:
-
             return await ctx.reply(self.error_msg("not_in_same_vc"))
         player = music_.get_player(guild_id=ctx.guild.id)
         if not player:
-
             return await ctx.reply(
                 "There is no music playing, please queue some songs."
             )
@@ -291,7 +269,6 @@ class music(commands.Cog):
             queue_ = player.current_queue()
         except DiscordUtils.EmptyQueue:
             return await ctx.reply("The queue is empty")
-
         nice = ""
         i = 1
         for (
@@ -301,33 +278,25 @@ class music(commands.Cog):
                 break
             nice += f"`{i}.{' ' if i != 10 else ''}` • [{song_.title}]({song_.url})\n"
             i += 1
-
         return await ctx.reply(embed=success_embed(":notes: Queue!", nice))
 
     @commands.command(aliases=["voteskip"])
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 30, commands.BucketType.user)
     async def skip(self, ctx):
         """Vote to skip the current song"""
         if not ctx.author.voice:
-
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if not ctx.guild.me.voice:
-
             return await ctx.reply("I am not in a voice channel")
         if ctx.author.voice.channel != ctx.guild.me.voice.channel:
-
             return await ctx.reply(self.error_msg("not_in_same_vc"))
         player = music_.get_player(guild_id=ctx.guild.id)
         if not player:
-
             return await ctx.reply(
                 "There is no music playing, please queue some songs."
             )
         if not ctx.voice_client.is_playing():
-
             return await ctx.reply("There is no music playing")
-
         hoomans = len(
             list(filter(lambda m: not m.bot, ctx.author.voice.channel.members))
         )
@@ -340,7 +309,6 @@ class music(commands.Cog):
                 return
             except DiscordUtils.NotPlaying:
                 return await ctx.reply("There is no music playing")
-
         if ctx.guild.id not in self.skip_votes:
             self.skip_votes.update({ctx.guild.id: [ctx.author.id]})
             await ctx.reply(
@@ -365,40 +333,30 @@ class music(commands.Cog):
                 )
 
     @commands.command()
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 30, commands.BucketType.user)
     async def remove(self, ctx: commands.Context, index: str = None):
         """Remove a song from the queue"""
         if not ctx.author.voice:
-
             return await ctx.reply(self.error_msg("not_in_voice_channel"))
         if not ctx.guild.me.voice:
-
             return await ctx.reply("I am not in a voice channel")
         if ctx.author.voice.channel != ctx.guild.me.voice.channel:
-
             return await ctx.reply(self.error_msg("not_in_same_vc"))
         player: MusicPlayer = music_.get_player(guild_id=ctx.guild.id)
         if not player:
-
             return await ctx.reply(
                 "There is no music playing, please queue some songs."
             )
         if not ctx.voice_client.is_playing():
-
             return await ctx.reply("There is no music playing")
-
         prefix = ctx.clean_prefix
         if index is None:
-
             return await ctx.reply(f"{prefix}remove <index>")
         try:
             index = int(index)
             if index <= 0:
-
                 return await ctx.reply(":x:The number should be a positive number!")
         except ValueError:
-
             return await ctx.reply(
                 f"Please enter an integer!\n\nUsage: `{prefix}remove <number>`\nExample: `{prefix}remove 69`"
             )
@@ -408,10 +366,10 @@ class music(commands.Cog):
                 f":white_check_mark: Removed `{song.name}` from the queue!"
             )
         except Exception as e:
+            capture_exception(e)
             return await ctx.reply(f"{e}")
 
     @commands.command()
-    @voter_only()
     @permissions.dynamic_ownerbypass_cooldown(3, 30, commands.BucketType.user)
     async def lyrics(self, ctx: commands.Context, *, song=None):
         """Get the lyrics of a song"""
@@ -427,23 +385,24 @@ class music(commands.Cog):
         main_msg = await ctx.reply("Searching for lyrics...")
         embeds = []
         async with self.session.get(
-                f"https://some-random-api.ml/lyrics?title={song.lower()}"
-            ) as r:
+            f"https://some-random-api.ml/lyrics?title={song.lower()}"
+        ) as r:
             if r.status != 200:
                 return await main_msg.edit(
                     content="An error occured while accessing the API, this is usually because there aren't any lyrics to the song. Please try again later :>"
                 )
             rj = await r.json()
             if "error" in rj:
-                return await ctx.reply(rj["error"])
+                return await main_msg.edit(content=rj["error"])
             if len(rj["lyrics"]) <= 4000:
-                return await ctx.reply(
+                return await main_msg.edit(
+                    content=None,
                     embed=discord.Embed(
                         title=rj["title"],
                         url=rj["links"]["genius"],
                         description=rj["lyrics"],
-                        color=EMBED_COLOUR,
-                    ).set_thumbnail(url=rj["thumbnail"]["genius"])
+                        color=colors.prim,
+                    ).set_thumbnail(url=rj["thumbnail"]["genius"]),
                 )
             i = 0
             while True:
@@ -453,7 +412,7 @@ class music(commands.Cog):
                             title=rj["title"],
                             url=rj["links"]["genius"],
                             description=rj["lyrics"][i : i + 3999],
-                            color=EMBED_COLOUR,
+                            color=colors.prim,
                         ).set_thumbnail(url=rj["thumbnail"]["genius"])
                     )
                 elif len(rj["lyrics"]) - i <= 0:
@@ -464,7 +423,7 @@ class music(commands.Cog):
                             title=rj["title"],
                             url=rj["links"]["genius"],
                             description=rj["lyrics"][i:-1],
-                            color=EMBED_COLOUR,
+                            color=colors.prim,
                         ).set_thumbnail(url=rj["thumbnail"]["genius"])
                     )
 
@@ -475,5 +434,5 @@ class music(commands.Cog):
             )
 
 
-async def setup(bot):
+async def setup(bot: Bot) -> None:
     await bot.add_cog(music(bot))

@@ -55,7 +55,7 @@ class ShortTime:
             raise commands.BadArgument("invalid time provided")
 
         data = {k: int(v) for k, v in match.groupdict(default=0).items()}
-        now = now or datetime.datetime.utcnow()
+        now = now or datetime.datetime.now(datetime.timezone.utc)
         self.dt = now + relativedelta(**data)
 
     @classmethod
@@ -67,7 +67,7 @@ class HumanTime:
     calendar = pdt.Calendar(version=pdt.VERSION_CONTEXT_STYLE)
 
     def __init__(self, argument, *, now=None):
-        now = now or datetime.datetime.utcnow()
+        now = now or datetime.datetime.now(datetime.timezone.utc)
         dt, status = self.calendar.parseDT(argument, sourceTime=now)
         if not status.hasDateOrTime:
             raise commands.BadArgument(
@@ -167,11 +167,7 @@ class UserFriendlyTime(commands.Converter):
             if argument.endswith("from now"):
                 argument = argument[:-8].strip()
 
-            if argument[:2] == "me" and argument[:6] in (
-                "me to ",
-                "me in ",
-                "me at ",
-            ):
+            if argument[:2] == "me" and argument[:6] in ("me to ", "me in ", "me at "):
                 argument = argument[6:]
 
             elements = calendar.nlp(argument, sourceTime=now)
@@ -243,7 +239,7 @@ class UserFriendlyTime(commands.Converter):
 
 
 def human_timedelta(dt, *, source=None, accuracy=3, brief=False, suffix=True):
-    now = source or datetime.datetime.utcnow()
+    now = source or datetime.datetime.now(datetime.timezone.utc)
     # Microsecond free zone
     now = now.replace(microsecond=0)
     dt = dt.replace(microsecond=0)

@@ -7,8 +7,8 @@ def config(filename: str = "config"):
     try:
         with open(f"{filename}.json", encoding="utf-8") as data:
             return json.load(data)
-    except FileNotFoundError:
-        raise FileNotFoundError("config.json file wasn't found")
+    except FileNotFoundError as e:
+        raise FileNotFoundError("config.json file wasn't found") from e
 
 
 def get(file):
@@ -17,7 +17,7 @@ def get(file):
             return json.load(
                 data, object_hook=lambda d: namedtuple("X", d.keys())(*d.values())
             )
-    except AttributeError:
-        raise AttributeError("Unknown argument")
-    except FileNotFoundError:
-        raise FileNotFoundError("JSON file wasn't found")
+    except AttributeError as e:
+        raise AttributeError("Unknown argument") from e
+    except FileNotFoundError as e:
+        raise FileNotFoundError("JSON file wasn't found") from e

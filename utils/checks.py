@@ -1,13 +1,10 @@
-import aiohttp
-import discord
-from discord.ext import commands
-
-from typing import Optional
-
-import discord
 from typing import List, Optional
-from discord.ext import commands
 
+import aiohttp
+import contextlib
+import discord
+from discord.ext import commands
+from index import config
 
 from utils import default
 from utils.default import log
@@ -68,14 +65,12 @@ async def send_embed(ctx, embed):
                 "Hey, seems like I can't send embeds. Please check my permissions :)"
             )
         except discord.errors.Forbidden:
-            try:
+            with contextlib.suppress(discord.errors.Forbidden):
                 await ctx.author.send(
                     f"Hey, seems like I can't send any message in {ctx.channel.name} on {ctx.guild.name}\n"
                     f"May you inform the server team about this issue?",
                     embed=embed,
                 )
-            except discord.errors.Forbidden:
-                pass
 
 
 def has_guild_permissions(*, check=all, **perms):
@@ -83,6 +78,14 @@ def has_guild_permissions(*, check=all, **perms):
         return await check_guild_permissions(ctx, perms, check=check)
 
     return commands.check(pred)
+
+
+class GlobalDisable(commands.CheckFailure):
+    def __init__(self, message: Optional[str] = None) -> None:
+        super().__init__(
+            message
+            or "This command has been globally disabled! This is likely due to an internal error with this command. This will be fixed asap!"
+        )
 
 
 class NotVoted(commands.CheckFailure):
@@ -106,6 +109,22 @@ class MusicGone(commands.CheckFailure):
         )
 
 
+class NsfwBeingWorkedOn(commands.CheckFailure):
+    def __init__(self, message: Optional[str] = None) -> None:
+        super().__init__(
+            message
+            or "These NSFW commands are still being worked on and tested!\nJoin the [support server](https://discord.gg/cNRNeaX) for updates on their release!"
+        )
+
+
+class Blacklisted(commands.CheckFailure):
+    def __init__(self, message: Optional[str] = None) -> None:
+        super().__init__(
+            message
+            or "You've been blacklisted from using this bot\nTo see why and or get the blacklist removed, send us an email - `contact@lunardev.group`"
+        )
+
+
 async def check_voter(user_id):
     if user_id in owners:
         return True
@@ -123,15 +142,20 @@ async def check_voter(user_id):
                 return False
 
 
+def disabled():
+    async def pred(ctx):
+        raise GlobalDisable
+
+    return commands.check(pred)
+
+
 def voter_only():
     async def predicate(ctx):
         if ctx.author.id in owners:
             return True
         check_vote = await check_voter(ctx.author.id)
         if not check_vote:
-            raise NotVoted(
-                "You need to vote to use this command, vote [here](https://top.gg/bot/723726581864071178/vote)"
-            )
+            raise NotVoted
         return True
 
     return commands.check(predicate)
@@ -180,6 +204,27 @@ def is_in_guilds(*guild_ids):
     return commands.check(predicate)
 
 
+# class InteractiveMenu(discord.ui.View):
+#     def __init__(self, bot, ctx: commands.Context):
+#         super().__init__(timeout=None)
+#         self.bot = bot
+#         self.ctx = ctx
+
+#     @discord.ui.button(emoji="❌", style=discord.ButtonStyle.blurple)
+#     async def close(self, i, b: discord.ui.Button):
+#         await i.message.delete()
+
+#     @discord.ui.button(label="Report to Developers", style=discord.ButtonStyle.blurple)
+#     async def report(self, i, b):
+#         bruh = await self.bot.get_channel(990187200656322601)
+#         await bruh.send(f"{self.ctx.author.mention} has reported a bug!")
+
+#     async def interaction_check(self, interaction):
+#         if interaction.user == self.ctx.author:
+#             return True
+#         await interaction.response.send_message("Not your command", ephemeral=True)
+
+
 class Paginator(discord.ui.View):
     def __init__(self, ctx: commands.Context, embeds: List[discord.Embed]):
         super().__init__(timeout=None)
@@ -193,18 +238,18 @@ class Paginator(discord.ui.View):
         await msg.edit(embed=em)
 
     @discord.ui.button(emoji="◀️", style=discord.ButtonStyle.blurple)
-    async def bac(self, b, i):
+    async def bac(self, i, b: discord.ui.Button):
         if self.current == 0:
             return
         await self.edit(i.message, self.current - 1)
         self.current -= 1
 
     @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.blurple)
-    async def stap(self, b, i):
+    async def stap(self, i, b: discord.ui.Button):
         await i.message.delete()
 
     @discord.ui.button(emoji="▶️", style=discord.ButtonStyle.blurple)
-    async def nex(self, b, i):
+    async def nex(self, i, b: discord.ui.Button):
         if self.current + 1 == len(self.embeds):
             return
         await self.edit(i.message, self.current + 1)

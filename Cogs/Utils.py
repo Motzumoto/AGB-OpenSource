@@ -1,14 +1,19 @@
+from __future__ import annotations
+
+import contextlib
+import io
+import os
 import random
+from contextvars import ContextVar
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, Dict, Union
 
 from discord import Embed
 from discord.ext import commands
-import io
-import os
-from index import EMBED_COLOUR
-from pathlib import Path
-from typing import Callable, Dict, Union
-from contextvars import ContextVar
-import contextlib
+from index import colors
+
+if TYPE_CHECKING:
+    from index import Bot
 
 # bot = None
 # url_regex =
@@ -25,7 +30,7 @@ MSGSTR = 'msgstr "'
 _translators = []
 
 
-async def setup(bot):
+async def setup(bot: Bot):
     # This module isn't actually a cog - but it is a place
     # we can call "a trash fire"
     await bot.add_cog(Utils(bot))
@@ -34,8 +39,8 @@ async def setup(bot):
 
 
 class Utils(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: Bot):
+        self.bot: Bot = bot
 
 
 def error_embed(title, description):
@@ -43,7 +48,7 @@ def error_embed(title, description):
 
 
 def success_embed(title, description):
-    return Embed(title=title, description=description, color=EMBED_COLOUR)
+    return Embed(title=title, description=description, color=colors.prim)
 
 
 def maxInt(val: int = 0):
