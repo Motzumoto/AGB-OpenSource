@@ -84,8 +84,9 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
     def blacklisted_users(self) -> list:
         cursor_n.execute(
-            f"SELECT userid FROM public.blacklist WHERE blacklisted = 'true'"
+            "SELECT userid FROM public.blacklist WHERE blacklisted = 'true'"
         )
+
 
         return [int(row[0]) for row in cursor_n.fetchall()]
 
@@ -98,12 +99,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             pass
         for row in cursor_n.fetchall():
             self.blacklisted = row[0]
-        if self.blacklisted == "false":
-            return True
-        elif self.blacklisted == None:
-            return True
-        else:
-            return False
+        return self.blacklisted in ["false", None]
 
     async def run_process(self, command):
         try:
@@ -200,12 +196,11 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         if member.guild.id == 755722576445046806:
             if member.bot:
                 return
-            else:
-                channel = self.bot.get_channel(755722577049026567)
-                await channel.send(
-                    f"{member.name} left. Guild member count: {guild.member_count}",
-                    delete_after=5,
-                )
+            channel = self.bot.get_channel(755722577049026567)
+            await channel.send(
+                f"{member.name} left. Guild member count: {guild.member_count}",
+                delete_after=5,
+            )
 
     @commands.group(aliases=["eco"], pass_context=True, hidden=True)
     @commands.check(permissions.is_owner)
@@ -238,7 +233,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
         if account == "bank":
             account_to_change = row[0][2]
-        elif account == "wallet" or account == "balance":
+        elif account in {"wallet", "balance"}:
             account_to_change = row[0][1]
             account = "balance"
         else:
@@ -250,7 +245,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             cursor_n.execute(
                 f"UPDATE public.usereco SET bank = '{final_amount}' WHERE userid = '{user.id}'"
             )
-        elif account == "wallet" or account == "balance":
+        elif account in {"wallet", "balance"}:
             cursor_n.execute(
                 f"UPDATE public.usereco SET balance = '{final_amount}' WHERE userid = '{user.id}'"
             )
@@ -283,7 +278,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
         if account == "bank":
             account_to_change = row[0][2]
-        elif account == "wallet" or account == "balance":
+        elif account in {"wallet", "balance"}:
             account_to_change = row[0][1]
             account = "balance"
         else:
@@ -305,7 +300,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                     user.id,
                 ),
             )
-        elif account == "balance" or account == "wallet":
+        elif account in {"balance", "wallet"}:
             cursor_n.execute(
                 f"UPDATE public.usereco SET balance = '{amount}' WHERE userid = '{user.id}'",
                 (
@@ -332,7 +327,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             await ctx.send(f"Please use `tp!eco reset {user.id} {account}`")
             return
         elif amount < 0:
-            await ctx.send(f"Please enter a positive, non-zero number.")
+            await ctx.send("Please enter a positive, non-zero number.")
             return
 
         if account == "bank":
@@ -340,7 +335,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
                 f"UPDATE public.usereco SET bank = '{amount}' WHERE userid = '{user.id}'"
             )
             await ctx.send(f"Set bank to ${amount} for {str(user)}.")
-        elif account == "wallet" or account == "balance":
+        elif account in {"wallet", "balance"}:
             cursor_n.execute(
                 f"UPDATE public.usereco SET balance = '{amount}' WHERE userid = '{user.id}'"
             )
@@ -370,7 +365,7 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             to_erase = "bank and wallet"
         elif account == "bank":
             to_erase = account
-        elif account == "wallet" or account == "balance":
+        elif account in {"wallet", "balance"}:
             to_erase = "balance"
 
         await ctx.send(
@@ -385,11 +380,11 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             ctx.send("Canceled")
             return
 
-        if account == "both" or account == "bank":
+        if account in {"both", "bank"}:
             cursor_n.execute(
                 f"UPDATE public.usereco SET bank = '0' WHERE userid = '{user.id}'"
             )
-        if account == "both" or account == "wallet" or account == "balance":
+        if account in {"both", "wallet", "balance"}:
             cursor_n.execute(
                 f"UPDATE public.usereco SET balance = '0' WHERE userid = '{user.id}'"
             )
@@ -410,8 +405,9 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             f"UPDATE public.globalvars SET variableData = '{new_tax}' WHERE variableName = 'taxData'"
         )
         cursor_n.execute(
-            f"SELECT * FROM public.globalvars WHERE variableName = 'taxData'"
+            "SELECT * FROM public.globalvars WHERE variableName = 'taxData'"
         )
+
         row = cursor_n.fetchall()
         await ctx.send(f"Tax rate changed to {int(row[0][1] * 100)}%.")
 
@@ -427,8 +423,9 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             )
         else:
             cursor_n.execute(
-                f"UPDATE public.globalvars SET variableData2 = '{None}' WHERE variableName = 'taxData'"
+                "UPDATE public.globalvars SET variableData2 = 'None' WHERE variableName = 'taxData'"
             )
+
 
         cursor_n.execute(
             "SELECT * FROM public.globalvars WHERE variableName = 'taxData'"
@@ -436,8 +433,9 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
         row = cursor_n.fetchall()
         if row[0][2] is None:
             await ctx.send(
-                f"Tax collector cleared. User might still be taxed, but no one will collect it."
+                "Tax collector cleared. User might still be taxed, but no one will collect it."
             )
+
         else:
             await ctx.send(f"Tax collector set to {str(user)} (ID: {row[0][2]})")
 
@@ -459,8 +457,8 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             "guild": ctx.guild,
             "message": ctx.message,
             "_": self._last_result,
-        }
-        env.update(globals())
+        } | globals()
+
         body = self.cleanup_code(body)
         stdout = io.StringIO()
         to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
@@ -544,10 +542,9 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
 
         # find the user with the most messages
         most_messages = max(speaker_count.values())
-        most_messages_users = []
-        for user in speaker_count:
-            if speaker_count[user] == most_messages:
-                most_messages_users.append(user)
+        most_messages_users = [
+            user for user, value in speaker_count.items() if value == most_messages
+        ]
 
         # find the user with the most messages
         most_messages_user = most_messages_users[0]
@@ -570,9 +567,10 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
     @commands.command()
     async def whatcanyousee(self, ctx):
         """Displays what channels the bot can see"""
-        channel_list = ""
-        for channel in ctx.guild.text_channels:
-            channel_list += f"{channel.mention}\n"
+        channel_list = "".join(
+            f"{channel.mention}\n" for channel in ctx.guild.text_channels
+        )
+
         await ctx.send(f"Here are the channels I can see:\n{channel_list}")
 
     @commands.check(permissions.is_owner)
@@ -816,9 +814,9 @@ class Admin(commands.Cog, name="admin", command_attrs=dict(hidden=True)):
             description=message,
         )
         embed.set_footer(
-            text=f"To contact me, just DM the bot",
-            icon_url=ctx.author.avatar,
+            text="To contact me, just DM the bot", icon_url=ctx.author.avatar
         )
+
         send_embed_to_logging_guild = self.bot.get_guild(730651628302106714)
         get_log_channel = self.bot.get_channel(730651628302106718)
         if send_embed_to_logging_guild.id != ctx.guild.id:

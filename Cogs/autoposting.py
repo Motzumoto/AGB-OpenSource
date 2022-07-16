@@ -148,101 +148,90 @@ class autoposting(commands.Cog, name="ap"):
                     )
                 except Exception as e:
                     log(f"AutoPosting - Error | {formatColor(e), 'red'}")
-                else:
-                    pass
         else:
             try:
                 for row in cursor_n.fetchall():
                     if row[0] is None:
                         continue
-                    else:
-                        channel = self.bot.get_channel(int(row[0]))
-                        if channel is None:
+                    channel = self.bot.get_channel(int(row[0]))
+                    if channel is None:
+                        continue
+                    if not channel.guild.chunked:
+                        await channel.guild.chunk()
+                        if channel.guild.member_count < 15:
+                            # remove that channel
+                            cursor_n.execute(
+                                f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
+                            )
+                            mydb_n.commit()
+                            log(
+                                f"AutoPosting - Removed Hentai Channel from {channel.guild.name}: {channel.guild.member_count} members"
+                            )
                             continue
-                        if not channel.guild.chunked:
-                            await channel.guild.chunk()
-                            if channel.guild.member_count < 15:
-                                # remove that channel
+                    if channel is not None and channel.guild.id != BotList_Servers:
+                        if channel.is_nsfw():
+                            try:
+                                webhooks = await channel.webhooks()
+                                webhook = discord.utils.get(
+                                    webhooks,
+                                    name="AGB Autoposting",
+                                    user=self.bot.user,
+                                )
+                                if webhook is None:
+                                    # check all the channels webhooks for AGB Autoposting
+                                    for w in webhooks:
+                                        if w.name == "AGB Autoposting":
+                                            # check if there are more than one webhooks
+                                            await w.delete()
+                                    webhook = await channel.create_webhook(
+                                        name="AGB Autoposting",
+                                        avatar=await self.bot.user.avatar.read(),
+                                    )
+                            except discord.errors.Forbidden:
+                                webhook = None
+                            except Exception:
+                                webhook = None
+                            final_messagable: Union[
+                                discord.Webhook, discord.TextChannel
+                            ] = (channel if webhook is None else webhook)
+                            posts += 1
+                            try:
+                                if isinstance(
+                                            final_messagable, discord.TextChannel
+                                        ):
+                                    await final_messagable.send(embed=embed)
+                                else:
+                                    await self.send_from_webhook(
+                                        final_messagable, embed
+                                    )
+                                await asyncio.sleep(0.5)
+                            except discord.Forbidden as e:
+                                ## error is more likely to be a 404, check the logs regardless
+                                log(
+                                    f"AutoPosting - error | {channel.guild.id} / {channel.guild.name} / {channel.id}"
+                                )
+                                log(f"AutoPosting - error | {e}")
+                                log(f"AutoPosting - error | {e.__traceback__}")
+                                log(
+                                    "AutoPosting - Removing hentai channel from database"
+                                )
+                                # this is probably an awful idea but its the only way to remove the channel if the bot is not allowed to post in it
+                                # lets hope discord doesnt fuck up and the webhook is actually there
                                 cursor_n.execute(
                                     f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
                                 )
-                                mydb_n.commit()
-                                log(
-                                    f"AutoPosting - Removed Hentai Channel from {channel.guild.name}: {channel.guild.member_count} members"
-                                )
-                                continue
-                        if channel is not None:
-                            if channel.guild.id == BotList_Servers:
-                                continue
-                            else:
-                                if not channel.is_nsfw():
-                                    if channel.guild.id in BotList_Servers:
-                                        continue
-                                    else:
-                                        # Remove hentai channel from db
-                                        cursor_n.execute(
-                                            f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
-                                        )
-                                        mydb_n.commit()
-                                        log(
-                                            f"AutoPosting - {channel.guild.id} is no longer NSFW, so I have removed the channel from the database."
-                                        )
-                                        continue
-                                else:
-                                    try:
-                                        webhooks = await channel.webhooks()
-                                        webhook = discord.utils.get(
-                                            webhooks,
-                                            name="AGB Autoposting",
-                                            user=self.bot.user,
-                                        )
-                                        if webhook is None:
-                                            # check all the channels webhooks for AGB Autoposting
-                                            for w in webhooks:
-                                                if w.name == "AGB Autoposting":
-                                                    # check if there are more than one webhooks
-                                                    await w.delete()
-                                            webhook = await channel.create_webhook(
-                                                name="AGB Autoposting",
-                                                avatar=await self.bot.user.avatar.read(),
-                                            )
-                                    except discord.errors.Forbidden:
-                                        webhook = None
-                                    except Exception:
-                                        webhook = None
-                                    final_messagable: Union[
-                                        discord.Webhook, discord.TextChannel
-                                    ] = (channel if webhook is None else webhook)
-                                    posts += 1
-                                    try:
-                                        if isinstance(
-                                            final_messagable, discord.TextChannel
-                                        ):
-                                            await final_messagable.send(embed=embed)
-                                            await asyncio.sleep(0.5)
-                                        else:
-                                            await self.send_from_webhook(
-                                                final_messagable, embed
-                                            )
-                                            await asyncio.sleep(0.5)
-                                    except discord.Forbidden as e:
-                                        ## error is more likely to be a 404, check the logs regardless
-                                        log(
-                                            f"AutoPosting - error | {channel.guild.id} / {channel.guild.name} / {channel.id}"
-                                        )
-                                        log(f"AutoPosting - error | {e}")
-                                        log(f"AutoPosting - error | {e.__traceback__}")
-                                        log(
-                                            "AutoPosting - Removing hentai channel from database"
-                                        )
-                                        # this is probably an awful idea but its the only way to remove the channel if the bot is not allowed to post in it
-                                        # lets hope discord doesnt fuck up and the webhook is actually there
-                                        cursor_n.execute(
-                                            f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
-                                        )
-                                        # subtarct 1 from the posts
-                                        posts -= 1
+                                # subtarct 1 from the posts
+                                posts -= 1
 
+                        elif channel.guild.id not in BotList_Servers:
+                            # Remove hentai channel from db
+                            cursor_n.execute(
+                                f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{channel.guild.id}'"
+                            )
+                            mydb_n.commit()
+                            log(
+                                f"AutoPosting - {channel.guild.id} is no longer NSFW, so I have removed the channel from the database."
+                            )
             except Exception:
                 log("AutoPosting - Autoposting has failed. Reloading the cog...")
                 await self.bot.reload_extension("Cogs.autoposting")

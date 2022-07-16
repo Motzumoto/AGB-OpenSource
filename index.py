@@ -31,9 +31,10 @@ discord.http._set_api_version(9)
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
-    format=f"{Style.DIM + '(%(asctime)s)' + Style.RESET_ALL} [{Fore.CYAN + '%(levelname)s' +  Style.RESET_ALL}]: {'%(message)s'}",
+    format=f"{f'{Style.DIM}(%(asctime)s){Style.RESET_ALL}'} [{Fore.CYAN}%(levelname)s{Style.RESET_ALL}]: %(message)s",
     datefmt="[%a]-%I:%M-%p",
 )
+
 
 
 config = imports.get("config.json")
@@ -81,10 +82,7 @@ def msgtracking(user):
         row = cursor_n.fetchall()[0][4]
     except Exception:
         return True
-    if row is True:
-        return True
-    else:
-        return False
+    return row is True
 
 
 async def update_command_usages(self, interaction):
@@ -187,17 +185,13 @@ class Bot(commands.AutoShardedBot):
                     mydb_n.commit()
                     bucket = self.message_cooldown.get_bucket(msg)
                     retry_after = bucket.update_rate_limit()
-                    if retry_after:
-                        return
-                    else:
-                        if msg.reference is not None:
-                            return
-                        else:
-                            if random.randint(1, 2) == 1:
-                                return
-                            else:
-                                await msg.channel.send(embed=embed)
-                                return
+                    if (
+                        not retry_after
+                        and msg.reference is None
+                        and random.randint(1, 2) != 1
+                    ):
+                        await msg.channel.send(embed=embed)
+                    return
                 except Exception:
                     await msg.channel.send(
                         f"**Hi, My name is AGB!**\nIf you like me and want to know more information about me, please enable embed permissions in your server settings so I can show you more information!\nIf you don't know how, please join the support server and ask for help!\n{config.Server}"

@@ -17,12 +17,11 @@ async def is_owner_slash(interaction):
     await interaction.response.defer(ephemeral=True, thinking=True)
     if interaction.user.id in owners:
         return True
-    else:
-        await interaction.followup.send(
-            "You are not one of the owners of this bot. You can't use this command.",
-            ephemeral=True,
-        )
-        return False
+    await interaction.followup.send(
+        "You are not one of the owners of this bot. You can't use this command.",
+        ephemeral=True,
+    )
+    return False
 
 
 async def check_permissions(ctx, perms, *, check=all):
@@ -43,8 +42,6 @@ async def slash_check_permissions(
 
     if interaction.user.id in owners:
         return True
-    else:
-        pass
     resolved = interaction.channel.permissions_for(interaction.user)
     check(getattr(resolved, name, None) == value for name, value in perms.items())
     return
@@ -52,10 +49,7 @@ async def slash_check_permissions(
 
 def dynamic_ownerbypass_cooldown(rate: int, per: float, type):
     def actual_func(message):
-        if message.author.id in owners:
-            return None
-        # Otherwise cooldown of 1 per 1 second
-        return commands.Cooldown(rate, per)
+        return None if message.author.id in owners else commands.Cooldown(rate, per)
 
     return commands.dynamic_cooldown(actual_func, type)
 
@@ -125,11 +119,8 @@ async def slash_check_priv(interaction: discord.Interaction, member: discord.Mem
         return False
 
     # Now permission check
-    if member.id in owners:
-        if interaction.user.id not in owners:
-            return await interaction.followup.send(embed=embed3)
-        else:
-            pass
+    if member.id in owners and interaction.user.id not in owners:
+        return await interaction.followup.send(embed=embed3)
     if member.id == interaction.guild.owner.id:
         return await interaction.followup.send(embed=embed4)
     if interaction.user.top_role == member.top_role:
@@ -180,11 +171,8 @@ async def check_priv(ctx, member):
             return False
 
         # Now permission check
-        if member.id in owners:
-            if ctx.author.id not in owners:
-                return await ctx.send(embed=embed3)
-            else:
-                pass
+        if member.id in owners and ctx.author.id not in owners:
+            return await ctx.send(embed=embed3)
         if member.id == ctx.guild.owner.id:
             return await ctx.send(embed=embed4)
         if ctx.author.top_role == member.top_role:

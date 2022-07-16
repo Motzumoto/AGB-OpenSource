@@ -20,10 +20,7 @@ def cmd(name: str, guild: int):
             mydb_n.commit()
             return False
         else:
-            if cmdRow[0][0] == "true":
-                cmdBool = True
-            else:
-                cmdBool = False
+            cmdBool = cmdRow[0][0] == "true"
             mydb_n.commit()
     except psycopg.errors.UndefinedColumn:
         cursor_n.execute(

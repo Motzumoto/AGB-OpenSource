@@ -61,17 +61,15 @@ class Error(commands.Cog, name="error"):
     async def create_embed(self, ctx, error):
         embed = discord.Embed(title="Error", description=error, colour=0xFF0000)
         bucket = self.message_cooldown.get_bucket(ctx.message)
-        retry_after = bucket.update_rate_limit()
-        if retry_after:
+        if retry_after := bucket.update_rate_limit():
             return
-        else:
-            try:
-                await ctx.send(embed=embed, delete_after=15)
-            except Exception:
-                await ctx.send(
-                    f"`{error}`\n***Enable Embed permissions please.***",
-                    delete_after=15,
-                )
+        try:
+            await ctx.send(embed=embed, delete_after=15)
+        except Exception:
+            await ctx.send(
+                f"`{error}`\n***Enable Embed permissions please.***",
+                delete_after=15,
+            )
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -82,9 +80,6 @@ class Error(commands.Cog, name="error"):
         error = getattr(error, "original", error)
         if hasattr(ctx.command, "on_error"):
             return
-        else:
-            pass
-
         if isinstance(error, commands.MissingRequiredArgument):
             bucket = self.message_cooldown.get_bucket(ctx.message)
             retry_after = bucket.update_rate_limit()
@@ -130,24 +125,17 @@ class Error(commands.Cog, name="error"):
             minute = round(error.retry_after / 60)
             if retry_after:
                 return
+            if day > 0:
+                await ctx.send(f"This command has a cooldown for {str(day)}day(s)")
+            elif hour > 0:
+                await ctx.send(f"This command has a cooldown for {str(hour)} hour(s)")
+            elif minute > 0:
+                await ctx.send(f"This command has a cooldown for {str(minute)} minute(s)")
             else:
-                if day > 0:
-                    await ctx.send(
-                        "This command has a cooldown for " + str(day) + "day(s)"
-                    )
-                elif hour > 0:
-                    await ctx.send(
-                        "This command has a cooldown for " + str(hour) + " hour(s)"
-                    )
-                elif minute > 0:
-                    await ctx.send(
-                        "This command has a cooldown for " + str(minute) + " minute(s)"
-                    )
-                else:
-                    await ctx.send(
-                        f"This command has a cooldown for {error.retry_after:.2f} second(s)"
-                    )
-                    return
+                await ctx.send(
+                    f"This command has a cooldown for {error.retry_after:.2f} second(s)"
+                )
+                return
 
         elif isinstance(error, commands.NSFWChannelRequired):
             embed = discord.Embed(
@@ -162,19 +150,17 @@ class Error(commands.Cog, name="error"):
                 name=ctx.message.author.name, icon_url=ctx.message.author.avatar
             )
             bucket = self.message_cooldown.get_bucket(ctx.message)
-            retry_after = bucket.update_rate_limit()
-            if retry_after:
+            if retry_after := bucket.update_rate_limit():
                 return
-            else:
-                try:
-                    await ctx.send(embed=embed, delete_after=30)
-                except discord.errors.Forbidden:
-                    await ctx.send(
-                        f"`{error}`\n***Enable Embed permissions please.***",
-                        delete_after=30,
-                    )
+            try:
+                await ctx.send(embed=embed, delete_after=30)
+            except discord.errors.Forbidden:
+                await ctx.send(
+                    f"`{error}`\n***Enable Embed permissions please.***",
+                    delete_after=30,
+                )
 
-                    return
+                return
 
         elif isinstance(error, commands.CheckAnyFailure):
             pass
@@ -205,92 +191,86 @@ class Error(commands.Cog, name="error"):
                     name=ctx.message.author.name, icon_url=ctx.message.author.avatar
                 )
                 bucket = self.message_cooldown.get_bucket(ctx.message)
-                retry_after = bucket.update_rate_limit()
-                if retry_after:
+                if retry_after := bucket.update_rate_limit():
                     return
-                else:
-                    try:
-                        await ctx.send(embed=embed, delete_after=15)
-                        await ctx.message.add_reaction("\u274C")
-                    except discord.errors.Forbidden:
-                        await ctx.send(
-                            f"You don't have permission to run this command.\n***Enable Embed permissions please.***",
-                            delete_after=15,
-                        )
-                        await ctx.message.add_reaction("\u274C")
+                try:
+                    await ctx.send(embed=embed, delete_after=15)
+                    await ctx.message.add_reaction("\u274C")
+                except discord.errors.Forbidden:
+                    await ctx.send(
+                        f"You don't have permission to run this command.\n***Enable Embed permissions please.***",
+                        delete_after=15,
+                    )
+                    await ctx.message.add_reaction("\u274C")
 
-                        return
+                    return
+            elif self.nword_re.search(ctx.message.content.lower()):
+                await me1.send(
+                    f"{ctx.author} is trying to get AGB to say racist things"
+                )
+                await me2.send(
+                    f"{ctx.author} is trying to get AGB to say racist things"
+                )
+                return
             else:
-                if self.nword_re.search(ctx.message.content.lower()):
-                    await me1.send(
-                        f"{ctx.author} is trying to get AGB to say racist things"
-                    )
-                    await me2.send(
-                        f"{ctx.author} is trying to get AGB to say racist things"
-                    )
+                embed = discord.Embed(
+                    title="Error",
+                    colour=0xFF0000,
+                    timestamp=ctx.message.created_at,
+                )
+
+                embed.add_field(name="Author", value=ctx.message.author.mention)
+                embed.add_field(
+                    name="Error",
+                    value="You don't have permission to run this command.",
+                )
+                embed.set_thumbnail(url=ctx.message.author.avatar)
+                embed.set_footer(
+                    text="If you believe this is a mistake, contact the bot owner or the server owner."
+                )
+                embed.set_author(
+                    name=ctx.message.author.name,
+                    icon_url=ctx.message.author.avatar,
+                )
+                bucket = self.message_cooldown.get_bucket(ctx.message)
+                if retry_after := bucket.update_rate_limit():
                     return
-                else:
-                    embed = discord.Embed(
-                        title="Error",
-                        colour=0xFF0000,
-                        timestamp=ctx.message.created_at,
+                try:
+                    await ctx.send(embed=embed, delete_after=35)
+                except Exception:
+                    await ctx.send(
+                        "You don't have permission to run this command.",
+                        delete_after=15,
                     )
 
-                    embed.add_field(name="Author", value=ctx.message.author.mention)
-                    embed.add_field(
-                        name="Error",
-                        value="You don't have permission to run this command.",
-                    )
-                    embed.set_thumbnail(url=ctx.message.author.avatar)
-                    embed.set_footer(
-                        text="If you believe this is a mistake, contact the bot owner or the server owner."
-                    )
-                    embed.set_author(
-                        name=ctx.message.author.name,
-                        icon_url=ctx.message.author.avatar,
-                    )
-                    bucket = self.message_cooldown.get_bucket(ctx.message)
-                    retry_after = bucket.update_rate_limit()
-                    if retry_after:
-                        return
-                    else:
-                        try:
-                            await ctx.send(embed=embed, delete_after=35)
-                        except Exception:
-                            await ctx.send(
-                                f"You don't have permission to run this command.",
-                                delete_after=15,
-                            )
 
-                            return
+                    return
             mydb_n.commit()
             return
         bucket = self.message_cooldown.get_bucket(ctx.message)
-        retry_after = bucket.update_rate_limit()
-        if retry_after:
+        if retry_after := bucket.update_rate_limit():
+            return
+        await ctx.send(
+            f"An error has occured. The error has automatically been reported and logged. Please wait until the developers work on a fix.\nJoin the support server for updates: {config.Server}",
+        )
+        bug_channel = self.bot.get_channel(791265212429762561)
+
+        embed = discord.Embed(
+            title=f"New Bug Submitted By {ctx.author.name}.",
+            colour=EMBED_COLOUR,
+        )
+        embed.add_field(name="Error", value=default.traceback_maker(error))
+        embed.add_field(name="Command", value=ctx.command.name)
+        embed.set_footer(
+            text=f"User *({ctx.author.id})* in {ctx.channel.id} {ctx.message.id}",
+            icon_url=ctx.author.avatar,
+        )
+        # check if the error is already being handled in self.errors list
+
+        if error in self.errors:
             return
         else:
-            await ctx.send(
-                f"An error has occured. The error has automatically been reported and logged. Please wait until the developers work on a fix.\nJoin the support server for updates: {config.Server}",
-            )
-            bug_channel = self.bot.get_channel(791265212429762561)
-
-            embed = discord.Embed(
-                title=f"New Bug Submitted By {ctx.author.name}.",
-                colour=EMBED_COLOUR,
-            )
-            embed.add_field(name="Error", value=default.traceback_maker(error))
-            embed.add_field(name="Command", value=ctx.command.name)
-            embed.set_footer(
-                text=f"User *({ctx.author.id})* in {ctx.channel.id} {ctx.message.id}",
-                icon_url=ctx.author.avatar,
-            )
-            # check if the error is already being handled in self.errors list
-
-            if error in self.errors:
-                return
-            else:
-                await bug_channel.send(embed=embed)
+            await bug_channel.send(embed=embed)
 
 
 async def setup(bot):

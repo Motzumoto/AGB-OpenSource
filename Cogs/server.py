@@ -65,56 +65,54 @@ class DiscordCmds(commands.Cog, name="discord"):
 
     @commands.Cog.listener(name="on_message")
     async def spooky(self, message):
-        BotList_Servers = [
-            336642139381301249,
-            716445624517656727,
-            523523486719803403,
-            658262945234681856,
-            608711879858192479,
-            446425626988249089,
-            387812458661937152,
-            414429834689773578,
-            645281161949741064,
-            527862771014959134,
-            733135938347073576,
-            766993740463603712,
-            724571620676599838,
-            568567800910839811,
-            641574644578648068,
-            532372609476591626,
-            374071874222686211,
-            789934742128558080,
-            694140006138118144,
-            743348125191897098,
-            110373943822540800,
-            491039338659053568,
-            891226286347923506,
-        ]
         bucket = self.message_cooldown.get_bucket(message)
         retry_after = bucket.update_rate_limit()
-        if datetime.today().month == 10:  # and datetime.today().day == 31:
+        if datetime.now().month == 10:  # and datetime.today().day == 31:
+            BotList_Servers = [
+                336642139381301249,
+                716445624517656727,
+                523523486719803403,
+                658262945234681856,
+                608711879858192479,
+                446425626988249089,
+                387812458661937152,
+                414429834689773578,
+                645281161949741064,
+                527862771014959134,
+                733135938347073576,
+                766993740463603712,
+                724571620676599838,
+                568567800910839811,
+                641574644578648068,
+                532372609476591626,
+                374071874222686211,
+                789934742128558080,
+                694140006138118144,
+                743348125191897098,
+                110373943822540800,
+                491039338659053568,
+                891226286347923506,
+            ]
             if self.halloween_re.search(message.content.lower()):
                 if retry_after:
                     return
                 if message.guild.id in BotList_Servers:
                     return
-                else:
-                    try:
-                        await message.add_reaction("🎃")
-                        await asyncio.sleep(1)
-                    except Exception:
-                        pass
+                try:
+                    await message.add_reaction("🎃")
+                    await asyncio.sleep(1)
+                except Exception:
+                    pass
             if self.spooky_re.search(message.content.lower()):
                 if retry_after:
                     return
                 if message.guild.id in BotList_Servers:
                     return
-                else:
-                    try:
-                        await message.add_reaction("👻")
-                        await asyncio.sleep(1)
-                    except Exception:
-                        pass
+                try:
+                    await message.add_reaction("👻")
+                    await asyncio.sleep(1)
+                except Exception:
+                    pass
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -157,8 +155,7 @@ class DiscordCmds(commands.Cog, name="discord"):
     @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     async def snipe(self, ctx):
         """Snipe recently deleted messages to see what someone said."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         try:
@@ -170,9 +167,11 @@ class DiscordCmds(commands.Cog, name="discord"):
                 attachments,
             ) = self.bot.sniped_messages[ctx.guild.id, ctx.channel.id]
 
-            files = ""
-            for file in attachments:
-                files += f"[{file.filename}]({file.proxy_url})" + "\n"
+            files = "".join(
+                f"[{file.filename}]({file.proxy_url})" + "\n"
+                for file in attachments
+            )
+
             embed = discord.Embed(
                 title=f"{self.bot.user.name}",
                 url=Website,
@@ -200,8 +199,7 @@ class DiscordCmds(commands.Cog, name="discord"):
     @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     async def editsnipe(self, ctx):
         """Snipe edited messages to see what the message said before."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         try:
@@ -232,8 +230,7 @@ class DiscordCmds(commands.Cog, name="discord"):
     @permissions.has_permissions(manage_roles=True)
     async def listemoji(self, ctx, ids: bool = False):
         """Lists all available emojis in a server, perfect for an emoji channel"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         try:
@@ -247,7 +244,7 @@ class DiscordCmds(commands.Cog, name="discord"):
 
             # truncate text to 5750 characters
             if len(text) > 3900:
-                text = text[:3900] + "..."
+                text = f"{text[:3900]}..."
             embed_no_id = discord.Embed(
                 title=description, description=text, color=EMBED_COLOUR
             )
@@ -265,7 +262,7 @@ class DiscordCmds(commands.Cog, name="discord"):
                 ]
             )
             if len(text) > 3900:
-                text = text[:3900] + "..."
+                text = f"{text[:3900]}..."
             embed_id = discord.Embed(
                 title=description, description=text, color=EMBED_COLOUR
             )
@@ -332,14 +329,16 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.guild_only()
     async def roles(self, ctx):
         """Get all roles in current server"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
-        allroles = ""
+        allroles = "".join(
+            f"[{str(num).zfill(2)}] {role.id}\t{role.name}\t[ Users: {len(role.members)} ]\r\n"
+            for num, role in enumerate(
+                sorted(ctx.guild.roles, reverse=True), start=1
+            )
+        )
 
-        for num, role in enumerate(sorted(ctx.guild.roles, reverse=True), start=1):
-            allroles += f"[{str(num).zfill(2)}] {role.id}\t{role.name}\t[ Users: {len(role.members)} ]\r\n"
 
         data = BytesIO(allroles.encode("utf-8"))
         await ctx.send(
@@ -353,8 +352,7 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.guild_only()
     async def joinedat(self, ctx, *, user: discord.Member = None):
         """Check when a user joined the current server."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         user = user or ctx.author
@@ -374,8 +372,7 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.guild_only()
     async def mods(self, ctx):
         """Check which mods are in current guild"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         mods = []
@@ -390,9 +387,11 @@ class DiscordCmds(commands.Cog, name="discord"):
             ):
                 mods.append(member)
         if mods:
-            mod_list = ""
-            for num, mod in enumerate(mods, start=1):
-                mod_list += f"[{num}] {mod.name}#{mod.discriminator} [{mod.id}]\n"
+            mod_list = "".join(
+                f"[{num}] {mod.name}#{mod.discriminator} [{mod.id}]\n"
+                for num, mod in enumerate(mods, start=1)
+            )
+
             await ctx.send(f"\n{default.pycode(mod_list)}")
         else:
             await ctx.send("There are no mods online.")
@@ -403,8 +402,7 @@ class DiscordCmds(commands.Cog, name="discord"):
     @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     async def firstmessage(self, ctx, channel: discord.TextChannel = None):
         """Provide a link to the first message in current or provided channel."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         channel = channel or ctx.channel
@@ -426,23 +424,20 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.guild_only()
     async def channelstats(self, ctx):
         """Gets stats for the current channel you're in."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         channel = ctx.channel
 
         embed = discord.Embed(
             title=f"Stats for **{channel.name}**",
-            description=f"{'Category: {}'.format(channel.category.name) if channel.category else 'This channel is not in a category'}",
+            description=f"{f'Category: {channel.category.name}' if channel.category else 'This channel is not in a category'}",
             color=EMBED_COLOUR,
         )
+
         embed.add_field(name="Channel Guild", value=ctx.guild.name)
         embed.add_field(name="Channel Id", value=channel.id)
-        embed.add_field(
-            name="Channel Topic",
-            value=f"{channel.topic if channel.topic else 'No topic.'}",
-        )
+        embed.add_field(name="Channel Topic", value=f"{channel.topic or 'No topic.'}")
         embed.add_field(name="Channel Position", value=channel.position)
         embed.add_field(
             name="Amount of pinned messages?", value=(len(await channel.pins()))
@@ -464,15 +459,15 @@ class DiscordCmds(commands.Cog, name="discord"):
     @permissions.dynamic_ownerbypass_cooldown(1, 10, commands.BucketType.user)
     async def suggest(self, ctx, *, suggestion: str):
         """Suggest things this bot should have or not have."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         thanks = discord.Embed(
             title=f"Thank you for contributing to the community {ctx.author.name}.",
-            description=f"**Warning**: This command is not for spamming / abusing or for advertising. You will be blacklisted from this bot if you do so.",
+            description="**Warning**: This command is not for spamming / abusing or for advertising. You will be blacklisted from this bot if you do so.",
             colour=EMBED_COLOUR,
         )
+
         suggestion_channel = self.bot.get_channel(773904927579701310)
         embed = discord.Embed(
             title=f"New suggestion by {ctx.author}.",
@@ -490,8 +485,7 @@ class DiscordCmds(commands.Cog, name="discord"):
     @permissions.dynamic_ownerbypass_cooldown(1, 10, commands.BucketType.user)
     async def bug(self, ctx, *, bug: str):
         """Report bugs that you run into"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         thanks = discord.Embed(
@@ -518,8 +512,7 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.check(permissions.is_owner)
     async def bugreply(self, ctx, channel_id: int, reported_bug_id: int, *, reply: str):
         """Reply to a bug report"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         channel = self.bot.get_channel(channel_id)
@@ -544,8 +537,7 @@ class DiscordCmds(commands.Cog, name="discord"):
     @commands.guild_only()
     async def colors(self, ctx):
         """Tells you all the colors this bot can make"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         with open("colors.json", "r") as f:
@@ -575,8 +567,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def give_color(self, ctx, *, role: Creamy = None):
         """Allows users to give themselves a color role."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         with open("colors.json", "r") as f:
@@ -586,7 +577,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 for x in color_roles:
                     if x in ctx.author.roles:
                         await ctx.author.remove_roles(x)
-                await ctx.send(f"Your color has been removed.")
+                await ctx.send("Your color has been removed.")
             elif role in color_roles:
                 for x in color_roles:
                     if x in ctx.author.roles:
@@ -605,8 +596,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def icon(self, ctx):
         """Get the current server icon"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         if not ctx.guild.icon:
@@ -627,8 +617,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def banner(self, ctx):
         """Get the current banner image"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         if not ctx.guild.banner:
@@ -644,14 +633,11 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         user = user or ctx.author
         async with aiohttp.ClientSession() as s:
             async with s.get(
-                f"https://top.gg/api/bots/723726581864071178/check?userId={user.id}",
-                headers={"Authorization": TOP_GG_TOKEN},
-            ) as r:
+                        f"https://top.gg/api/bots/723726581864071178/check?userId={user.id}",
+                        headers={"Authorization": TOP_GG_TOKEN},
+                    ) as r:
                 idkwhattocallthis = await r.json()
-                if idkwhattocallthis["voted"] == 1:
-                    voted = True
-                else:
-                    voted = False
+                voted = idkwhattocallthis["voted"] == 1
                 if voted:
                     title = "Poggers!"
                     description = "You have voted in the last **12** hours."
@@ -670,14 +656,13 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Get information about a role"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         list_members_with_the_role = [
             member.mention for member in ctx.guild.members if role in member.roles
         ]
-        if len(list_members_with_the_role) == 0:
+        if not list_members_with_the_role:
             list_members_with_the_role = "None"
         if len(list_members_with_the_role) > 40:
             list_members_with_the_role = "Too many members to list"
@@ -729,8 +714,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @permissions.has_permissions(manage_roles=True)
     async def massrole(self, ctx, *, role: discord.Role):
         """Mass give a role to all users in the server (Ignores bots)"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         added = 0
@@ -743,10 +727,9 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         async with ctx.channel.typing():
             msg_1 = await ctx.send("Working...")
             for member in ctx.guild.members:
-                if not member.bot:
-                    if role not in member.roles:
-                        await member.add_roles(role)
-                        added += 1
+                if not member.bot and role not in member.roles:
+                    await member.add_roles(role)
+                    added += 1
             await msg_1.edit(
                 content=f"**{role.name}** role was given to {added} users in the server!"
             )
@@ -760,17 +743,17 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         self, ctx, *, role: discord.Role, ephemeral: bool = False
     ):
         """Mass removes a role from everyone in the server (Doesn't ignore bots)"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         removed = 0
         if role.is_default():
-            return await ctx.send(f"Cant remove a default role from all users!")
+            return await ctx.send("Cant remove a default role from all users!")
         if role.position > ctx.author.top_role.position:
             return await ctx.send(
-                f"You cant remove a role that is higher than your top role!"
+                "You cant remove a role that is higher than your top role!"
             )
+
         async with ctx.channel.typing():
             msg_1 = await ctx.send("Working...")
             for member in ctx.guild.members:
@@ -788,8 +771,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def serverinfo(self, ctx):
         """Check info about current server"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
         fetching = await ctx.send("Fetching info...")
         embed = discord.Embed(
@@ -894,10 +876,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             return await ctx.send(
                 "Bots don't have any *useful* information!", ephemeral=True
             )
-        chunked = []
-        for guild in self.bot.guilds:
-            if guild.chunked:
-                chunked.append(guild)
+        chunked = [guild for guild in self.bot.guilds if guild.chunked]
         discord_version = discord.__version__
         python_version = platform.python_version()
         banner = await self.bot.fetch_user(user.id)
@@ -910,9 +889,8 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
             embed.set_image(url=banner.banner)
         except Exception:
             pass
-        if isinstance(user, discord.Member):
-            if user.nick is not None:
-                embed.add_field(name="Nickname", value=f"`{user.nick}`", inline=True)
+        if isinstance(user, discord.Member) and user.nick is not None:
+            embed.add_field(name="Nickname", value=f"`{user.nick}`", inline=True)
         # create a unix timestamp for the user's account creation
         time_created = int(user.created_at.timestamp())
         embed.add_field(
@@ -927,19 +905,14 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
                 value=f"`{len(user.mutual_guilds)} Servers`",
                 inline=False,
             )
+        elif len(user.mutual_guilds) == 1:
+            embed.add_field(name="Mutual Servers", value="`1 Server`", inline=True)
         else:
-            if len(user.mutual_guilds) == 1:
-                embed.add_field(
-                    name="Mutual Servers",
-                    value=f"`1 Server`",
-                    inline=True,
-                )
-            else:
-                embed.add_field(
-                    name="Mutual Servers",
-                    value=f"`{len(user.mutual_guilds)} Servers`\n`(Can be innacurate, requires all servers to be cached)`",
-                    inline=True,
-                )
+            embed.add_field(
+                name="Mutual Servers",
+                value=f"`{len(user.mutual_guilds)} Servers`\n`(Can be innacurate, requires all servers to be cached)`",
+                inline=True,
+            )
 
         embed.set_thumbnail(url=user.avatar)
         if isinstance(user, discord.Member):
@@ -974,8 +947,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     @commands.guild_only()
     async def wolfram(self, ctx):
         """Interactively calculate things with Wolfram Alpha."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         if ctx.invoked_subcommand is None:
@@ -994,17 +966,15 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
         async with self.session.get(url, params=payload, headers=headers) as r:
             result = await r.text()
         root = ET.fromstring(result)
-        a = []
-        for pt in root.findall(".//plaintext"):
-            if pt.text:
-                a.append(pt.text.capitalize())
-        if len(a) < 1:
-            message = "There is as yet insufficient data for a meaningful answer."
-        else:
-            message = "\n".join(a[0:3])
+        if a := [
+            pt.text.capitalize() for pt in root.findall(".//plaintext") if pt.text
+        ]:
+            message = "\n".join(a[:3])
             if "Current geoip location" in message:
                 message = "There is as yet insufficient data for a meaningful answer."
 
+        else:
+            message = "There is as yet insufficient data for a meaningful answer."
         await ctx.send(default.box(message), ephemeral=ephemeral)
 
     @wolfram.command()
@@ -1046,7 +1016,7 @@ You can give yourself the colors by doing `tp!colorme <color>`. \nExample: `tp!c
     async def solve(self, ctx, *, mathquestion: str, ephemeral: bool = True):
         """Solve any math problem"""
         api_key = config.WolframAlpha
-        url = f"http://api.wolframalpha.com/v2/query"
+        url = "http://api.wolframalpha.com/v2/query"
         params = {
             "appid": api_key,
             "input": mathquestion,

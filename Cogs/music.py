@@ -23,10 +23,10 @@ class music(commands.Cog):
         self.session = aiohttp.ClientSession()
 
     def error_msg(self, error) -> str:
-        if error == "not_in_voice_channel":
-            return f":x:You need to join a voice channel first."
-        elif error == "not_in_same_vc":
-            return f":x:You need to be in the same voice channel as me."
+        if error == "not_in_same_vc":
+            return ":x:You need to be in the same voice channel as me."
+        elif error == "not_in_voice_channel":
+            return ":x:You need to join a voice channel first."
         else:
             return "An error occured"
 
@@ -91,8 +91,7 @@ class music(commands.Cog):
         if ctx.author.voice.channel != ctx.guild.me.voice.channel:
 
             return await ctx.reply(self.error_msg("not_in_same_vc"))
-        player = music_.get_player(guild_id=ctx.guild.id)
-        if player:
+        if player := music_.get_player(guild_id=ctx.guild.id):
             try:
                 await player.stop()
                 await player.delete()
@@ -397,7 +396,7 @@ class music(commands.Cog):
             index = int(index)
             if index <= 0:
 
-                return await ctx.reply(f":x:The number should be a positive number!")
+                return await ctx.reply(":x:The number should be a positive number!")
         except ValueError:
 
             return await ctx.reply(
@@ -425,11 +424,11 @@ class music(commands.Cog):
                 return await ctx.reply(error_msg)
             current_song = player.now_playing()
             song = current_song.name
-        main_msg = await ctx.reply(f"Searching for lyrics...")
+        main_msg = await ctx.reply("Searching for lyrics...")
         embeds = []
         async with self.session.get(
-            f"https://some-random-api.ml/lyrics?title={song.lower()}"
-        ) as r:
+                f"https://some-random-api.ml/lyrics?title={song.lower()}"
+            ) as r:
             if r.status != 200:
                 return await main_msg.edit(
                     content="An error occured while accessing the API, this is usually because there aren't any lyrics to the song. Please try again later :>"
@@ -464,10 +463,11 @@ class music(commands.Cog):
                         discord.Embed(
                             title=rj["title"],
                             url=rj["links"]["genius"],
-                            description=rj["lyrics"][i : len(rj["lyrics"]) - 1],
+                            description=rj["lyrics"][i:-1],
                             color=EMBED_COLOUR,
                         ).set_thumbnail(url=rj["thumbnail"]["genius"])
                     )
+
                     break
                 i += 3999
             return await main_msg.edit(
