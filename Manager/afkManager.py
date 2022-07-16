@@ -10,11 +10,7 @@ def afkState(user: int):
 
     afkBool = bool
 
-    if row[0][1] == True:
-        afkBool = True
-    else:
-        afkBool = False
-
+    afkBool = row[0][1] == True
     mydb_n.commit()
     return afkBool
 
@@ -28,11 +24,7 @@ def afkNotes(user: int):
 
     afkStr = str
 
-    if row[0][1] == True:
-        afkStr = str(row[0][2])
-    else:
-        afkStr = "Not AFK"
-
+    afkStr = str(row[0][2]) if row[0][1] == True else "Not AFK"
     mydb_n.commit()
     return afkStr
 

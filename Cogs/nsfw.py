@@ -48,8 +48,9 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
 
     async def create_embed(self, ctx, error):
         embed = discord.Embed(
-            title=f"Error Caught!", color=0xFF0000, description=f"{error}"
+            title="Error Caught!", color=0xFF0000, description=f"{error}"
         )
+
         embed.set_thumbnail(url=self.bot.user.avatar)
 
     @commands.hybrid_command()
@@ -66,17 +67,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
         self, ctx, *, channel: discord.TextChannel, ephemeral: bool = False
     ):
         """Mention a channel to autopost hentai to. example: `tp!autopost #auto-nsfw`"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         Server = self.bot.get_guild(755722576445046806)
 
         # check if the command was used as an interaction
-        if ctx.interaction is None:
-            ephemeral = False
-        else:
-            ephemeral = True
+        ephemeral = ctx.interaction is not None
         if not channel.is_nsfw():
             return await ctx.send(
                 "That shit isn't NSFW - fuck that.", ephemeral=ephemeral
@@ -151,8 +148,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
     @permissions.has_permissions(manage_channels=True)
     async def autopost_remove(self, ctx):
         """Remove the auto hentai posting channel."""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         # await ctx.send(f"This command is currently disabled because it is no
@@ -172,8 +168,9 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                     f"UPDATE public.guilds SET hentaichannel = NULL WHERE guildId = '{ctx.guild.id}'"
                 )
                 await ctx.send(
-                    f"Alright, your auto posting channel has been removed from our database."
+                    "Alright, your auto posting channel has been removed from our database."
                 )
+
                 mydb_n.commit()
 
     @commands.hybrid_group()
@@ -200,16 +197,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=EMBED_COLOUR,
         )
         embed.set_image(url=(await self.get_hentai_img()))
-        embed.set_footer(
-            text=f"lunardev.group",
-        )
+        embed.set_footer(text="lunardev.group")
         if ctx.interaction is None:
-            if ctx.channel.is_nsfw():
-                await ctx.send(embed=embed)
-                return
-            else:
+            if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
                 raise commands.NSFWChannelRequired(ctx.channel)
+            await ctx.send(embed=embed)
+            return
         await ctx.send(embed=embed, ephemeral=True)
 
     @nsfw.command()
@@ -236,16 +230,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=EMBED_COLOUR,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group",
-        )
+        embed.set_footer(text="lunardev.group")
         if ctx.interaction is None:
-            if ctx.channel.is_nsfw():
-                await ctx.send(embed=embed)
-                return
-            else:
+            if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
                 raise commands.NSFWChannelRequired(ctx.channel)
+            await ctx.send(embed=embed)
+            return
         await ctx.send(embed=embed, ephemeral=True)
 
     @nsfw.command()
@@ -272,16 +263,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=EMBED_COLOUR,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group",
-        )
+        embed.set_footer(text="lunardev.group")
         if ctx.interaction is None:
-            if ctx.channel.is_nsfw():
-                await ctx.send(embed=embed)
-                return
-            else:
+            if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
                 raise commands.NSFWChannelRequired(ctx.channel)
+            await ctx.send(embed=embed)
+            return
         await ctx.send(embed=embed, ephemeral=True)
 
     @nsfw.command()
@@ -308,16 +296,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=EMBED_COLOUR,
         )
         embed.set_image(url=(await self.get_hentai_img()))
-        embed.set_footer(
-            text=f"lunardev.group",
-        )
+        embed.set_footer(text="lunardev.group")
         if ctx.interaction is None:
-            if ctx.channel.is_nsfw():
-                await ctx.send(embed=embed)
-                return
-            else:
+            if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
                 raise commands.NSFWChannelRequired(ctx.channel)
+            await ctx.send(embed=embed)
+            return
         await ctx.send(embed=embed, ephemeral=True)
 
     @nsfw.command()
@@ -345,16 +330,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=EMBED_COLOUR,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group",
-        )
+        embed.set_footer(text="lunardev.group")
         if ctx.interaction is None:
-            if ctx.channel.is_nsfw():
-                await ctx.send(embed=embed)
-                return
-            else:
+            if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
                 raise commands.NSFWChannelRequired(ctx.channel)
+            await ctx.send(embed=embed)
+            return
         await ctx.send(embed=embed, ephemeral=True)
 
     @nsfw.command()
@@ -382,16 +364,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=EMBED_COLOUR,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group",
-        )
+        embed.set_footer(text="lunardev.group")
         if ctx.interaction is None:
-            if ctx.channel.is_nsfw():
-                await ctx.send(embed=embed)
-                return
-            else:
+            if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
                 raise commands.NSFWChannelRequired(ctx.channel)
+            await ctx.send(embed=embed)
+            return
         await ctx.send(embed=embed, ephemeral=True)
 
     @nsfw.command()
@@ -419,16 +398,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=EMBED_COLOUR,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group",
-        )
+        embed.set_footer(text="lunardev.group")
         if ctx.interaction is None:
-            if ctx.channel.is_nsfw():
-                await ctx.send(embed=embed)
-                return
-            else:
+            if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
                 raise commands.NSFWChannelRequired(ctx.channel)
+            await ctx.send(embed=embed)
+            return
         await ctx.send(embed=embed, ephemeral=True)
 
     @nsfw.command()
@@ -456,16 +432,13 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=EMBED_COLOUR,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group",
-        )
+        embed.set_footer(text="lunardev.group")
         if ctx.interaction is None:
-            if ctx.channel.is_nsfw():
-                await ctx.send(embed=embed)
-                return
-            else:
+            if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
                 raise commands.NSFWChannelRequired(ctx.channel)
+            await ctx.send(embed=embed)
+            return
         await ctx.send(embed=embed, ephemeral=True)
 
 

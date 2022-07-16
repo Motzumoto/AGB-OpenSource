@@ -83,11 +83,9 @@ def _parse(translation_file: io.TextIOWrapper) -> Dict[str, str]:
     step = None
     untranslated = ""
     translated = ""
-    translations = {}
     locale = get_locale()
 
-    translations[locale] = {}
-
+    translations = {locale: {}}
     for line in translation_file:
         line = line.strip()
 
@@ -126,7 +124,7 @@ def get_locale_path(cog_folder: Path, extension: str) -> Path:
     :return:
         Path of possible localization file, it may not exist.
     """
-    return cog_folder / "locales" / "{}.{}".format(get_locale(), extension)
+    return cog_folder / "locales" / f"{get_locale()}.{extension}"
 
 
 class Translator(Callable[[str], str]):
@@ -186,6 +184,5 @@ class Translator(Callable[[str], str]):
 
     def _add_translation(self, untranslated, translated):
         untranslated = _unescape(untranslated)
-        translated = _unescape(translated)
-        if translated:
+        if translated := _unescape(translated):
             self.translations[untranslated] = translated

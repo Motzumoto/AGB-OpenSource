@@ -51,7 +51,7 @@ class events(commands.Cog):
         log(f"Discord Python Version: {formatColor(f'{discord_version}', 'green')}")
         try:
             await self.bot.load_extension("jishaku")
-            log(f"Loaded JSK.")
+            log("Loaded JSK.")
         except Exception:
             pass
         for guild in self.bot.guilds:
@@ -79,19 +79,17 @@ class events(commands.Cog):
                 cursor_n.execute(f"INSERT INTO guilds (guildId) VALUES ('{guild.id}')")
                 mydb_n.commit()
                 log(f"New guild detected: {guild.id} | Added to database!")
-            else:
-                pass
 
     @tasks.loop(count=None, seconds=random.randint(25, 60))
     async def presence_loop(self):
         await self.bot.wait_until_ready()
-        if datetime.today().month == 10 and datetime.today().day == 3:
+        if datetime.now().month == 10 and datetime.now().day == 3:
             await self.bot.change_presence(
                 activity=discord.Game(name="Happy birthday Motz!")
             )
             return
 
-        cursor_n.execute(f"SELECT * FROM public.status")
+        cursor_n.execute("SELECT * FROM public.status")
         row_count = cursor_n.rowcount
         status_id = random.randint(0, row_count)
 
@@ -267,33 +265,30 @@ class events(commands.Cog):
     @commands.Cog.listener(name="on_command")
     async def logger_shit(self, ctx):
         await self.bot.wait_until_ready()
-        if msgtracking(ctx.author.id):
-            # check if it was a dm
-            if ctx.guild == None:
-                return
-            if not ctx.guild.chunked:
-                try:
-                    await ctx.guild.chunk()
-                except:
-                    pass
-
-            if ctx.author.bot:
-                return
-            else:
-                pass
-            if ctx.interaction is not None:
-                return
-            if ctx.author.id in self.config.owners:
-                log(
-                    f"{formatColor('[DEV]', 'bold_red')} {formatColor(ctx.author, 'red')} used command {formatColor(ctx.message.clean_content, 'grey')}"
-                )
-                return
-            else:
-                log(
-                    f"{formatColor(ctx.author.id, 'grey')} used command {formatColor(ctx.message.clean_content, 'grey')}"
-                )
-        else:
+        if not msgtracking(ctx.author.id):
             return
+            # check if it was a dm
+        if ctx.guild is None:
+            return
+        if not ctx.guild.chunked:
+            try:
+                await ctx.guild.chunk()
+            except:
+                pass
+
+        if ctx.author.bot:
+            return
+        if ctx.interaction is not None:
+            return
+        if ctx.author.id in self.config.owners:
+            log(
+                f"{formatColor('[DEV]', 'bold_red')} {formatColor(ctx.author, 'red')} used command {formatColor(ctx.message.clean_content, 'grey')}"
+            )
+            return
+        else:
+            log(
+                f"{formatColor(ctx.author.id, 'grey')} used command {formatColor(ctx.message.clean_content, 'grey')}"
+            )
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
@@ -302,9 +297,10 @@ class events(commands.Cog):
         embed = discord.Embed(title="Removed from a server.", colour=0xFF0000)
         try:
             embed.add_field(
-                name=f":( forced to leave a server, heres their info:",
+                name=":( forced to leave a server, heres their info:",
                 value=f"Server name: `{guild.name}`\n ID `{guild.id}`\n Member Count: `{guild.member_count}`.",
             )
+
         except Exception:
             return
         embed.set_thumbnail(url=self.bot.user.avatar)
@@ -383,23 +379,22 @@ class events(commands.Cog):
                 # check to see if the guild still exists, if it doesn't, return
                 if guild is None:
                     return
-            else:
-                if not member.bot:
-                    try:
-                        cursor_n.execute(
-                            f"SELECT * FROM public.users WHERE userid = '{member.id}'"
-                        )
-                    except Exception:
-                        pass
-                    automod_rows = cursor_n.rowcount
-                    if automod_rows == 0:
-                        cursor_n.execute(
-                            f"INSERT INTO public.users (userid) VALUES ('{member.id}')"
-                        )
-                        mydb_n.commit()
-                        log(
-                            f"New user detected: {formatColor(member.id, 'green')} | Added to database!"
-                        )
+            elif not member.bot:
+                try:
+                    cursor_n.execute(
+                        f"SELECT * FROM public.users WHERE userid = '{member.id}'"
+                    )
+                except Exception:
+                    pass
+                automod_rows = cursor_n.rowcount
+                if automod_rows == 0:
+                    cursor_n.execute(
+                        f"INSERT INTO public.users (userid) VALUES ('{member.id}')"
+                    )
+                    mydb_n.commit()
+                    log(
+                        f"New user detected: {formatColor(member.id, 'green')} | Added to database!"
+                    )
 
 
 async def setup(bot):

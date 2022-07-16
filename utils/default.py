@@ -21,7 +21,7 @@ from . import common_filters
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
-    format=f"{Style.DIM + '(%(asctime)s)' + Style.RESET_ALL} [{Fore.CYAN + '%(levelname)s' +  Style.RESET_ALL}]: {'%(message)s'}",
+    format=f"{f'{Style.DIM}(%(asctime)s){Style.RESET_ALL}'} [{Fore.CYAN}%(levelname)s{Style.RESET_ALL}]: %(message)s",
     datefmt="[%a]-%I:%M-%p",
 )
 
@@ -82,7 +82,7 @@ def pycode(text: str, escape_formatting: bool = True) -> str:
     Parameters
     """
     text = escape(text, formatting=escape_formatting)
-    return "```py\n{}\n```".format(text)
+    return f"```py\n{text}\n```"
 
 
 def get(file):
@@ -110,7 +110,7 @@ def log(text: str):
     text : `str`
             The text to log.
     """
-    with open(f"logs.txt", "a+", encoding="utf-8") as log_file:
+    with open("logs.txt", "a+", encoding="utf-8") as log_file:
         log_file.write(f"[{date()}] {text}\n")
     # output the text to the console
     logger.info(text)
@@ -137,14 +137,12 @@ def addcommas(number):
     if number < 1000:
         return number
     number = str(number)
-    return addcommas(number[:-3]) + "," + number[-3:]
+    return f"{addcommas(number[:-3])},{number[-3:]}"
 
 
 def commify(n):
     n = str(n)
-    if len(n) <= 3:
-        return n
-    return commify(n[:-3]) + "," + n[-3:]
+    return n if len(n) <= 3 else f"{commify(n[:-3])},{n[-3:]}"
 
 
 def timetext(name):
@@ -152,8 +150,7 @@ def timetext(name):
 
 
 def add_one(num):
-    num = int(num)
-    num += 1
+    num = int(num) + 1
     return num
 
 
@@ -175,7 +172,7 @@ def date(clock=True):
     date = datetime.datetime.utcnow()
     date = date.strftime("%a %d %b %Y")
     if clock:
-        date = date + " " + time.strftime("%H:%M:%S")
+        date = f"{date} " + time.strftime("%H:%M:%S")
     return date
 
 
@@ -268,7 +265,7 @@ def bold(text: str, escape_formatting: bool = True) -> str:
             The marked up text.
     """
     text = escape(text, formatting=escape_formatting)
-    return "**{}**".format(text)
+    return f"**{text}**"
 
 
 def box(text: str, lang: str = "") -> str:
@@ -284,8 +281,7 @@ def box(text: str, lang: str = "") -> str:
     str
             The marked up text.
     """
-    ret = "```{}\n{}\n```".format(lang, text)
-    return ret
+    return f"```{lang}\n{text}\n```"
 
 
 def inline(text: str) -> str:
@@ -299,10 +295,7 @@ def inline(text: str) -> str:
     str
             The marked up text.
     """
-    if "`" in text:
-        return "``{}``".format(text)
-    else:
-        return "`{}`".format(text)
+    return f"``{text}``" if "`" in text else f"`{text}`"
 
 
 def italics(text: str, escape_formatting: bool = True) -> str:
@@ -320,7 +313,7 @@ def italics(text: str, escape_formatting: bool = True) -> str:
             The marked up text.
     """
     text = escape(text, formatting=escape_formatting)
-    return "*{}*".format(text)
+    return f"*{text}*"
 
 
 def bordered(*columns: Sequence[str], ascii_border: bool = False) -> str:
@@ -469,7 +462,7 @@ def strikethrough(text: str, escape_formatting: bool = True) -> str:
             The marked up text.
     """
     text = escape(text, formatting=escape_formatting)
-    return "~~{}~~".format(text)
+    return f"~~{text}~~"
 
 
 def underline(text: str, escape_formatting: bool = True) -> str:
@@ -487,7 +480,7 @@ def underline(text: str, escape_formatting: bool = True) -> str:
             The marked up text.
     """
     text = escape(text, formatting=escape_formatting)
-    return "__{}__".format(text)
+    return f"__{text}__"
 
 
 def quote(text: str) -> str:
@@ -583,7 +576,7 @@ def bytesto(bytes, to, bsize=1024):
 
     a = {"k": 1, "m": 2, "g": 3, "t": 4, "p": 5, "e": 6}
     r = float(bytes)
-    for i in range(a[to]):
+    for _ in range(a[to]):
         r = r / bsize
 
     return r

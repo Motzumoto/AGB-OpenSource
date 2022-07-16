@@ -14,13 +14,10 @@ class Guilds:
         guild = self.guilds.get(id)  # get the 'Guild' object of a given id
 
         # check if the guild is already stored then return it
-        if guild:
-            return guild
-        # if not, then create a new 'Guild' object and store it then return it
-        else:
+        if not guild:
             guild = Guild(id)
             self.guilds[id] = guild
-            return guild
+        return guild
 
 
 class Guild:

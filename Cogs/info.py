@@ -61,35 +61,40 @@ class Information(commands.Cog, name="info"):
             color=EMBED_COLOUR,
         )
         embed.add_field(
-            name=f"Temperature", value=f"{str(data['temp'])}° F", inline=False
+            name="Temperature", value=f"{str(data['temp'])}° F", inline=False
         )
+
         embed.add_field(
-            name=f"Minimum temperature",
+            name="Minimum temperature",
             value=f"{str(data['temp_min'])}° F",
             inline=False,
         )
+
         embed.add_field(
-            name=f"Maximum temperature",
+            name="Maximum temperature",
             value=f"{str(data['temp_max'])}° F",
             inline=False,
         )
+
         embed.add_field(
-            name=f"Feels like", value=f"{str(data['feels_like'])}° F", inline=False
+            name="Feels like", value=f"{str(data['feels_like'])}° F", inline=False
         )
+
         return embed
 
     def error_message(self, location):
         location = location.title()
         return discord.Embed(
-            title=f"Error caught!",
+            title="Error caught!",
             description=f"There was an error finding weather data for {location}.",
             color=EMBED_COLOUR,
         )
 
     async def create_embed(self, ctx, error):
         embed = discord.Embed(
-            title=f"Error Caught!", color=0xFF0000, description=f"{error}"
+            title="Error Caught!", color=0xFF0000, description=f"{error}"
         )
+
         embed.set_thumbnail(url=self.bot.user.avatar)
         await ctx.send(
             embed=embed,
@@ -145,11 +150,10 @@ class Information(commands.Cog, name="info"):
         """Get weather data for a location
         You can use your zip code or your city name.
         Ex; `tp!weather City / Zip Code` or `tp!weather City,Town`"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
-        if location == None:
+        if location is None:
             await ctx.send("Please send a valid location.")
             return
 
@@ -201,8 +205,7 @@ class Information(commands.Cog, name="info"):
     @permissions.dynamic_ownerbypass_cooldown(1, 3, commands.BucketType.user)
     async def vote(self, ctx):
         """Vote for the bot"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
@@ -267,10 +270,11 @@ class Information(commands.Cog, name="info"):
             name="Bot Invite", value=f"[Invite Me!]({config.Invite})", inline=True
         )
         embed.add_field(
-            name=f"Support Server",
+            name="Support Server",
             value=f"[Join Our Server!!]({config.Server})",
             inline=True,
         )
+
         embed.add_field(
             name=f"{self.bot.user.name} was made with love by: {'' if len(self.config.owners) == 1 else ''}",
             value=", ".join(
@@ -340,7 +344,7 @@ class Information(commands.Cog, name="info"):
                 await fetching.edit(content="Fetching Lunar API stats...")
                 async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
                     try:
-                        async with s.get(f"https://lunardev.group/api/ping") as r:
+                        async with s.get("https://lunardev.group/api/ping") as r:
                             j = await r.json()
                             seconds = j["uptime"]
 
@@ -361,7 +365,7 @@ class Information(commands.Cog, name="info"):
                 await fetching.edit(content="Fetching Lunar system cores...")
                 async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
                     try:
-                        async with s.get(f"https://lunardev.group/api/ping") as r:
+                        async with s.get("https://lunardev.group/api/ping") as r:
                             j = await r.json()
                             cores = j["system"]["cores"]
 
@@ -380,7 +384,7 @@ class Information(commands.Cog, name="info"):
                 await fetching.edit(content="Fetching Lunar API files...")
                 async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
                     try:
-                        async with s.get(f"https://lunardev.group/api/ping") as r:
+                        async with s.get("https://lunardev.group/api/ping") as r:
                             j = await r.json()
                             files = j["images"]["total"]
 
@@ -399,7 +403,7 @@ class Information(commands.Cog, name="info"):
                 await fetching.edit(content="Fetching Lunar system uptime...")
                 async with aiohttp.ClientSession(headers=self.lunar_headers) as s:
                     try:
-                        async with s.get(f"https://lunardev.group/api/ping") as r:
+                        async with s.get("https://lunardev.group/api/ping") as r:
                             j = await r.json()
                             uptime = j["system"]["uptime"]
 
@@ -479,8 +483,11 @@ class Information(commands.Cog, name="info"):
             )
             if len(chunked) == len(self.bot.guilds):
                 embed.add_field(
-                    name="\u200b", value=f"**All servers are cached!**", inline=False
+                    name="\u200b",
+                    value="**All servers are cached!**",
+                    inline=False,
                 )
+
             else:
                 embed.add_field(
                     name="\u200b",
@@ -506,8 +513,7 @@ class Information(commands.Cog, name="info"):
     @commands.bot_has_permissions(embed_links=True)
     async def say(self, ctx, *, message: str):
         """Speak through the bot uwu"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         # if message.
@@ -522,8 +528,7 @@ class Information(commands.Cog, name="info"):
     @commands.bot_has_permissions(embed_links=True)
     async def policy(self, ctx):
         """Privacy Policy"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         embed = discord.Embed(color=EMBED_COLOUR, timestamp=ctx.message.created_at)
@@ -534,19 +539,22 @@ class Information(commands.Cog, name="info"):
         embed.set_thumbnail(url=ctx.bot.user.avatar)
         embed.add_field(
             name="Direct Link To The Privacy Policy ",
-            value=f"[Click Here](https://gist.github.com/Motzumoto/2f25e114533a35d86078018fdc2dd283)",
+            value="[Click Here](https://gist.github.com/Motzumoto/2f25e114533a35d86078018fdc2dd283)",
             inline=True,
         )
+
         embed.add_field(
             name="Backup To The Policy ",
-            value=f"[Click Here](https://pastebin.com/J5Zj8U1q)",
+            value="[Click Here](https://pastebin.com/J5Zj8U1q)",
             inline=False,
         )
+
         embed.add_field(
-            name=f"Support If You Have More Questions",
+            name="Support If You Have More Questions",
             value=f"[Click Here To Join]({config.Server})",
             inline=True,
         )
+
         embed.add_field(
             name=f"{ctx.bot.user.name} was made with love by: {'' if len(self.config.owners) == 1 else ''}",
             value=", ".join(
@@ -568,8 +576,7 @@ class Information(commands.Cog, name="info"):
     @commands.bot_has_permissions(embed_links=True)
     async def profile(self, ctx, user: Union[MemberConverter, discord.User] = None):
         """Show your user profile"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         usr = user or ctx.author
@@ -646,8 +653,7 @@ class Information(commands.Cog, name="info"):
     @commands.bot_has_permissions(embed_links=True)
     async def bio(self, ctx, *, bio: str = None):
         """Set your profile bio"""
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         if bio is None:
@@ -678,8 +684,7 @@ class Information(commands.Cog, name="info"):
         Example: 12/22/2005 02:20:00
         You don't need to specify time. It will automatically round it to midnight.
         """
-        cmdEnabled = cmd(str(ctx.command.name).lower(), ctx.guild.id)
-        if cmdEnabled:
+        if cmdEnabled := cmd(str(ctx.command.name).lower(), ctx.guild.id):
             return await ctx.send(":x: This command has been disabled!")
 
         if time is None:
