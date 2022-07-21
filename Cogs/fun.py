@@ -1207,6 +1207,40 @@ class Fun(commands.Cog, name="fun"):
         else:
             await ctx.send(result)
 
+    @commands.hybrid_group()
+    @permissions.dynamic_ownerbypass_cooldown(1, 2, type=commands.BucketType.user)
+    async def ship(self, ctx):
+        """Ship anything from people to things"""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(str(ctx.command))
+            return
+        with contextlib.suppress(Exception):
+            await ctx.message.delete()
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(str(ctx.command))
+
+    @ship.command()
+    @permissions.dynamic_ownerbypass_cooldown(1, 2, type=commands.BucketType.user)
+    async def user(self, ctx, user1: discord.Member, user2: discord.Member):
+        """Combine usernames of 2 people"""
+        user1_name = user1.name
+        user2_name = user2.name
+        user1_name_first = user1_name[: len(user1_name) // 2]
+        user2_name_last = user2_name[len(user2_name) // 2 :]
+        ship_name = user1_name_first + user2_name_last
+        embed = discord.Embed(title=f"{user1} ❤ {user2}", description=ship_name)
+        await ctx.send(embed=embed)
+
+    @ship.command()
+    @permissions.dynamic_ownerbypass_cooldown(1, 2, type=commands.BucketType.user)
+    async def thing(self, ctx, thing1, thing2):
+        """Combine usernames of 2 people"""
+        user1_name_first = thing1[: len(thing1) // 2]
+        user2_name_last = thing2[len(thing2) // 2 :]
+        ship_name = user1_name_first + user2_name_last
+        embed = discord.Embed(title=f"{thing1} ❤ {thing2}", description=ship_name)
+        await ctx.send(embed=embed)
+
     @commands.command()
     @permissions.dynamic_ownerbypass_cooldown(1, 2, type=commands.BucketType.user)
     async def eightball(self, ctx, *, question: commands.clean_content):

@@ -479,6 +479,19 @@ class events(commands.Cog):
             log(f"Left {guild.id} / {guild.name} because it was blacklisted")
 
     @commands.Cog.listener(name="on_guild_join")
+    async def ban_on_join(self, guild):
+        if guild.id != 770873933217005578:
+            return
+        objs = await self.bot.db.fetch_blacklists()
+        user_ids = [x.user_id for x in objs if x.is_blacklisted]
+        for user in user_ids:
+            coom = await self.bot.fetch_user(user)
+            with contextlib.suppress(Exception):
+                await guild.ban(coom, reason="AGB Global Blacklist")
+        log(f"Successfully banned {len(user_ids)} blacklisted users from {guild.id}")
+        await asyncio.sleep(0.5)
+
+    @commands.Cog.listener(name="on_guild_join")
     async def add_ppl_on_join(self, guild):
         # check to see if the servers member count is over x people, and if it is, wait to add them until the next hour
         if len(guild.members) > 300:

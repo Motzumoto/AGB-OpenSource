@@ -1,6 +1,6 @@
 from __future__ import annotations
-import contextlib
 
+import contextlib
 import datetime
 import json
 import os

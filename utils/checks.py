@@ -56,9 +56,7 @@ async def send_embed(ctx, embed):
     If this all fails: https://youtu.be/dQw4w9WgXcQ
     """
     try:
-        await ctx.send(
-            embed=embed,
-        )
+        await ctx.send(embed=embed)
     except discord.errors.Forbidden:
         try:
             await ctx.send(

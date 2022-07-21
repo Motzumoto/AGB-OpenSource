@@ -353,8 +353,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
 
         if db_guild.hentai_channel_id and db_guild.hentai_channel_id == channel.id:
             await ctx.send(
-                "whoops, guild already has a channel my dude",
-                ephemeral=ephemeral,
+                "whoops, guild already has a channel my dude", ephemeral=ephemeral
             )
             return
         # add to the db
@@ -448,9 +447,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
                 colour=colors.prim,
             )
             embed.set_image(url=url)
-            embed.set_footer(
-                text=f"lunardev.group | {used_commands} commands used.",
-            )
+            embed.set_footer(text=f"lunardev.group | {used_commands} commands used.")
             if ctx.interaction is None:
                 if not ctx.channel.is_nsfw():
                     # raise nsfw channel required
@@ -481,9 +478,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=colors.prim,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group | {used_commands} commands used.",
-        )
+        embed.set_footer(text=f"lunardev.group | {used_commands} commands used.")
         if ctx.interaction is None:
             if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
@@ -512,9 +507,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=colors.prim,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group | {used_commands} commands used.",
-        )
+        embed.set_footer(text=f"lunardev.group | {used_commands} commands used.")
         if ctx.interaction is None:
             if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
@@ -542,9 +535,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=colors.prim,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group | {used_commands} commands used.",
-        )
+        embed.set_footer(text=f"lunardev.group | {used_commands} commands used.")
         if ctx.interaction is None:
             if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
@@ -573,9 +564,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=colors.prim,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group | {used_commands} commands used.",
-        )
+        embed.set_footer(text=f"lunardev.group | {used_commands} commands used.")
         if ctx.interaction is None:
             if not ctx.channel.is_nsfw():
                 # raise nsfw channel required
@@ -604,9 +593,7 @@ class Nsfw(commands.Cog, name="nsfw", command_attrs=dict(nsfw=True)):
             colour=colors.prim,
         )
         embed.set_image(url=url)
-        embed.set_footer(
-            text=f"lunardev.group | {used_commands} commands used.",
-        )
+        embed.set_footer(text=f"lunardev.group | {used_commands} commands used.")
         if ctx.interaction is None:
             if not ctx.channel.is_nsfw():
                 # raise nsfw channel required

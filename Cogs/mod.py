@@ -211,9 +211,7 @@ class Moderator(commands.Cog, name="mod"):
         )
 
         embed.set_thumbnail(url=self.bot.user.avatar)
-        await ctx.send(
-            embed=embed,
-        )
+        await ctx.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -235,8 +233,7 @@ class Moderator(commands.Cog, name="mod"):
                     value=f"{message.content}",
                 )
                 embed.set_footer(
-                    text=f"tp!dm {message.author.id} ",
-                    icon_url=message.author.avatar,
+                    text=f"tp!dm {message.author.id} ", icon_url=message.author.avatar
                 )
                 channel = self.bot.get_channel(986079167944749057)
                 if message.author.bot:
@@ -299,16 +296,13 @@ class Moderator(commands.Cog, name="mod"):
                 timestamp=ctx.message.created_at,
             )
             embed.add_field(
-                name="Success",
-                value=f"The `{command}` command has been **{ternary}**",
+                name="Success", value=f"The `{command}` command has been **{ternary}**"
             )
             embed.set_thumbnail(url=ctx.message.author.avatar)
             embed.set_author(
                 name=ctx.message.author.name, icon_url=ctx.message.author.avatar
             )
-            await ctx.send(
-                embed=embed,
-            )
+            await ctx.send(embed=embed)
 
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @commands.guild_only()
@@ -623,9 +617,7 @@ class Moderator(commands.Cog, name="mod"):
             timestamp=ctx.message.created_at,
         )
         embed.set_footer(text="lunardev.group", icon_url=ctx.author.avatar)
-        await ctx.send(
-            embed=embed,
-        )
+        await ctx.send(embed=embed)
 
     @permissions.dynamic_ownerbypass_cooldown(1, 500, commands.BucketType.guild)
     @permissions.has_permissions(manage_roles=True)
@@ -901,13 +893,7 @@ class Moderator(commands.Cog, name="mod"):
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     @permissions.has_permissions(ban_members=True)
     @commands.bot_has_permissions(embed_links=True, ban_members=True)
-    async def ban(
-        self,
-        ctx,
-        member: MemberID,
-        *,
-        reason: ActionReason = None,
-    ):
+    async def ban(self, ctx, member: MemberID, *, reason: ActionReason = None):
         """
         Bans a member from the server.
         """
@@ -933,7 +919,7 @@ class Moderator(commands.Cog, name="mod"):
             embed=discord.Embed(
                 color=colors.prim,
                 description=f"<a:LD_Banned1:872972866092662794><a:LD_Banned2:872972848354983947><a:LD_Banned3:872972787877314601> **{member}** has been banned: reason {reason}",
-            ),
+            )
         )
 
     @commands.hybrid_command()
@@ -1313,8 +1299,7 @@ class Moderator(commands.Cog, name="mod"):
             return await ctx.send("Topic is too long!")
         await channel.edit(topic=topic)
         await ctx.send(
-            f"{channel.name}'s topic has been changed to: `{topic}`!",
-            ephemeral=True,
+            f"{channel.name}'s topic has been changed to: `{topic}`!", ephemeral=True
         )
 
     @edit.command()
@@ -2012,9 +1997,7 @@ class Moderator(commands.Cog, name="mod"):
 
         await self.do_removal(ctx, search, predicate)
 
-    @purge.command(
-        aliases=["emojis", "emote", "emotes"],
-    )
+    @purge.command(aliases=["emojis", "emote", "emotes"])
     @commands.guild_only()
     @permissions.dynamic_ownerbypass_cooldown(1, 5, commands.BucketType.user)
     async def emoji(self, ctx, search=100):

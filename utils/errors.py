@@ -1,3 +1,4 @@
+from discord.ext.commands.errors import CheckFailure
 from typing import Any
 
 
@@ -6,9 +7,6 @@ class DatabaseError(Exception):
         self.original: Any = error
         self.message: str = str(error)
         super().__init__(self.message)
-
-
-from discord.ext.commands.errors import CheckFailure
 
 
 class DisabledCommand(CheckFailure):

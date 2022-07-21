@@ -67,7 +67,9 @@ class autoposting(commands.Cog, name="ap"):
             from Cogs.admin import PersistentView
 
             await webhook.send(
-                embed=embed, avatar_url=self.bot.user.avatar.url, view=PersistentView(self)  # type: ignore
+                embed=embed,
+                avatar_url=self.bot.user.avatar.url,
+                view=PersistentView(self),  # type: ignore
             )
         except Exception as e:
             capture_exception(e)
@@ -80,7 +82,9 @@ class autoposting(commands.Cog, name="ap"):
         from Cogs.admin import PersistentView
 
         posts = 0
-        me = await self.bot.fetch_user(101118549958877184)
+        me = self.bot.get_user(101118549958877184) or await self.bot.fetch_user(
+            101118549958877184
+        )
         url = await self.get_hentai_img()
         cleaned_link = url.replace("https://lunardev.group/api/", "")
         if random.randint(1, 10) == 3:
@@ -171,9 +175,7 @@ class autoposting(commands.Cog, name="ap"):
 
                     # found out custom webhook
                     webhook = discord.utils.get(
-                        webhooks,
-                        name="AGB Autoposting",
-                        user=self.bot.user,
+                        webhooks, name="AGB Autoposting", user=self.bot.user
                     )
                     # if not found, loop through all webhooks and check if there is a custom one
                     # and delete it if it is

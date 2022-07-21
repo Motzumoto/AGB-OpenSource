@@ -177,7 +177,9 @@ class Bot(commands.AutoShardedBot):
             case_insensitive=True,
             owner_ids=config.owners,
             help_command=None,
+            reconnect=True,
             command_attrs=dict(hidden=True),
+            status=discord.Status.idle,
             activity=discord.Game(name="Initializing..."),
             shard_count=1,
             chunk_guilds_at_startup=False,
@@ -211,6 +213,11 @@ class Bot(commands.AutoShardedBot):
                 await self.load_extension(f"Cogs.{name}")
 
     async def close(self):
+        await self.close_func()
+
+    async def close_func(self):
+        logger.info("Closing bot...")
+        await self.session.close()  # type: ignore
         await super().close()
         await self.db.close()
 

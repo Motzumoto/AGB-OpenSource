@@ -15,17 +15,10 @@ import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
-from index import (
-    Website,
-    colors,
-    config,
-    suggestion_no,
-    suggestion_yes,
-)
+from index import Website, colors, config, suggestion_no, suggestion_yes
 from sentry_sdk import capture_exception
 from utils import default, imports, permissions
 from utils.default import log
-
 
 if TYPE_CHECKING:
     from index import Bot
@@ -220,7 +213,6 @@ class DiscordCmds(commands.Cog, name="discord"):
                 embed=embed,
             )
         except Exception as e:
-            log(e)
             await ctx.send("Nothing has been recently edited.")
 
     @commands.hybrid_command()

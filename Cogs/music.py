@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime
+import contextlib
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
 import DiscordUtils
-import contextlib
 import humanfriendly
-from datetime import timezone
 from discord.ext import commands
 from DiscordUtils.Music import MusicPlayer
 from index import colors

@@ -30,14 +30,7 @@ NOT_EMBED_DOMAINS = (
 GOOD_EXTENSIONS = (".png", ".jpg", ".jpeg", ".gif", "gifv")
 
 # Subreddits
-FOUR_K = [
-    "Hegre",
-    "HighResASS",
-    "HighResNSFW",
-    "NSFW_Wallpapers",
-    "UHDnsfw",
-    "closeup",
-]
+FOUR_K = ["Hegre", "HighResASS", "HighResNSFW", "NSFW_Wallpapers", "UHDnsfw", "closeup"]
 AHEGAO = ["AhegaoGirls", "EyeRollOrgasm", "O_Faces", "RealAhegao", "ahegao"]
 ASS = [
     "AssOnTheGlass",
@@ -81,14 +74,7 @@ ASIANPORN = [
     "bustyasians",
     "juicyasians",
 ]
-BBW = [
-    "BBW",
-    "BBW_Chubby",
-    "GoneWildPlus",
-    "PerkyChubby",
-    "chubby",
-    "gonewildcurvy",
-]
+BBW = ["BBW", "BBW_Chubby", "GoneWildPlus", "PerkyChubby", "chubby", "gonewildcurvy"]
 BDSM = ["BDSMGW", "BDSM_NoSpam", "Bondage", "Spanking", "bdsm", "ropeart"]
 BLACKCOCK = ["Blackdick", "ChurchOfTheBBC", "bigblackcocks", "blackcock"]
 BLOWJOB = [
@@ -132,13 +118,7 @@ BOOBS = [
     "tits",
 ]
 BOTTOMLESS = ["Bottomless", "nopanties", "upskirt"]
-COSPLAY = [
-    "CosplayBoobs",
-    "CosplayLewd",
-    "Cosplayheels",
-    "gwcosplay",
-    "nsfwcosplay",
-]
+COSPLAY = ["CosplayBoobs", "CosplayLewd", "Cosplayheels", "gwcosplay", "nsfwcosplay"]
 CUMSHOTS = [
     "GirlsFinishingTheJob",
     "amateurcumsluts",
@@ -171,14 +151,7 @@ EBONY = [
     "ebonyamateurs",
 ]
 FACIALS = ["FacialFun", "facialcumshots"]
-FEET = [
-    "ButtsAndBareFeet",
-    "Feet_NSFW",
-    "Feetup",
-    "FootFetish",
-    "legsup",
-    "rule34feet",
-]
+FEET = ["ButtsAndBareFeet", "Feet_NSFW", "Feetup", "FootFetish", "legsup", "rule34feet"]
 FEMDOM = ["Femdom", "FemdomHumiliation", "femdom", "hentaifemdom"]
 GROUPS = ["GroupOfNudeGirls", "groupsex"]
 LESBIANS = [
