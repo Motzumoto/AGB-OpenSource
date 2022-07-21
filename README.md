@@ -1,2 +1,3 @@
-# Updates are being posted on this repo now: 
+# Updates are being posted on this repo now
+
 https://github.com/LunarsDev/AGB-Source
